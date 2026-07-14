@@ -1,0 +1,53 @@
+[SPHN]
+sphn_rdf_schema_file_path = "sphn_schema_release_2026.1.ttl"
+
+[SPHN.data_provider] 
+category = "University" # Mustbe a sphn:DataProvider_category valueset member
+
+[SPHN.data_provider.department] 
+name = "Department of Medical Imaging Benders"
+
+[SPHN.data_provider.institution_code]
+coding_system_and_version = "UID" # The coding system and version of the identifier, e.g. "UID"
+identifier = "CHE-888-888-888" # The Enterprise Identification Number UID.
+name = "University of Switzerland"
+
+[SPHN.source_system] 
+name = "Medical image management system"
+purpose = "Research" # Must be a sphn:SourceSystem_purpose valueset member
+category = "HealthcareInformationSystem" # Must be a sphn:SourceSystem_category valueset member
+
+[SPHN.source_system.healthcare_primary_information_system]
+name = "Medical image management system"
+
+[SPHN.source_system.healthcare_primary_information_system.code]
+coding_system_and_version = "SNOMED-CT"
+identifier = "702183004" # Meaning: SNOMED CT: 702183004 | Medical image management system (physical object) |
+name = "Medical image management system (physical object)"
+
+[orthanc_rest_api_user]
+base_url = "http://localhost:8042"      # Orthanc REST API base URL, e.g.: "http://localhost:8042" or "http://1.2.3.4:8042"
+username = "orthanc_user"               # Orthanc REST API username
+password = "orthanc_password"           # Orthanc REST API password
+
+[dicomweb_api_user]
+base_url = "http://localhost/dicom-web:8042" # DICOMweb API base URL, e.g.: "http://localhost/dicom-web:8042" or "http://1.2.3.4/dicom-web:8042"
+username = "dicomweb_user"                   # DICOMweb API username
+password = "dicomweb_password"               # DICOMweb API password
+
+[database_api_user]
+base_url = "http://localhost:5432" # Database base URL, e.g.: "http://localhost:5432" or "http://1.2.3.4:5432"
+username = "database_user"         # Database username
+password = "database_password"     # Database password
+
+[dicom_options]
+# List of allowed SOP Class UIDs (of type Storage Service Class) and their meanings
+allowed_sop_classes = [
+    { UID = "1.2.840.10008.5.1.4.1.1.2",        Meaning = "CT Image Storage" },
+    { UID = "1.2.840.10008.5.1.4.1.1.4",        Meaning = "MR Image Storage" },
+    { UID = "1.2.840.10008.5.1.4.1.1.128",      Meaning = "Positron Emission Tomography Image Storage" }
+]
+
+#    { UID = "1.2.840.10008.5.1.4.1.1.1",        Meaning = "Computed Radiography Image Storage" },
+#    { UID = "1.2.840.10008.5.1.4.1.1.77.1.6",   Meaning = "VL Whole Slide Microscopy Image Storage" },
+
