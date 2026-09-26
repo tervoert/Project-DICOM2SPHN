@@ -4,24 +4,27 @@ import_config_settings.py:
     It contains the functions for importing configuration settings.
 """
 import tomllib
-from time import time
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
+from time import time
+
 from pydicom.uid import UID
 from pynetdicom import sop_class
 from pynetdicom.service_class import StorageServiceClass
 
+from .api_users import DicomwebAPIUser, OrthancRestAPIUser
 from .context import Context
-from .api_users import OrthancRestAPIUser, DicomwebAPIUser
-from .tools import is_valid_string, is_clean_string
-from .sphn_schema_graph import SPHNSchemaGraph
 from .data_store import DataStore
-from .sphn_data_provider import SPHNDataProvider
-from .sphn_code import SPHNCode, CodingSystemList
-from .sphn_department import SPHNDepartment
-from .sphn_data_release import SPHNDataRelease
-from .sphn_source_system import SPHNSourceSystem
-from .sphn_healthcare_primary_information_system import SPHNHealthcarePrimaryInformationSystem
+from .sphn_concepts.sphn_code import CodingSystemList, SPHNCode
+from .sphn_concepts.sphn_data_provider import SPHNDataProvider
+from .sphn_concepts.sphn_data_release import SPHNDataRelease
+from .sphn_concepts.sphn_department import SPHNDepartment
+from .sphn_concepts.sphn_healthcare_primary_information_system import (
+    SPHNHealthcarePrimaryInformationSystem,
+)
+from .sphn_concepts.sphn_source_system import SPHNSourceSystem
+from .sphn_schema_graph import SPHNSchemaGraph
+from .tools import is_clean_string, is_valid_string
 
 
 #
@@ -29,18 +32,34 @@ from .sphn_healthcare_primary_information_system import SPHNHealthcarePrimaryInf
 #
 class ImportConfigSettingsError(Exception):
     """Custom exception for errors in the import_config_settings module."""
-    pass
 
 
 #
-# Edwin 2026-07-14
+# Edwin 2026-07-15
 #
 def import_config_settings(config_file: Path, context: Context, indent: int=0) -> Context:
     """Import settings from a TOML configuration file and add them to the context."""
 
-    context.logger.info(" "*(indent+0) + "Trying to import settings.")
+    # Checks
+    assert isinstance(config_file,Path)
+    assert isinstance(context,Context)
+    assert isinstance(indent,int) and indent>=0
 
-    settings = load_settings_from_configuration_file(config_file, context, indent=indent+1)
+    # -----------------------------------------------------------------------------------------------------------------
+    # Load settings from the configuration file
+    # -----------------------------------------------------------------------------------------------------------------
+
+    context.logger.info(" "*(indent+0) + "Trying to load settings from file.")
+
+    settings = load_settings_from_configuration_file(config_file, context, indent=indent+2)
+
+    context.logger.info(" "*(indent+0) + "Successfully loaded settings from file.")
+
+    # -----------------------------------------------------------------------------------------------------------------
+    # Process the SPHN settings
+    # -----------------------------------------------------------------------------------------------------------------
+
+    context.logger.info(" "*(indent+0) + "Trying to select the SPHN settings.")
 
     # SPHN Settings
     if "SPHN" not in settings:
@@ -51,17 +70,19 @@ def import_config_settings(config_file: Path, context: Context, indent: int=0) -
     if not isinstance(sphn_settings, dict):
         raise ImportConfigSettingsError("The 'SPHN' settings have the wrong format.")
 
-    # SPHN RDF schema settings
+    context.logger.info(" "*(indent+0) + "Successfully selected the SPHN settings.")
 
-    context.logger.info(" "*(indent+1) + "Trying to import SPHN RDF schema file path settings.")
+    # -----------------------------------------------------------------------------------------------------------------
+    # Process the SPHN settings: RDF Schema
+    # -----------------------------------------------------------------------------------------------------------------
 
-    sphn_rdf_schema_file_path = read_sphn_rdf_schema_file_path_settings(sphn_settings, context, indent=indent+1)
+    context.logger.info(" "*(indent+0) + "Trying to process the SPHN RDF schema file path settings.")
 
-    context.logger.info(" "*(indent+1) + "Successfully imported SPHN RDF schema file path settings.")
+    sphn_rdf_schema_file_path = read_sphn_rdf_schema_file_path_settings(sphn_settings, context, indent=indent+2)
 
-    # SPHN RDF schema
+    context.logger.info(" "*(indent+0) + "Successfully processed the SPHN RDF schema file path settings.")
 
-    context.logger.info(" "*(indent+1) + f"Trying to import SPHN RDF schema file '{sphn_rdf_schema_file_path}'.")
+    context.logger.info(" "*(indent+0) + f"Trying to load SPHN RDF schema file '{sphn_rdf_schema_file_path}'.")
 
     if not sphn_rdf_schema_file_path.is_file():
         raise ImportConfigSettingsError(f"The 'sphn_rdf_schema_file_path' setting points to a non-existing file: '{sphn_rdf_schema_file_path}'.")
@@ -72,34 +93,42 @@ def import_config_settings(config_file: Path, context: Context, indent: int=0) -
 
     context.sphn_schema = sphn_schema        
 
-    context.logger.info(" "*(indent+1) + f"Successfully imported the SPHN RDF schema file, version: '{str(sphn_schema_version)}'.")
+    context.logger.info(" "*(indent+0) + f"Successfully loaded the SPHN RDF schema file, version: '{sphn_schema_version!s}'.")
 
-    # SPHN DataProvider settings
+    # -----------------------------------------------------------------------------------------------------------------
+    # Process the SPHN settings: SPHN DataProvider
+    # -----------------------------------------------------------------------------------------------------------------
 
-    context.logger.info(" "*(indent+1) + "Trying to import SPHN DataProvider settings.")
+    context.logger.info(" "*(indent+0) + "Trying to process the SPHN DataProvider settings.")
 
-    sphn_data_provider = read_sphn_data_provider_settings(sphn_settings, context, indent=indent+1)
+    sphn_data_provider = read_sphn_data_provider_settings(sphn_settings, context, indent=indent+2)
 
-    context.logger.info(" "*(indent+1) + "Successfully imported SPHN DataProvider settings.")
+    context.logger.info(" "*(indent+0) + "Successfully processed the SPHN DataProvider settings.")
 
-    # SPHN SourceSystem settings
+    # -----------------------------------------------------------------------------------------------------------------
+    # Process the SPHN settings: SPHN SourceSystem
+    # -----------------------------------------------------------------------------------------------------------------
 
-    context.logger.info(" "*(indent+1) + "Trying to import SPHN SourceSystem settings.")
+    context.logger.info(" "*(indent+0) + "Trying to process the SPHN SourceSystem settings.")
 
-    sphn_source_system = read_sphn_source_system_settings(sphn_settings, context, indent=indent+1)
+    sphn_source_system = read_sphn_source_system_settings(sphn_settings, context, indent=indent+2)
 
-    context.logger.info(" "*(indent+1) + "Successfully imported SPHN SourceSystem settings.")
+    context.logger.info(" "*(indent+0) + "Successfully processed the SPHN SourceSystem settings.")
 
-    # SPHN DataRelease
+    # -----------------------------------------------------------------------------------------------------------------
+    # Process the SPHN settings: SPHN DataRelease
+    # -----------------------------------------------------------------------------------------------------------------
 
-    context.logger.info(" "*(indent+1) + "Trying to create SPHN DataRelease.")
+    context.logger.info(" "*(indent+0) + "Trying to create the SPHN DataRelease concept.")
 
     # Timestamp: The time in seconds since the epoch. The epoch is: 1 January 1970 at 00:00:00 UTC.
     timestamp = time()
     # Convert to dateTime string
-    extraction_date_time = datetime.fromtimestamp(timestamp)
+    extraction_date_time = datetime.fromtimestamp(timestamp, tz=UTC)
     # extraction_date_time_str = extraction_date_time.strftime("%Y-%m-%dT%H:%M:%S")
     # extraction_date_time_str = extraction_date_time.isoformat(timespec='milliseconds')
+
+    context.logger.info(" "*(indent+2) + f"Using the extraction date/time: '{extraction_date_time.isoformat(timespec='milliseconds')}'.")
 
     # Get the SPHN Schema version, like: "https://biomedit.ch/rdf/sphn-schema/sphn/2026/1"
     sphn_schema_version = context.sphn_schema.get_version()
@@ -110,52 +139,77 @@ def import_config_settings(config_file: Path, context: Context, indent: int=0) -
         has_extraction_datetime=extraction_date_time,
         sphn_schema=context.sphn_schema)
 
-    context.logger.info(" "*(indent+2) + f"Extraction date/time: '{extraction_date_time.isoformat(timespec='milliseconds')}'.")
-    context.logger.info(" "*(indent+1) + "Successfully created SPHN DataRelease.")
+    context.logger.info(" "*(indent+0) + "Successfully created the SPHN DataRelease concept.")
 
-    # DataStore
+    # -----------------------------------------------------------------------------------------------------------------
+    # Process the DICOM settings: Allowed SOP Classes
+    # -----------------------------------------------------------------------------------------------------------------
 
-    context.logger.info(" "*(indent+1) + "Trying to create the DataStore.")
+    context.logger.info(" "*(indent+0) + "Trying to process the allowed SOP Classes settings.")
+
+    sop_classes_specified = get_allowed_sop_classes_from_dicom_options_settings(settings, context, indent=indent+2)
+    
+    context.logger.info(" "*(indent+2) + f"Found {len(sop_classes_specified)} valid SOP class settings.")
+
+    context.logger.info(" "*(indent+0) + "Successfully processed the allowed SOP Classes settings.")
+
+    # -----------------------------------------------------------------------------------------------------------------
+    # Process the DICOM settings: StudyDate and StudyTime for DICOM Studies without a date/time
+    # -----------------------------------------------------------------------------------------------------------------
+
+    context.logger.info(" "*(indent+0) + "Trying to process the StudyDate and StudyTime settings for DICOM Studies without a date/time.")
+
+    fallback_study_date_time = get_fallback_study_date_time_from_dicom_options_settings(settings, context, indent=indent+2)
+
+    context.logger.info(" "*(indent+2) + f"Using StudyDateTime: '{fallback_study_date_time}' for DICOM Studies without a date/time.")
+
+    context.logger.info(" "*(indent+0) + "Successfully processed the StudyDate and StudyTime settings.")
+
+    # -----------------------------------------------------------------------------------------------------------------
+    # Create the DataStore
+    # -----------------------------------------------------------------------------------------------------------------
+
+    context.logger.info(" "*(indent+0) + "Trying to create the DataStore.")
 
     data_store = DataStore(
         sphn_data_release=sphn_data_release,
         sphn_data_provider=sphn_data_provider,
-        sphn_source_system=sphn_source_system)
+        sphn_source_system=sphn_source_system,
+        sphn_schema=context.sphn_schema,
+        valid_sop_classes=sop_classes_specified,
+        fallback_study_date_time=fallback_study_date_time)
     
     context.data_store = data_store
 
-    context.logger.info(" "*(indent+1) + "Successfully created the DataStore.")
+    context.logger.info(" "*(indent+0) + "Successfully created the DataStore.")
 
-    # Orthanc REST API user settings
+    # -----------------------------------------------------------------------------------------------------------------
+    # Process the Orthanc REST API user settins
+    # -----------------------------------------------------------------------------------------------------------------
 
-    # orthanc_rest_api_user = get_orthanc_rest_api_user_from_settings(settings, context, indent=indent+1)
-    # context.logger.info(" "*(indent+0) + "Orthanc REST API user settings found.")
+    # context.logger.info(" "*(indent+0) + "Trying to process the Orthanc REST API user settings.")
+
+    # orthanc_rest_api_user = get_orthanc_rest_api_user_from_settings(settings, context, indent=indent+2)
+    # context.logger.info(" "*(indent+2) + "Orthanc REST API user settings found.")
     # context.orthanc_rest_api_user = orthanc_rest_api_user
 
-    # DICOMweb API user settings
+    # context.logger.info(" "*(indent+0) + "Successfully processed the Orthanc REST API user settings.")
 
-    context.logger.info(" "*(indent+1) + "Trying to import the DICOMweb API user settings.")
+    # -----------------------------------------------------------------------------------------------------------------
+    # Process the DICOMweb API user settings
+    # -----------------------------------------------------------------------------------------------------------------
 
-    dicomweb_api_user = get_dicomweb_api_user_from_settings(settings, context, indent=indent+1)
+    context.logger.info(" "*(indent+0) + "Trying to process the DICOMweb API user settings.")
+
+    dicomweb_api_user = get_dicomweb_api_user_from_settings(settings, context, indent=indent+2)
     
     context.dicomweb_api_user = dicomweb_api_user
 
-    context.logger.info(" "*(indent+1) + "Successfully imported the DICOMweb API user settings.")
+    context.logger.info(" "*(indent+0) + "Successfully processed the DICOMweb API user settings.")
 
-    # Allowed SOP Classes settings
+    # -----------------------------------------------------------------------------------------------------------------
 
-    context.logger.info(" "*(indent+1) + "Trying to import the allowed SOP Classes settings.")
-
-    sop_classes_specified = get_allowed_sop_classes_from_dicom_options_settings(settings, context, indent=indent+1)
-    
-    context.logger.info(" "*(indent+2) + f"Found {len(sop_classes_specified)} valid SOP class settings.")
-
-    context.valid_sop_classes = sop_classes_specified
-
-    context.logger.info(" "*(indent+1) + "Successfully imported the allowed SOP Classes settings.")
-
-    context.logger.info(" "*(indent+0) + "Successfully imported settings.")
-
+    # Return the updated context
     return context
 
 
@@ -164,14 +218,19 @@ def import_config_settings(config_file: Path, context: Context, indent: int=0) -
 #
 def load_settings_from_configuration_file(config_file: Path, context: Context, indent: int=0) -> dict:
     """Load settings from a TOML configuration file and return them as a dictionary."""
-    
+
+    # Checks
+    assert isinstance(config_file,Path)
+    assert isinstance(context,Context)
+    assert isinstance(indent,int) and indent>=0
+
     context.logger.info(" "*(indent+0) + f"Trying to load settings from configuration file '{config_file}'.")
 
     try:
         with open(config_file, "rb") as f:
             settings = tomllib.load(f)
             context.logger.info(" "*(indent+0) + f"Successfully loaded settings from configuration file '{config_file}'.")
-    except Exception as e:
+    except (OSError, FileNotFoundError, ValueError) as e:
         raise ImportConfigSettingsError(f"Error reading configuration file '{config_file}': '{e}'")
 
     if not isinstance(settings, dict):
@@ -193,7 +252,7 @@ def read_sphn_rdf_schema_file_path_settings(sphn_settings: dict, context: Contex
     # Checks
     assert isinstance(sphn_settings, dict)
     assert isinstance(context, Context)
-    assert isinstance(indent, int) and indent>=0
+    assert isinstance(indent,int) and indent>=0
 
     if "sphn_rdf_schema_file_path" not in sphn_settings:
         raise ImportConfigSettingsError("The 'SPHN' settings are missing the 'sphn_rdf_schema_file_path' field.")
@@ -223,7 +282,7 @@ def read_sphn_data_provider_settings(sphn_settings:dict, context: Context, inden
     # Checks
     assert isinstance(sphn_settings,dict)
     assert isinstance(context,Context)
-    assert isinstance(indent, int) and indent>=0
+    assert isinstance(indent,int) and indent>=0
     assert context.sphn_schema is not None
     
     if "data_provider" not in sphn_settings:
@@ -244,7 +303,7 @@ def read_sphn_data_provider_settings(sphn_settings:dict, context: Context, inden
     if not isinstance(institution_code_settings, dict):
         raise ImportConfigSettingsError("The 'SPHN data_provider institution_code' settings have the wrong format.")
 
-    sphn_code = read_sphn_code_settings(institution_code_settings, context, indent=indent+1)
+    sphn_code = read_sphn_code_settings(institution_code_settings, context, indent=indent+2)
 
     # SPHN DataProvider Category Value Set Member is optional for SPHN DataProvider
 
@@ -270,7 +329,7 @@ def read_sphn_data_provider_settings(sphn_settings:dict, context: Context, inden
         if not isinstance(sphn_department_settings, dict):
             raise ImportConfigSettingsError("The 'SPHN data_provider department' settings have the wrong format.")
         
-        sphn_department = read_sphn_data_provider_department_settings(sphn_department_settings, context, indent=indent+1)
+        sphn_department = read_sphn_data_provider_department_settings(sphn_department_settings, context, indent=indent+2)
     else:
         sphn_department = None
 
@@ -297,7 +356,7 @@ def read_sphn_code_settings(code_settings:dict, context: Context, indent: int=0)
     # Checks
     assert isinstance(code_settings,dict)
     assert isinstance(context,Context)
-    assert isinstance(indent, int) and indent>=0
+    assert isinstance(indent,int) and indent>=0
     assert context.sphn_schema is not None
 
     if "coding_system_and_version" not in code_settings:
@@ -353,7 +412,7 @@ def read_sphn_data_provider_department_settings(department_settings:dict, contex
     # Checks
     assert isinstance(department_settings,dict)
     assert isinstance(context,Context)
-    assert isinstance(indent, int) and indent>=0
+    assert isinstance(indent,int) and indent>=0
     assert context.sphn_schema is not None
 
     # SPHN DataProvider Department Name is mandatory
@@ -388,7 +447,7 @@ def read_sphn_source_system_settings(sphn_settings:dict, context: Context, inden
     # Checks
     assert isinstance(sphn_settings,dict)
     assert isinstance(context,Context)
-    assert isinstance(indent, int) and indent>=0
+    assert isinstance(indent,int) and indent>=0
     assert context.sphn_schema is not None
 
     if "source_system" not in sphn_settings:
@@ -440,7 +499,7 @@ def read_sphn_source_system_settings(sphn_settings:dict, context: Context, inden
 
     # SPHN Source System Primary System is optional for SPHN SourceSystem
 
-    source_system_primary_system = read_sphn_source_system_primary_system_settings(source_system_settings, context, indent=indent+1)
+    source_system_primary_system = read_sphn_source_system_primary_system_settings(source_system_settings, context, indent=indent+2)
 
     # Create the SPHNSourceSystem object
     sphn_source_system = SPHNSourceSystem(
@@ -466,7 +525,7 @@ def read_sphn_source_system_primary_system_settings(source_system_settings:dict,
     # Checks
     assert isinstance(source_system_settings,dict)
     assert isinstance(context,Context)
-    assert isinstance(indent, int) and indent>=0
+    assert isinstance(indent,int) and indent>=0
     assert context.sphn_schema is not None
 
     if "healthcare_primary_information_system" not in source_system_settings:
@@ -494,7 +553,7 @@ def read_sphn_source_system_primary_system_settings(source_system_settings:dict,
         if not isinstance(code_settings, dict):
             raise ImportConfigSettingsError("The 'SPHN source_system healthcare_primary_information_system code' settings have the wrong format.")
 
-        sphn_code = read_sphn_code_settings(code_settings, context, indent=indent+1)
+        sphn_code = read_sphn_code_settings(code_settings, context, indent=indent+2)
     else:
         sphn_code = None
 
@@ -512,6 +571,11 @@ def read_sphn_source_system_primary_system_settings(source_system_settings:dict,
 #
 def get_orthanc_rest_api_user_from_settings(settings:dict, context: Context, indent: int=0) -> OrthancRestAPIUser:
     """Get the Orthanc REST API user settings from the configuration settings and return them as an OrthancRestAPIUser object."""
+
+    # Checks
+    assert isinstance(settings,dict)
+    assert isinstance(context,Context)
+    assert isinstance(indent,int) and indent>=0
 
     if "orthanc_rest_api_user" not in settings:
         raise ImportConfigSettingsError("No 'orthanc_rest_api_user' settings found.")
@@ -552,6 +616,11 @@ def get_orthanc_rest_api_user_from_settings(settings:dict, context: Context, ind
 #
 def get_dicomweb_api_user_from_settings(settings:dict, context: Context, indent: int=0) -> DicomwebAPIUser:
     """Get the DICOMweb API user settings from the configuration settings and return them as an DicomwebAPIUser object."""
+    
+    # Checks
+    assert isinstance(settings,dict)
+    assert isinstance(context,Context)
+    assert isinstance(indent,int) and indent>=0
 
     if "dicomweb_api_user" not in settings:
         raise ImportConfigSettingsError("No 'dicomweb_api_user' settings found.")
@@ -579,10 +648,22 @@ def get_dicomweb_api_user_from_settings(settings:dict, context: Context, indent:
     if not is_valid_string(dicomweb_api_user_settings["base_url"]):
         raise ImportConfigSettingsError("DICOMweb API user settings has an invalid 'base_url' string value.")
 
+    if "timeout_seconds" not in dicomweb_api_user_settings:
+        raise ImportConfigSettingsError("DICOMweb API user settings is missing the 'timeout_seconds' field.")
+
+    if not isinstance(dicomweb_api_user_settings["timeout_seconds"], (int, float)) or dicomweb_api_user_settings["timeout_seconds"] < 20:
+        raise ImportConfigSettingsError("DICOMweb API user settings has an invalid 'timeout_seconds' value. It must be a number greater than or equal to 20.")
+
+    try:
+        timeout_seconds = float(dicomweb_api_user_settings["timeout_seconds"])
+    except ValueError:
+        raise ImportConfigSettingsError("DICOMweb API user settings has an invalid 'timeout_seconds' value. It must be a number greater than or equal to 20.")
+
     dicomweb_api_user = DicomwebAPIUser(
         base_url=dicomweb_api_user_settings["base_url"], 
         username=dicomweb_api_user_settings["username"], 
-        password=dicomweb_api_user_settings["password"])
+        password=dicomweb_api_user_settings["password"],
+        timeout_seconds=timeout_seconds)
 
     return dicomweb_api_user
 
@@ -592,6 +673,11 @@ def get_dicomweb_api_user_from_settings(settings:dict, context: Context, indent:
 #
 def get_allowed_sop_classes_from_dicom_options_settings(settings:dict, context: Context, indent: int=0) -> dict[UID,str]:
     """Get the allowed SOP Classes that are specified in the 'dicom options' in the configuration settings and return them as a dictionary."""
+
+    # Checks
+    assert isinstance(settings,dict)
+    assert isinstance(context,Context)
+    assert isinstance(indent,int) and indent>=0
 
     if "dicom_options" not in settings:
         raise ImportConfigSettingsError("No 'dicom_options' settings found in the configuration settings.")
@@ -638,3 +724,49 @@ def get_allowed_sop_classes_from_dicom_options_settings(settings:dict, context: 
     return allowed_sop_classes
 
 
+#
+# Edwin 2026-08-07
+#
+def get_fallback_study_date_time_from_dicom_options_settings(settings:dict, context: Context, indent: int=0) -> datetime:
+    """
+    Get the Fallback StudyDate and StudyTime from the 'dicom_options' 
+    in the configuration settings and return them as a combined datetime.
+    """
+
+    # Checks
+    assert isinstance(settings,dict)
+    assert isinstance(context,Context)
+    assert isinstance(indent,int) and indent>=0
+
+    if "dicom_options" not in settings:
+        raise ImportConfigSettingsError("No 'dicom_options' settings found in the configuration settings.")
+    
+    dicom_options_settings = settings["dicom_options"]
+
+    if not isinstance(dicom_options_settings, dict):
+        raise ImportConfigSettingsError("The 'dicom_options' settings have the wrong format.")
+
+    if "fallback_study_date" not in dicom_options_settings:
+        raise ImportConfigSettingsError("No 'fallback_study_date' found in the 'dicom_options' settings.")
+
+    if "fallback_study_time" not in dicom_options_settings:
+        raise ImportConfigSettingsError("No 'fallback_study_time' found in the 'dicom_options' settings.")
+
+    fallback_study_date = dicom_options_settings["fallback_study_date"]
+    fallback_study_time = dicom_options_settings["fallback_study_time"]
+
+    # Validate the date and time formats
+    try:
+        result_date = datetime.strptime(fallback_study_date,"%Y-%m-%d").replace(tzinfo=UTC).date()
+    except ValueError as e:
+        raise ImportConfigSettingsError(f"Failed to parse 'fallback_study_date' in the 'dicom_options' settings (expected format: 'YYYY-MM-DD'): {e}")
+    
+    try:
+        result_time = datetime.strptime(fallback_study_time,"%H:%M:%S").replace(tzinfo=UTC).time()
+    except ValueError as e:
+        raise ImportConfigSettingsError(f"Failed to parse 'fallback_study_time' in the 'dicom_options' settings (expected format: 'HH:MM:SS'): {e}")
+
+    # Combine date and time
+    result_datetime = datetime.combine(result_date, result_time, tzinfo=UTC)
+
+    return result_datetime

@@ -15,6 +15,7 @@ dependencies:
   - sqlite
   - pydantic
   - stringcase  
+  - pathvalidate
   - pip
   - pipx
   - pip:

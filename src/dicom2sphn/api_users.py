@@ -1,6 +1,7 @@
 
 from pydantic import BaseModel, Field, SecretStr
 
+
 class OrthancRestAPIUser(BaseModel):
     """Pydantic model for Orthanc REST API settings and user credentials."""
     base_url: str = Field(..., description="Base URL for the Orthanc REST API", examples=["http://localhost:8042"])
@@ -12,6 +13,7 @@ class DicomwebAPIUser(BaseModel):
     base_url: str = Field(..., description="Base URL for the Orthanc REST API", examples=["http://localhost/dicom-web:8042"])
     username: str = Field(..., description="DICOMweb API username", examples=["dicomweb_user"])
     password: SecretStr = Field(..., description="DICOMweb API password", examples=["dicomweb_password"])
+    timeout_seconds: float = Field(..., description="Timeout in seconds for DICOMweb API requests", examples=[20])
 
 class DatabaseAPIUser(BaseModel):
     """Pydantic model for database user credentials."""

@@ -4,26 +4,25 @@ sphn_schema_graph.py:
     It contains the SPHNSchemaGraph class, which represents the SPHN rdf schema graph and provides methods to interact with it.
 """
 from pathlib import Path
+
 from rdflib import Graph, Namespace, URIRef
-from rdflib.namespace import NamespaceManager, OWL, RDF
+from rdflib.namespace import OWL, RDF, NamespaceManager
 
-from .tools import is_valid_string, make_clean
-
+from .tools import is_clean_string, is_valid_string, make_clean
 
 # Other Namespaces
 SPHN     = Namespace("https://biomedit.ch/rdf/sphn-schema/sphn#")
 SPHN_IND = Namespace("https://biomedit.ch/rdf/sphn-schema/sphn/individual#")
-SPHN_DCM = Namespace("https://biomedit.ch/rdf/sphn-resource/dcm/")
-
+DCM      = Namespace("http://dicom.nema.org/resources/ontology/DCM/")
 UCUM     = Namespace("https://biomedit.ch/rdf/sphn-resource/ucum/")
 EDAM     = Namespace("http://edamontology.org/")
 SNOMED   = Namespace("http://snomed.info/id/")
 
-# RESOURCE = Namespace("https://biomedit.ch/rdf/sphn-resource/")
-
 # Future project?
-#DMIB     = Namespace("https://biomedit.ch/rdf/sphn-schema/dmib#")
-#DMIB_IND = Namespace("https://biomedit.ch/rdf/sphn-schema/dmib/individual#")
+# DMIB     = Namespace("https://biomedit.ch/rdf/sphn-schema/dmib#")
+# DMIB_IND = Namespace("https://biomedit.ch/rdf/sphn-schema/dmib/individual#")
+# Other Namespaces:
+# RESOURCE = Namespace("https://biomedit.ch/rdf/sphn-resource/")
 
 #
 # The SPHN Schema Graph class representing the SPHN RDF schema graph and providing methods to interact with it.
@@ -60,7 +59,7 @@ class SPHNSchemaGraph:
             raise ValueError(f"SPHN RDF Schema version could not be found in the file '{sphn_rdf_schema_file_path}'. Please check the file path and content.")
 
         if not isinstance(version_iri, URIRef): 
-            raise ValueError("SPHN RDF Schema version has an invalid type.")
+            raise TypeError("SPHN RDF Schema version has an invalid type.")
 
         # Save the version IRI
         self._version_iri = version_iri
@@ -89,6 +88,10 @@ class SPHNSchemaGraph:
         
         return self._version_iri
 
+    # -----------------------------------------------------------------------------------------------------------------
+    # Tests if a given value is a member of a SPHN ValueSet
+    # -----------------------------------------------------------------------------------------------------------------
+
     #
     # Edwin 2026-07-09
     #
@@ -97,15 +100,14 @@ class SPHNSchemaGraph:
         Checks if category is a valid sphn:DataProvider_category value set member
         """
         # Checks
-        assert is_valid_string(category)
-        assert category == make_clean(category)
+        assert is_clean_string(category)
 
         # Create the triple
         subj_01 = URIRef(SPHN_IND+category)
         pred_01 = RDF.type
         obj_01 = SPHN.DataProvider_category
         
-        return True if (subj_01, pred_01, obj_01) in self._graph else False
+        return bool((subj_01, pred_01, obj_01) in self._graph)
 
     #
     # Edwin 2026-07-09
@@ -115,15 +117,14 @@ class SPHNSchemaGraph:
         Checks if purpose is a valid sphn:SourceSystem_purpose value set member
         """
         # Checks
-        assert is_valid_string(purpose)
-        assert purpose == make_clean(purpose)
+        assert is_clean_string(purpose)
 
         # Create the triple
         subj_01 = URIRef(SPHN_IND+purpose)
         pred_01 = RDF.type
         obj_01 = SPHN.SourceSystem_purpose
         
-        return True if (subj_01, pred_01, obj_01) in self._graph else False
+        return bool((subj_01, pred_01, obj_01) in self._graph)
 
     #
     # Edwin 2026-07-09
@@ -133,15 +134,14 @@ class SPHNSchemaGraph:
         Checks if category is a valid sphn:SourceSystem_category value set member
         """
         # Checks
-        assert is_valid_string(category)
-        assert category == make_clean(category)
+        assert is_clean_string(category)
 
         # Create the triple
         subj_01 = URIRef(SPHN_IND+category)
         pred_01 = RDF.type
         obj_01 = SPHN.SourceSystem_category
         
-        return True if (subj_01, pred_01, obj_01) in self._graph else False
+        return bool((subj_01, pred_01, obj_01) in self._graph)
 
     #
     # Edwin 2026-07-09
@@ -151,15 +151,14 @@ class SPHNSchemaGraph:
         Checks if comparator is a valid sphn:Comparator value set member
         """
         # Checks
-        assert is_valid_string(comparator)
-        assert comparator == make_clean(comparator)
+        assert is_clean_string(comparator)
 
         # Create the triple
         subj_01 = URIRef(SPHN_IND+comparator)
         pred_01 = RDF.type
         obj_01 = SPHN.Comparator
         
-        return True if (subj_01, pred_01, obj_01) in self._graph else False
+        return bool((subj_01, pred_01, obj_01) in self._graph)
 
     #
     # Edwin 2026-07-09
@@ -169,15 +168,14 @@ class SPHNSchemaGraph:
         Checks if algorithm is a valid sphn:Hash_algorithm value set member
         """
         # Checks
-        assert is_valid_string(algorithm)
-        assert algorithm == make_clean(algorithm)
+        assert is_clean_string(algorithm)
 
         # Create the triple
         subj_01 = URIRef(SPHN_IND+algorithm)
         pred_01 = RDF.type
         obj_01 = SPHN.Hash_algorithm
         
-        return True if (subj_01, pred_01, obj_01) in self._graph else False
+        return bool((subj_01, pred_01, obj_01) in self._graph)
 
     #
     # Edwin 2026-07-09
@@ -187,15 +185,14 @@ class SPHNSchemaGraph:
         Checks if type is a valid sphn:DataCompressionAlgorithm_type value set member
         """
         # Checks
-        assert is_valid_string(type)
-        assert type == make_clean(type)
+        assert is_clean_string(type)
 
         # Create the triple
         subj_01 = URIRef(SPHN_IND+type)
         pred_01 = RDF.type
         obj_01 = SPHN.DataCompressionAlgorithm_type
         
-        return True if (subj_01, pred_01, obj_01) in self._graph else False
+        return bool((subj_01, pred_01, obj_01) in self._graph)
 
     #
     # Edwin 2026-07-09
@@ -205,15 +202,15 @@ class SPHNSchemaGraph:
         Checks if method is a valid sphn:DataCompressionAlgorithm_method value set member
         """
         # Checks
-        assert is_valid_string(method)
-        assert method == make_clean(method)
+        assert is_clean_string(method)
 
         # Create the triple
         subj_01 = URIRef(SPHN_IND+method)
         pred_01 = RDF.type
         obj_01 = SPHN.DataCompressionAlgorithm_method
         
-        return True if (subj_01, pred_01, obj_01) in self._graph else False
+        return bool((subj_01, pred_01, obj_01) in self._graph)
+            
 
     #
     # Edwin 2026-07-09
@@ -223,15 +220,15 @@ class SPHNSchemaGraph:
         Checks if encoding is a valid sphn:DataFile_encoding value set member
         """
         # Checks
-        assert is_valid_string(encoding)
-        assert encoding == make_clean(encoding)
+        assert is_clean_string(encoding)
 
         # Create the triple
         subj_01 = URIRef(SPHN_IND+encoding)
         pred_01 = RDF.type
         obj_01 = SPHN.DataFile_encoding
         
-        return True if (subj_01, pred_01, obj_01) in self._graph else False
+        return bool((subj_01, pred_01, obj_01) in self._graph)
+            
 
     #
     # Edwin 2026-07-09
@@ -241,16 +238,15 @@ class SPHNSchemaGraph:
         Checks if content_qualification is a valid sphn:ImagingFrame_contentQualification value set member
         """
         # Checks
-        assert is_valid_string(content_qualification)
-        assert content_qualification == make_clean(content_qualification)
+        assert is_clean_string(content_qualification)
 
         # Create the triple
         subj_01 = URIRef(SPHN_IND+content_qualification)
         pred_01 = RDF.type
         obj_01 = SPHN.ImagingFrame_contentQualification
         
-        return True if (subj_01, pred_01, obj_01) in self._graph else False
-
+        return bool((subj_01, pred_01, obj_01) in self._graph)
+        
     #
     # Edwin 2026-07-09
     #
@@ -259,15 +255,119 @@ class SPHNSchemaGraph:
         Checks if image_type is a valid sphn:ImagingFrame_type value set member
         """
         # Checks
-        assert is_valid_string(image_type)
-        assert image_type == make_clean(image_type)
+        assert is_clean_string(image_type)
 
         # Create the triple
         subj_01 = URIRef(SPHN_IND+image_type)
         pred_01 = RDF.type
         obj_01 = SPHN.ImagingFrame_type
 
-        return True if (subj_01, pred_01, obj_01) in self._graph else False
+        return bool((subj_01, pred_01, obj_01) in self._graph)
+
+
+    #
+    # Edwin 2026-08-13
+    #
+    def is_sphn_synchronization_method_value_set_member(self, method: str) -> bool:
+        """ 
+        Checks if method is a valid sphn:Synchronisation_method value set member
+        """
+        # Checks
+        assert is_clean_string(method)
+
+        # Create the triple
+        subj_01 = URIRef(SPHN_IND+method)
+        pred_01 = RDF.type
+        obj_01 = SPHN.Synchronisation_method
+
+        return bool((subj_01, pred_01, obj_01) in self._graph)
+
+    #
+    # Edwin 2026-08-13
+    #
+    def is_sphn_synchronization_signal_source_value_set_member(self, signal_source: str) -> bool:
+        """ 
+        Checks if signal_source is a valid sphn:Synchronisation_signalSource value set member
+        """
+        # Checks
+        assert is_clean_string(signal_source)
+
+        # Create the triple
+        subj_01 = URIRef(SPHN_IND+signal_source)
+        pred_01 = RDF.type
+        obj_01 = SPHN.Synchronisation_signalSource
+
+        return bool((subj_01, pred_01, obj_01) in self._graph)
+
+
+    #
+    # Edwin 2026-08-13
+    #
+    def is_sphn_cardiac_synchronization_method_value_set_member(self, method: str) -> bool:
+        """ 
+        Checks if method is a valid sphn:CardiacSynchronisation_method value set member
+        """
+        # Checks
+        assert is_clean_string(method)
+
+        # Create the triple
+        subj_01 = URIRef(SPHN_IND+method)
+        pred_01 = RDF.type
+        obj_01 = SPHN.CardiacSynchronisation_method
+
+        return bool((subj_01, pred_01, obj_01) in self._graph)
+
+    #
+    # Edwin 2026-08-13
+    #
+    def is_sphn_cardiac_synchronization_signal_source_value_set_member(self, signal_source: str) -> bool:
+        """ 
+        Checks if signal_source is a valid sphn:CardiacSynchronisation_signalSource value set member
+        """
+        # Checks
+        assert is_clean_string(signal_source)
+
+        # Create the triple
+        subj_01 = URIRef(SPHN_IND+signal_source)
+        pred_01 = RDF.type
+        obj_01 = SPHN.CardiacSynchronisation_signalSource
+
+        return bool((subj_01, pred_01, obj_01) in self._graph)
+
+    #
+    # Edwin 2026-08-13
+    #
+    def is_sphn_respiratory_synchronization_method_value_set_member(self, method: str) -> bool:
+        """ 
+        Checks if method is a valid sphn:RespiratorySynchronisation_method value set member
+        """
+        # Checks
+        assert is_clean_string(method)
+
+        # Create the triple
+        subj_01 = URIRef(SPHN_IND+method)
+        pred_01 = RDF.type
+        obj_01 = SPHN.RespiratorySynchronisation_method
+
+        return bool((subj_01, pred_01, obj_01) in self._graph)
+
+    #
+    # Edwin 2026-08-13
+    #
+    def is_sphn_respiratory_synchronization_signal_source_value_set_member(self, signal_source: str) -> bool:
+        """ 
+        Checks if signal_source is a valid sphn:RespiratorySynchronisation_signalSource value set member
+        """
+        # Checks
+        assert is_clean_string(signal_source)
+
+        # Create the triple
+        subj_01 = URIRef(SPHN_IND+signal_source)
+        pred_01 = RDF.type
+        obj_01 = SPHN.RespiratorySynchronisation_signalSource
+
+        return bool((subj_01, pred_01, obj_01) in self._graph)
+
 
     # -----------------------------------------------------------------------------------------------------------------
     # Private functions

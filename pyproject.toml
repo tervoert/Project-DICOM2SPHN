@@ -5,14 +5,16 @@ build-backend = "hatchling.build"
 [project]
 name = "dicom2sphn"
 version = "0.1.0"
-description = "A small example package that can read DICOM datasets and export the metadata in JSON format that can be read by the SPHN Connector"
 authors = [
   { name="Edwin ter Voert", email="e.g.w.ter.voert@gmail.com" },
 ]
-license = "MIT"
-license-files = ["LICEN[CS]E*"]
+description = "A small example package that can read DICOM datasets and export the metadata in JSON format that can be read by the SPHN Connector"
 readme = "README.md"
 requires-python = ">=3.14"
+license = "GPL-3.0-or-later"
+license-files = [
+  "LICEN[CS]E*",
+]
 classifiers = [
   # How mature is this project? Common values are
   #   3 - Alpha
@@ -28,10 +30,11 @@ classifiers = [
   # Specify the Python versions you support here.
   "Programming Language :: Python :: 3.14",
   "Operating System :: OS Independent",
+
+  # License information
+  "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
 ]
-
 keywords = [ "SPHN", "DICOM", "DICOMweb", "PACS", "Medical Imaging", "Python" ]
-
 dependencies = [
   "click",
   "pydicom",

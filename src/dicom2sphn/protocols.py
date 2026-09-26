@@ -5,6 +5,7 @@ protocols.py:
 """
 from typing import Any, Protocol, runtime_checkable
 
+
 @runtime_checkable
 class LoggerProtocol(Protocol):
     """Protocol for the logger to ensure it has the necessary methods."""

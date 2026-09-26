@@ -17,3 +17,5 @@ if not __package__:
 if __name__ == "__main__":
     from dicom2sphn.cli import cli
     cli()
+    #from dicom2sphn.extract_contrast_agents import test_extraction
+    #test_extraction()

@@ -3,13 +3,14 @@ context.py:
     Part of the example dicom2sphn package.
     It contains the Context class, which holds the application context and configuration.
 """
-from pydantic import BaseModel, Field, ConfigDict
 from dicomweb_client.api import DICOMwebClient
+from pydantic import BaseModel, ConfigDict, Field
 
-from .protocols import LoggerProtocol
-from .api_users import OrthancRestAPIUser, DicomwebAPIUser, DatabaseAPIUser
-from .sphn_schema_graph import SPHNSchemaGraph
+from .api_users import DatabaseAPIUser, DicomwebAPIUser, OrthancRestAPIUser
 from .data_store import DataStore
+from .protocols import LoggerProtocol
+from .sphn_schema_graph import SPHNSchemaGraph
+
 
 class Context(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
@@ -22,9 +23,14 @@ class Context(BaseModel):
 
     dw_client: DICOMwebClient | None = Field(None, description="DICOMweb API client")
 
-    valid_sop_classes: dict[str, str] | None = Field(None, description="Dictionary of valid SOP Class UIDs and their meanings", examples=[{"1.2.840.10008.5.1.4.1.1.77.1.6": "VL Whole Slide Microscopy Image Storage"}])
-
     orthanc_rest_api_user: OrthancRestAPIUser | None = Field(None, description="Orthanc REST API user credentials")
     dicomweb_api_user: DicomwebAPIUser | None = Field(None, description="DICOMweb API user credentials")
     database_api_user: DatabaseAPIUser | None = Field(None, description="Database user credentials")
+
+    ALWAYS_ADD_SPHN_IMAGING_PROCEDURE: bool = True
+    ALWAYS_ADD_SPHN_IMAGING_SERIES: bool = True
+    ALWAYS_ADD_SPHN_IMAGING_FRAME: bool = True
+
+
+
 

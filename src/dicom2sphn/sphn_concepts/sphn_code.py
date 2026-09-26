@@ -4,18 +4,19 @@ sphn_code.py:
     It contains the SPHNCode class, which represents the SPHN Code concept in the SPHN schema.
 """
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
-from .sphn_schema_graph import SPHNSchemaGraph, SPHN, SPHN_DCM, UCUM, EDAM, SNOMED
-from .tools import is_valid_string, generate_id
+from pydantic import Field, field_validator
+
+from ..sphn_schema_graph import DCM, EDAM, SNOMED, SPHN, UCUM, SPHNSchemaGraph
+from ..tools import generate_id, is_valid_string
+from .sphn_concept import SPHNConcept
 
 # The implemented coding systems 
-CodingSystemList = ['SNOMED-CT', 'UCUM', 'DCM', 'UID', 'EDAM']
+CodingSystemList = ['SNOMED', 'UCUM', 'DCM', 'UID', 'EDAM', 'GTIN', 'EDQM']
 
 #
 # The SPHN Code class representing the SPHN Code concept in the SPHN schema.
 #
-class SPHNCode(BaseModel):
-    model_config = ConfigDict(arbitrary_types_allowed=True, validate_assignment=True)
+class SPHNCode(SPHNConcept):
 
     has_coding_system_and_version: str      # (1:1) xsd:string
     has_identifier: str                     # (1:1) xsd:string
@@ -24,7 +25,14 @@ class SPHNCode(BaseModel):
     sphn_schema: SPHNSchemaGraph
     id: str = Field(default_factory=lambda: generate_id())
      
-    @field_validator('has_coding_system_and_version', 'has_identifier', mode='after')  
+    @field_validator('has_coding_system_and_version', mode='after')  
+    @classmethod
+    def validate_coding_system_and_version(cls, value: str) -> str:
+        if value not in CodingSystemList:
+            raise ValueError(f'{value} is not an implemented coding system')
+        return value  
+
+    @field_validator('has_identifier', mode='after')  
     @classmethod
     def validate_string(cls, value: str) -> str:
         if not is_valid_string(value):
@@ -38,20 +46,9 @@ class SPHNCode(BaseModel):
             raise ValueError(f'{value} is not a valid string')
         return value  
 
-    @field_validator('has_coding_system_and_version', mode='after')  
-    @classmethod
-    def validate_coding_system_and_version(cls, value: str) -> str:
-        if value not in CodingSystemList:
-            raise ValueError(f'{value} is not an implemented coding system')
-        return value  
-
     # ----------------------------------------------------------------------------------------------------------
     # Public functions
     # ----------------------------------------------------------------------------------------------------------
-
-    #
-    # Edwin 2026-07-06
-    #
 
     # 
     # Example Terminology:
@@ -75,18 +72,20 @@ class SPHNCode(BaseModel):
     #     "sourceConceptID": "7e27d80d-8517-4536-8f02-0e557cd80cc2"
     # }
 
+    #
+    # Edwin 2026-07-06
+    #
+    # It is not a Core Concept
     def get_json_dict(self, content: dict|None=None, source_concept_id: str|None=None) -> dict:
         """ 
-        Gets the dict for json output (for the special concepts)
+        Gets the dict for json output
         """
         # Checks
         assert content is None or isinstance(content, dict)
         assert source_concept_id is None or is_valid_string(source_concept_id)
         
-        assert self.is_complete()
-
         # Check if it is a Terminology or Code
-        if self.has_coding_system_and_version in ['SNOMED-CT','DCM','UCUM','EDAM']:
+        if self.has_coding_system_and_version in ['SNOMED','DCM','UCUM','EDAM']:
 
             # It is a Terminology
     
@@ -96,16 +95,16 @@ class SPHNCode(BaseModel):
             }
 
             # Check which Terminology
-            if self.has_coding_system_and_version == 'SNOMED-CT':
+            if self.has_coding_system_and_version == 'SNOMED':
                 json_dict_content_inline["iri"] = SNOMED + self.has_identifier
 
-            elif self._has_coding_system_and_version == 'DCM':
-                json_dict_content_inline["iri"] = SPHN_DCM + self.has_identifier
+            elif self.has_coding_system_and_version == 'DCM':
+                json_dict_content_inline["iri"] = DCM + self.has_identifier
 
-            elif self._has_coding_system_and_version == 'UCUM':
+            elif self.has_coding_system_and_version == 'UCUM':
                 json_dict_content_inline["iri"] = UCUM + self.has_identifier
 
-            elif self._has_coding_system_and_version == 'EDAM':
+            elif self.has_coding_system_and_version == 'EDAM':
                 json_dict_content_inline["iri"] = EDAM + self.has_identifier
 
             else:
@@ -134,57 +133,19 @@ class SPHNCode(BaseModel):
 
         return json_dict_content_inline
 
-    #
-    # Edwin 2026-07-06
-    #
-    def is_complete(self) -> bool:
-        """
-        Checks if all mandatory metadata is available
-        """
-
-        # result = is_valid_string(self._has_coding_system_and_version) \
-        #          and self._has_coding_system_and_version in coding_systems \
-        #          and is_valid_string(self._has_identifier) \
-        #          and (self._has_name is None or is_valid_string(self._has_name))
-        
-        result = True
-
-        return result
 
     #
-    # Edwin 2026-07-07
+    # Edwin 2026-08-05
     #
-    def is_similar(self, other) -> bool:
+    def is_similar(self, other: SPHNConcept) -> bool:
         """
         Compare this instance with another instance of the same class
         """
-        # Checks
-        assert self.is_complete()
-        
-        # Check if type is similar
-        if not isinstance(other, type(self)):
-            # Not similar
-            return False
 
-        assert other.is_complete()
-
-        # Checking if the coding system is similar
-        if self.has_coding_system_and_version != other.has_coding_system_and_version:
-            # Not similar
-            return False
-        
-        # Checking if the identifier is similar
-        if self.has_identifier != other.has_identifier:
-            # Not similar
-            return False
-        
-        # Checking if the name is similar
-        if self.has_name != other.has_name:
-            # Not similar
-            return False
-
-        # Similar
-        return True
+        return isinstance(other, type(self)) \
+            and self.has_coding_system_and_version == other.has_coding_system_and_version \
+            and self.has_identifier == other.has_identifier \
+            and self.has_name == other.has_name
 
     # ----------------------------------------------------------------------------------------------------------
     # Private functions

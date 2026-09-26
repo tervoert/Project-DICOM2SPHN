@@ -4,15 +4,17 @@ sphn_department.py:
     It contains the SPHNDepartment class, which represents the SPHN Department concept in the SPHN schema.
 """
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
-from .sphn_schema_graph import SPHNSchemaGraph, SPHN
-from .tools import is_valid_string, generate_id
+from pydantic import Field, field_validator
+
+from ..sphn_schema_graph import SPHN, SPHNSchemaGraph
+from ..tools import generate_id, is_valid_string
+from .sphn_concept import SPHNConcept
+
 
 #
 # The SPHN Department class representing the SPHN Department concept in the SPHN schema.
 #
-class SPHNDepartment(BaseModel):
-    model_config = ConfigDict(arbitrary_types_allowed=True, validate_assignment=True)
+class SPHNDepartment(SPHNConcept):
 
     has_name: str                           # (1:1) xsd:string
 
@@ -21,18 +23,14 @@ class SPHNDepartment(BaseModel):
      
     @field_validator('has_name', mode='after')  
     @classmethod
-    def validate_string(cls, value: str) -> str:
+    def validate_name(cls, value: str) -> str:
         if not is_valid_string(value):
-            raise ValueError(f'{value} is not a valid string')
+            raise ValueError(f'SPHN has_name value {value} is not a valid string')
         return value  
 
     # -----------------------------------------------------------------------------------------------------------------
     # Public functions
     # -----------------------------------------------------------------------------------------------------------------
-
-    #
-    # Edwin 2026-07-09
-    #
 
     #
     # Example DataProvider/Department
@@ -56,15 +54,17 @@ class SPHNDepartment(BaseModel):
     #     }
     # }
 
+    #
+    # Edwin 2026-08-05
+    #
+    # It is not a Core Concept
     def get_json_dict(self, content: dict|None=None, source_concept_id: str|None=None) -> dict:
         """ 
-        Gets the dict for json output (for the special concepts)
+        Gets the dict for json output
         """
         # Checks
         assert content is None or isinstance(content, dict)
         assert source_concept_id is None or is_valid_string(source_concept_id)        
-
-        assert self.is_complete()
 
         # Inline, not a core concept, no reference to separate content description
         json_dict_content_inline = {
@@ -76,42 +76,17 @@ class SPHNDepartment(BaseModel):
 
         return json_dict_content_inline
 
-    #
-    # Edwin 2026-07-09
-    #
-    def is_complete(self) -> bool:
-        """
-        Checks if all mandatory metadata is available
-        """
-
-        result = True
-
-        return result
 
     #
     # Edwin 2026-07-09
     #
-    def is_similar(self, other):
+    def is_similar(self, other: SPHNConcept) -> bool:
         """
         Compare this instance with another instance of the same class
         """
-        # Checks
-        assert self.is_complete()
 
-        # Check if type is similar
-        if not isinstance(other, type(self)):
-            # Not similar
-            return False
-
-        assert other.is_complete()
-
-        # Checking if the name is similar
-        if self.has_name != other.has_name:
-            # Not similar
-            return False
-
-        # Similar
-        return True
+        return isinstance(other, type(self)) \
+            and self.has_name == other.has_name
 
     # -----------------------------------------------------------------------------------------------------------------
     # Private functions

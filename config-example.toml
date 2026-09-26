@@ -9,7 +9,7 @@ name = "Department of Medical Imaging Benders"
 
 [SPHN.data_provider.institution_code]
 coding_system_and_version = "UID" # The coding system and version of the identifier, e.g. "UID"
-identifier = "CHE-888-888-888" # The Enterprise Identification Number UID.
+identifier = "CHE_888_888_888" # The Enterprise Identification Number UID.
 name = "University of Switzerland"
 
 [SPHN.source_system] 
@@ -21,7 +21,7 @@ category = "HealthcareInformationSystem" # Must be a sphn:SourceSystem_category 
 name = "Medical image management system"
 
 [SPHN.source_system.healthcare_primary_information_system.code]
-coding_system_and_version = "SNOMED-CT"
+coding_system_and_version = "SNOMED"
 identifier = "702183004" # Meaning: SNOMED CT: 702183004 | Medical image management system (physical object) |
 name = "Medical image management system (physical object)"
 
@@ -51,3 +51,6 @@ allowed_sop_classes = [
 #    { UID = "1.2.840.10008.5.1.4.1.1.1",        Meaning = "Computed Radiography Image Storage" },
 #    { UID = "1.2.840.10008.5.1.4.1.1.77.1.6",   Meaning = "VL Whole Slide Microscopy Image Storage" },
 
+# Set a DICOM StudyDate and StudyTime for DICOM Studies without a date/time:
+fallback_study_date = "1800-01-01" # YYYY-MM-DD
+fallback_study_time = "12:00:00"   # HH:MM:SS
