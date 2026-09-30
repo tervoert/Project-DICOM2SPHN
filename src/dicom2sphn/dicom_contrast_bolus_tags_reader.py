@@ -4,10 +4,16 @@ dicom_contrast_bolus_tags_reader.py:
     It contains functions for reading DICOM contrast bolus tags.
 """
 
+from datetime import datetime
+
 from pydicom import Dataset
 from pydicom.multival import MultiValue
 from pydicom.sequence import Sequence
 from pydicom.valuerep import DSdecimal, DSfloat
+
+from dicom2sphn.sphn_concepts.sphn_contrast_agent_administration_event import (
+    SPHNContrastAgentAdministrationEvent,
+)
 
 from .context import Context
 from .data_converter import DataConverter
@@ -15,9 +21,6 @@ from .dicom_code_sequence_tags_reader import (
     get_code_meaning_from_dicom,
     get_code_value_from_dicom,
     get_coding_scheme_designator_from_dicom,
-    get_coding_scheme_version_from_dicom,
-    get_long_code_value_from_dicom,
-    get_urn_code_value_from_dicom,
 )
 from .extract_contrast_agents import extract_contrast_agents
 from .sphn_concepts.sphn_code import SPHNCode
@@ -55,13 +58,15 @@ from .tools import already_in_list, is_valid_string
 # ---------------------------------------------------------------------------------------------------------------------
 
 #
-#  Edwin 2026-09-02
+#  Edwin 2026-09-29
 #
-def get_contrast_bolus_module_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> None:
+def get_contrast_bolus_module_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> list[SPHNContrastAgentAdministrationEvent]|None:
     """
-    Sets the contrast bolus module information in the data_store.
+    Returns a list of SPHN Contrast Agent Administration Event objects corresponding to the contrast bolus module information in the DICOM dataset.
+    Parameters:
         - dataset is the DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
         - context is the Context object that holds the data_store, logger and other relevant information
+        - indent is the indentation level for logging messages
     """
 
     # Check
@@ -83,7 +88,10 @@ def get_contrast_bolus_module_from_dicom(dataset: Dataset, context: Context, ind
     # contrast_flow_duration_list = get_contrast_flow_duration_list_from_dicom(dataset, context, indent=indent+2)
     # contrast_bolus_ingredient_concentration = get_contrast_bolus_ingredient_concentration_from_dicom(dataset, context, indent=indent+2)
 
+    sphn_contrast_agent_administration_event_list = []
     sphn_contrast_agent_list = []
+    sphn_administration_route_code = None
+    
 
     # 
     # 1. Check if there is coded information in the ContrastBolusAgentSequence
@@ -102,9 +110,9 @@ def get_contrast_bolus_module_from_dicom(dataset: Dataset, context: Context, ind
         if sphn_contrast_agent is not None:
             if not already_in_list(sphn_contrast_agent, sphn_contrast_agent_list):
                 sphn_contrast_agent_list.append(sphn_contrast_agent)
-                logger.debug(" "*(indent+2) + f"Added SPHN Contrast Agent: {sphn_contrast_agent}")
+                logger.debug(" "*(indent+2) + "Added SPHN Contrast Agent")
             else:
-                logger.debug(" "*(indent+2) + f"SPHN Contrast Agent is already in the list: {sphn_contrast_agent}")
+                logger.debug(" "*(indent+2) + "SPHN Contrast Agent is already in the list")
         else:            
             logger.debug(" "*(indent+2) + "Failed to create an SPHN Contrast Agent object from DICOM ContrastBolusAgentSequence (coded info).")
 
@@ -141,9 +149,9 @@ def get_contrast_bolus_module_from_dicom(dataset: Dataset, context: Context, ind
             if sphn_contrast_agent is not None:
                 if not already_in_list(sphn_contrast_agent, sphn_contrast_agent_list):
                     sphn_contrast_agent_list.append(sphn_contrast_agent)
-                    logger.debug(" "*(indent+2) + f"Added SPHN Contrast Agent: {sphn_contrast_agent}")
+                    logger.debug(" "*(indent+2) + "Added SPHN Contrast Agent")
                 else:
-                    logger.debug(" "*(indent+2) + f"SPHN Contrast Agent is already in the list: {sphn_contrast_agent}")
+                    logger.debug(" "*(indent+2) + "SPHN Contrast Agent is already in the list")
 
             else:            
                 logger.debug(" "*(indent+2) + "Failed to create an SPHN Contrast Agent object from DICOM ContrastBolusAgent (free text info).")
@@ -170,9 +178,9 @@ def get_contrast_bolus_module_from_dicom(dataset: Dataset, context: Context, ind
         if sphn_contrast_agent is not None:
             if not already_in_list(sphn_contrast_agent, sphn_contrast_agent_list):
                 sphn_contrast_agent_list.append(sphn_contrast_agent)
-                logger.debug(" "*(indent+2) + f"Added SPHN Contrast Agent: {sphn_contrast_agent}")
+                logger.debug(" "*(indent+2) + "Added SPHN Contrast Agent")
             else:
-                logger.debug(" "*(indent+2) + f"SPHN Contrast Agent is already in the list: {sphn_contrast_agent}")
+                logger.debug(" "*(indent+2) + "SPHN Contrast Agent is already in the list")
 
         else:            
             logger.debug(" "*(indent+2) + "Failed to create an SPHN Contrast Agent object from DICOM ContrastBolusIngredient (DICOM Term).")
@@ -187,20 +195,192 @@ def get_contrast_bolus_module_from_dicom(dataset: Dataset, context: Context, ind
                  f" Found: '{len(sphn_contrast_agent_list)}' SPHN Contrast Agent object(s)")
 
     #
-    # 4. Check if there is a administrative route sequence in the DICOM dataset
+    # 4. Check if there is a administration route sequence in the DICOM dataset
     #
 
     contrast_bolus_administration_route_sequence = get_contrast_bolus_administration_route_sequence_from_dicom(dataset, context, indent=indent+2)
 
-    assert isinstance(contrast_bolus_administration_route_sequence, Sequence)
+    if contrast_bolus_administration_route_sequence is not None:
+        
+        assert isinstance(contrast_bolus_administration_route_sequence, Sequence)
 
-    logger.debug(" "*(indent+0) + f"DICOM ContrastBolusAdministrationRouteSequence (coded info) found with {len(contrast_bolus_administration_route_sequence)} item(s)")
+        if len(contrast_bolus_administration_route_sequence) == 1:
 
-    administration_route = process_contrast_bolus_administration_route_sequence(contrast_bolus_administration_route_sequence, context, indent+4)
+            result = process_contrast_bolus_administration_route_sequence(contrast_bolus_administration_route_sequence, context, indent+4)
+
+            if result is not None:
+                sphn_administration_route_code = result
+            else:
+                logger.debug(" "*(indent+2) + "Failed to create an SPHN Administration Route Code object from DICOM ContrastBolusAdministrationRouteSequence (coded info).")
+
+        elif len(contrast_bolus_administration_route_sequence) == 0:
+            logger.debug(" "*(indent+2) + "DICOM ContrastBolusAdministrationRouteSequence is empty.")
+
+        else:
+            raise ValueError(f"Expected zero or one item in DICOM ContrastBolusAdministrationRouteSequence, but found {len(contrast_bolus_administration_route_sequence)}.")
+        
+    else:
+        logger.debug(" "*(indent+0) + "DICOM ContrastBolusAdministrationRouteSequence (coded info) is missing or empty.")
+        
+
+    #
+    # 5. Collect more information for the SPHN Contrast Agent Administration Event object
+    #
+
+    # ToDo: Edwin: HERE
+    # For test purposes:
+    start_date_time_dummy = data_store.fallback_study_date_time
+
+    #
+    # 8. Create SPHN Contrast Agent Administration Event object(s) with the collected information
+    #
+
+    if len(sphn_contrast_agent_list) > 1:
+        # Multiple contrast agent case, create administration events for each. 
+        # We cannot use the other information as we donn't know which contrast agent it belongs to.
+
+        logger.debug(" "*(indent+2) + f"Multiple contrast agents found: '{len(sphn_contrast_agent_list)}'.")
+
+        for index, sphn_contrast_agent in enumerate(sphn_contrast_agent_list):
+            
+            logger.debug(" "*(indent+2) + f"Start creating SPHN Contrast Agent Administration Event object {index}/{len(sphn_contrast_agent_list)}")
+
+            sphn_contrast_agent_administration_event = create_sphn_contrast_agent_administration_event(
+                sphn_contrast_agent=sphn_contrast_agent,
+                sphn_administration_route_code=sphn_administration_route_code,
+                start_date_time=start_date_time_dummy,
+                context=context,
+                indent=indent+2
+            )
+
+            if sphn_contrast_agent_administration_event is None:
+                logger.debug(" "*(indent+2) + "Failed to create SPHN Contrast Agent Administration Event object.")
+                continue
+
+            logger.debug(" "*(indent+2) + "Done  creating SPHN Contrast Agent Administration Event object.")
+
+            # Add to the list if not already in it
+            if not already_in_list(sphn_contrast_agent_administration_event, sphn_contrast_agent_administration_event_list):
+                sphn_contrast_agent_administration_event_list.append(sphn_contrast_agent_administration_event)
+                logger.debug(" "*(indent+2) + "Added SPHN Contrast Agent Administration Event object to the list.")
+            else:
+                logger.debug(" "*(indent+2) + "SPHN Contrast Agent Administration Event object is already in the list.")
+
+    if len(sphn_contrast_agent_list) == 1:
+        # Single contrast agent case, create an administration event for it.
+
+        logger.debug(" "*(indent+2) + "Single contrast agent found.")
+
+        sphn_contrast_agent = sphn_contrast_agent_list[0]
+
+        sphn_contrast_agent_administration_event = create_sphn_contrast_agent_administration_event(
+            sphn_contrast_agent=sphn_contrast_agent,
+            sphn_administration_route_code=sphn_administration_route_code,
+            start_date_time=start_date_time_dummy,
+            context=context,
+            indent=indent+2
+        )
+        
+        if sphn_contrast_agent_administration_event is None:
+            logger.debug(" "*(indent+2) + "Failed to create SPHN Contrast Agent Administration Event object.")
+        else:
+            logger.debug(" "*(indent+2) + "Done  creating SPHN Contrast Agent Administration Event object.")
+            # Add to the list if not already in it
+            if not already_in_list(sphn_contrast_agent_administration_event, sphn_contrast_agent_administration_event_list):
+                sphn_contrast_agent_administration_event_list.append(sphn_contrast_agent_administration_event)
+                logger.debug(" "*(indent+2) + "Added SPHN Contrast Agent Administration Event object to the list.")
+            else:
+                logger.debug(" "*(indent+2) + "SPHN Contrast Agent Administration Event object is already in the list.")
 
 
-    if administration_route is not None:
-        pass
+    if len(sphn_contrast_agent_list) == 0 and sphn_administration_route_code is not None:
+        # No contrast agent case but there is other information available
+        # The SPHN schema requires at least one contrast agent
+        # Creating a contrast agent object with a placeholder active ingredient
+
+        logger.debug(" "*(indent+2) + "No contrast agent found. Creating a contrast agent with a general 'Contrast Media' active ingredient.")
+        sphn_contrast_agent_active_ingredient = create_sphn_contrast_agent_active_ingredient("SNOMED","385420005","| Contrast media (substance) |", context, indent=indent+2)
+
+        sphn_contrast_agent = SPHNContrastAgent(
+            sphn_schema = sphn_schema,
+            has_active_ingredient=sphn_contrast_agent_active_ingredient,
+            has_source_system_list=[data_store.sphn_source_system]
+        )
+
+        # We now have one contrast agent and can create a single administration event
+        logger.debug(" "*(indent+2) + "Start creating SPHN Contrast Agent Administration Event object")
+
+        sphn_contrast_agent_administration_event = create_sphn_contrast_agent_administration_event(
+            sphn_contrast_agent=sphn_contrast_agent,
+            sphn_administration_route_code=sphn_administration_route_code,
+            start_date_time=start_date_time_dummy,
+            context=context,
+            indent=indent+2
+        )
+
+        if sphn_contrast_agent_administration_event is None:
+            logger.debug(" "*(indent+2) + "Failed to create SPHN Contrast Agent Administration Event object.")
+        else:
+            logger.debug(" "*(indent+2) + "Done  creating SPHN Contrast Agent Administration Event object.")
+            # Add to the list if not already in it
+            if not already_in_list(sphn_contrast_agent_administration_event, sphn_contrast_agent_administration_event_list):
+                sphn_contrast_agent_administration_event_list.append(sphn_contrast_agent_administration_event)
+                logger.debug(" "*(indent+2) + "Added SPHN Contrast Agent Administration Event object to the list.")
+            else:
+                logger.debug(" "*(indent+2) + "SPHN Contrast Agent Administration Event object is already in the list.")
+
+    # 
+    # 9. Check if any SPHN Contrast Agent Administration Event objects were successfully created
+    #
+
+    return sphn_contrast_agent_administration_event_list if len(sphn_contrast_agent_administration_event_list) > 0 else None
+
+
+#
+# Edwin 2026-09-29
+#
+def create_sphn_contrast_agent_administration_event(
+    sphn_contrast_agent:SPHNContrastAgent,
+    sphn_administration_route_code:SPHNCode|None,
+    start_date_time:datetime,
+    context: Context,
+    indent:int=0
+) -> SPHNContrastAgentAdministrationEvent:
+    """
+    Create an SPHN Contrast Agent Administration Event object with the provided information.
+    Parameters:
+        - sphn_contrast_agent: SPHNContrastAgent object.
+        - sphn_administration_route_code: The administration route code.
+        - start_date_time: The start date and time of the administration event.
+        - context: The Context object that holds the data_store, logger and other relevant information
+        - indent: The indentation level for logging (default is 0)
+    Returns:
+        - SPHNContrastAgentAdministrationEvent: The created SPHN Contrast Agent Administration Event object.
+    """
+
+    assert isinstance(sphn_contrast_agent, SPHNContrastAgent)
+    assert sphn_administration_route_code is None or isinstance(sphn_administration_route_code, SPHNCode)
+    assert isinstance(context, Context)
+    assert isinstance(indent, int) and indent >= 0
+
+    logger = context.logger
+    data_store = context.data_store
+    sphn_schema = context.sphn_schema
+
+    logger.debug(" "*(indent+0) + "Start creating an SPHN Contrast Agent Administration Event object...")
+
+    sphn_contrast_agent_administration_event = SPHNContrastAgentAdministrationEvent(
+        sphn_schema = sphn_schema,
+        has_start_date_time=start_date_time,
+        has_drug=sphn_contrast_agent,
+        sphn_administration_route_code=sphn_administration_route_code,
+        has_subject_pseudo_identifier = data_store.sphn_subject_pseudo_identifier,
+        has_source_system_list = [data_store.sphn_source_system]
+    )
+
+    logger.debug(" "*(indent+0) + "Done  creating SPHN Contrast Agent Administration Event object.")
+
+    return sphn_contrast_agent_administration_event
 
 
 #
@@ -269,7 +449,7 @@ def process_contrast_bolus_agent_sequence(contrast_bolus_agent_sequence:Sequence
                 logger.debug(" "*(indent+4) + f"DICOM ContrastBolusAgentSequence item {index} could not be converted to a SPHN Contrast Agent Active Ingredient object")
         else:
             logger.debug(" "*(indent+4) + f"DICOM ContrastBolusAgentSequence item {index} has no coding scheme designator or code value")
-            data_store.add_unknown_dicom_contrast_bolus_agent_sequence_code_to_dict(coding_scheme_designator, code_value, code_meaning)
+            data_store.add_unknown_contrast_bolus_agent_sequence_code_to_dict(coding_scheme_designator, code_value, code_meaning)
 
     if len(sphn_contrast_agent_active_ingredient_list) == 0:
         logger.debug(" "*(indent+4) + "No valid SPHN Contrast Agent Active Ingredients could be created from the DICOM ContrastBolusAgentSequence")
@@ -323,24 +503,22 @@ def create_sphn_contrast_agent_active_ingredient(coding_scheme_designator: str, 
     # Check again
     if result is None:
         logger.debug(" "*(indent+0) + f"The DICOM coding scheme designator: '{coding_scheme_designator}' and code value: '{code_value}' has no corresponding SPHN SNOMED-CT code in the DataConverter")
-        data_store.add_unknown_dicom_contrast_bolus_agent_sequence_code_to_dict(context, coding_scheme_designator, code_value, code_meaning, indent=indent)
+        data_store.add_unknown_contrast_bolus_agent_sequence_code_to_dict(context, coding_scheme_designator, code_value, code_meaning, indent=indent)
         # ToDo: Edwin: Perhaps add a generic SPHN code for unknown contrast agents
         return None
 
     assert isinstance(result, tuple) and len(result) == 3
+    assert all(is_valid_string(item) for item in result)
 
-    sphn_coding_scheme_designator = result[0]
-    sphn_code_value = result[1]
-    sphn_code_meaning = result[2]
-
-    assert is_valid_string(sphn_coding_scheme_designator)
-    assert is_valid_string(sphn_code_value)
-    assert is_valid_string(sphn_code_meaning)
+    active_ingredient_coding_scheme_designator = result[0]
+    active_ingredient_code_value = result[1]
+    active_ingredient_code_descr = result[2]
 
     sphn_code = SPHNCode( 
         sphn_schema = sphn_schema,
-        has_identifier = sphn_code_value,
-        has_coding_system_and_version = sphn_coding_scheme_designator
+        has_coding_system_and_version = active_ingredient_coding_scheme_designator,
+        has_identifier = active_ingredient_code_value,
+        has_name = active_ingredient_code_descr
         )
     sphn_contrast_agent_active_ingredient = SPHNContrastAgentActiveIngredient(
         sphn_schema = sphn_schema,
@@ -350,14 +528,14 @@ def create_sphn_contrast_agent_active_ingredient(coding_scheme_designator: str, 
 
     logger.debug(" "*(indent+0) + f"The DICOM coding scheme designator: '{coding_scheme_designator}' and code value: '{code_value}'" + 
                 f" with meaning '{code_meaning}' was successfully converted to an SPHN Contrast Agent Active Ingredient object" +
-                f" with coding scheme designator '{sphn_coding_scheme_designator}' and code value '{sphn_code_value}'" +
-                f" and code meaning '{sphn_code_meaning}'")
+                f" with coding scheme designator '{active_ingredient_coding_scheme_designator}' and code value '{active_ingredient_code_value}'" +
+                f" and code meaning '{active_ingredient_code_descr}'")
 
     return sphn_contrast_agent_active_ingredient
 
 
 #
-#  Edwin 2026-09-21
+#  Edwin 2026-09-29
 #
 def process_contrast_bolus_agent_dict(contrast_agent_dict: dict, context: Context, indent: int=0) -> SPHNContrastAgent|None:
     """
@@ -432,7 +610,7 @@ def process_contrast_bolus_agent_dict(contrast_agent_dict: dict, context: Contex
     #       It should not be a problem as the "extract_contrast_agents" function already normalizes the active ingredient names
     #       to match the case used in the dictionary (in case it is an active ingredient name).
     # Note: In case there are multiple ingredient names, they are added as separate contrast agents, but could potentially have originated from the same article.    
-    elif agent_name in DataConverter.dicom_contrast_agent_active_ingredient_name_dict:
+    elif agent_name in DataConverter.dicom_contrast_ingredient_name_dict:
         logger.debug(" "*(indent+0) + f"Contrast agent '{agent_name}' is identified as a DICOM active ingredient name")
         active_ingredient_name = agent_name
 
@@ -457,6 +635,8 @@ def process_contrast_bolus_agent_dict(contrast_agent_dict: dict, context: Contex
         dose_unit = dose_dict.get("unit", None)
         if dose_unit is not None:
             assert dose_unit in ["ml", "mg"]
+
+    return sphn_contrast_agent
 
 
 #
@@ -505,20 +685,17 @@ def process_contrast_bolus_agent_trade_name(trade_name:str, concentration: int|N
 
         # Check the format of the dicom_contrast_agent entry
         assert isinstance(dicom_contrast_agent, tuple) and len(dicom_contrast_agent) == 3
+        assert all(is_valid_string(item) for item in dicom_contrast_agent)
 
         coding_scheme_designator = dicom_contrast_agent[0]
         code_value = dicom_contrast_agent[1]
-        code_meaning = dicom_contrast_agent[2]
-
-        assert is_valid_string(coding_scheme_designator)
-        assert is_valid_string(code_value)
-        assert is_valid_string(code_meaning)
+        code_descr = dicom_contrast_agent[2]
 
         # Create the SPHN Contrast Agent Active Ingredient object
         sphn_contrast_agent_active_ingredient = create_sphn_contrast_agent_active_ingredient(
             coding_scheme_designator=coding_scheme_designator,
             code_value=code_value,
-            code_meaning=code_meaning,
+            code_meaning=code_descr,
             context=context,
             indent=indent+2
         )
@@ -591,25 +768,19 @@ def process_contrast_bolus_agent_generic_name(generic_name:str, context: Context
 
     # Check the format of the result
     assert isinstance(result, tuple) and len(result) == 2
-
+    assert all(is_valid_string(item) for item in result)
+    
     logger.debug(" "*(indent+2) + "DICOM contrast agent code found.")
 
-    # Get the corresponding DICOM contrast agent code for the generic name from the data_converter
-    dicom_contrast_agent_code = result
-
-    coding_scheme_designator = dicom_contrast_agent_code[0]
-    code_value = dicom_contrast_agent_code[1]
-    code_meaning = generic_name
-
-    assert is_valid_string(coding_scheme_designator)
-    assert is_valid_string(code_value)
-    assert is_valid_string(code_meaning)
+    coding_scheme_designator = result[0]
+    code_value = result[1]
+    code_descr = generic_name
 
     # Create the SPHN Contrast Agent Active Ingredient object
     sphn_contrast_agent_active_ingredient = create_sphn_contrast_agent_active_ingredient(
         coding_scheme_designator=coding_scheme_designator,
         code_value=code_value,
-        code_meaning=code_meaning,
+        code_meaning=code_descr,
         context=context,
         indent=indent+4
     )
@@ -647,7 +818,7 @@ def process_contrast_bolus_agent_active_ingredient_name(ingredient_name:str, con
     assert is_valid_string(ingredient_name)
     assert isinstance(context, Context)
     assert isinstance(indent, int)
-    assert ingredient_name in DataConverter.dicom_contrast_agent_active_ingredient_name_dict
+    assert ingredient_name in DataConverter.dicom_contrast_ingredient_name_dict
 
     logger = context.logger
     data_store = context.data_store
@@ -659,29 +830,23 @@ def process_contrast_bolus_agent_active_ingredient_name(ingredient_name:str, con
     # Note: Case-sensitive lookup in the DICOM contrast agent active ingredient name dictionary. 
     #       It should not be a problem as the "extract_contrast_agents" function already normalizes the ingredient names
     #       to match the case used in the dictionary.
-    result = DataConverter.dicom_contrast_agent_active_ingredient_name_dict.get(ingredient_name, None)
+    result = DataConverter.dicom_contrast_ingredient_name_dict.get(ingredient_name, None)
 
     # Check the format of the result
     assert isinstance(result, tuple) and len(result) == 2
+    assert all(is_valid_string(item) for item in result)
 
     logger.debug(" "*(indent+2) + "DICOM contrast agent ingredient code found.")
 
-    # Get the corresponding DICOM contrast agent code for the generic name from the data_converter
-    dicom_contrast_agent_ingredient_code = result
-
-    coding_scheme_designator = dicom_contrast_agent_ingredient_code[0]
-    code_value = dicom_contrast_agent_ingredient_code[1]
-    code_meaning = ingredient_name
-
-    assert is_valid_string(coding_scheme_designator)
-    assert is_valid_string(code_value)
-    assert is_valid_string(code_meaning)
+    coding_scheme_designator = result[0]
+    code_value = result[1]
+    code_descr = ingredient_name
 
     # Create the SPHN Contrast Agent Active Ingredient object
     sphn_contrast_agent_active_ingredient = create_sphn_contrast_agent_active_ingredient(
         coding_scheme_designator=coding_scheme_designator,
         code_value=code_value,
-        code_meaning=code_meaning,
+        code_meaning=code_descr,
         context=context,
         indent=indent+4
     )
@@ -739,20 +904,17 @@ def process_contrast_bolus_ingredient(ingredient_term:str, context: Context, ind
     
     # Check the format of the result
     assert isinstance(result, tuple) and len(result) == 3
+    assert all(is_valid_string(item) for item in result)
 
     coding_scheme_designator = result[0]
     code_value = result[1]
-    code_meaning = result[2]
-
-    assert is_valid_string(coding_scheme_designator)
-    assert is_valid_string(code_value)
-    assert is_valid_string(code_meaning)
+    code_descr = result[2]
 
     # Create the SPHN Contrast Agent Active Ingredient object
     sphn_contrast_agent_active_ingredient = create_sphn_contrast_agent_active_ingredient(
         coding_scheme_designator=coding_scheme_designator,
         code_value=code_value,
-        code_meaning=code_meaning,
+        code_meaning=code_descr,
         context=context,
         indent=indent+4
     )
@@ -776,11 +938,11 @@ def process_contrast_bolus_ingredient(ingredient_term:str, context: Context, ind
 
 
 #
-#  Edwin 2026-09-20
+#  Edwin 2026-09-29
 #
-def process_contrast_bolus_administration_route_sequence(contrast_bolus_administration_route_sequence:Sequence, context: Context, indent:int=0) -> SPHNContrastAgent|None:
+def process_contrast_bolus_administration_route_sequence(contrast_bolus_administration_route_sequence:Sequence, context: Context, indent:int=0) -> SPHNCode|None:
     """
-    Process the DICOM ContrastBolusAdministrationRouteSequence and return an SPHN Administration Route object, if any.
+    Process the DICOM ContrastBolusAdministrationRouteSequence and return an SPHNcode object for the SPHN hasAdministrationRouteCode, if any.
     Parameters:
         - contrast_bolus_administration_route_sequence (Sequence): The DICOM ContrastBolusAdministrationRouteSequence.
         - context: The Context object that holds the data_store, logger and other relevant information
@@ -796,70 +958,58 @@ def process_contrast_bolus_administration_route_sequence(contrast_bolus_administ
     data_store = context.data_store
     sphn_schema = context.sphn_schema
     
-    sphn_contrast_bolus_administration_route_list = []
-
     # There should only be one item in the ContrastBolusAdministrationRouteSequence
-    for index, dataset_item in enumerate(contrast_bolus_administration_route_sequence, start=1):
+    
+    assert len(contrast_bolus_administration_route_sequence) == 1
 
-        logger.debug(" "*(indent+2) + f"Processing DICOM ContrastBolusAdministrationRouteSequence item {index}/{len(contrast_bolus_administration_route_sequence)}")
+    dataset_item = contrast_bolus_administration_route_sequence[0]
 
-        assert isinstance(dataset_item, Dataset)
+    assert isinstance(dataset_item, Dataset)
 
-        code_value = get_code_value_from_dicom(dataset_item, context, indent=indent+2)
-        coding_scheme_designator = get_coding_scheme_designator_from_dicom(dataset_item, context, indent=indent+2)
-        #coding_scheme_version = get_coding_scheme_version_from_dicom(dataset_item, context, indent=indent+2)
-        code_meaning = get_code_meaning_from_dicom(dataset_item, context, indent=indent+2)
-        #code_value_long = get_long_code_value_from_dicom(dataset_item, context, indent=indent+2)
-        #urn_code_value = get_urn_code_value_from_dicom(dataset_item, context, indent=indent+2)
+    # Get the coded info from DICOM
+    coding_scheme_designator = get_coding_scheme_designator_from_dicom(dataset_item, context, indent=indent+2)
+    code_value = get_code_value_from_dicom(dataset_item, context, indent=indent+2)
+    code_descr = get_code_meaning_from_dicom(dataset_item, context, indent=indent+2)
 
-        # Add the contrast bolus agent code to the data store dictionary for statistical purposes
-        data_store.add_contrast_bolus_administration_route_sequence_code_to_dict(coding_scheme_designator, code_value, code_meaning)
+    # Add the administration route to the data store dictionary for statistical purposes
+    data_store.add_contrast_bolus_administration_route_sequence_code_to_dict(coding_scheme_designator, code_value, code_descr)
 
-        if code_value is not None and coding_scheme_designator is not None:
-
-            logger.debug(" "*(indent+4) + f"DICOM ContrastBolusAdministrationRouteSequence has coding scheme designator '{coding_scheme_designator}' and code value '{code_value}' with meaning '{code_meaning}'")
-
-            # Create the SPHN Contrast Bolus Administration Route object
-            sphn_contrast_bolus_administration_route = create_sphn_contrast_bolus_administration_route(
-                coding_scheme_designator=coding_scheme_designator,
-                code_value=code_value,
-                code_meaning=code_meaning,
-                context=context,
-                indent=indent+6
-            )
-
-            # It is possible that the creation of the SPHN Contrast Agent Active Ingredient object failed
-            # in case the DICOM code could not be mapped to a valid SPHN SNOMED-CT code
-            if sphn_contrast_agent_active_ingredient is not None:
-
-                # Add to the list if it is not already in the list
-                if not already_in_list(sphn_contrast_agent_active_ingredient, sphn_contrast_agent_active_ingredient_list):
-                    sphn_contrast_agent_active_ingredient_list.append(sphn_contrast_agent_active_ingredient)
-                else:
-                    logger.debug(" "*(indent+4) + "SPHN Contrast Agent Active Ingredient is already in the list of SPHN Contrast Agent Active Ingredients")
-
-            else:
-                logger.debug(" "*(indent+4) + f"DICOM ContrastBolusAgentSequence item {index} could not be converted to a SPHN Contrast Agent Active Ingredient object")
-        else:
-            logger.debug(" "*(indent+4) + f"DICOM ContrastBolusAgentSequence item {index} has no coding scheme designator or code value")
-            data_store.add_unknown_dicom_contrast_bolus_agent_sequence_code_to_dict(coding_scheme_designator, code_value, code_meaning)
-
-    if len(sphn_contrast_agent_active_ingredient_list) == 0:
-        logger.debug(" "*(indent+4) + "No valid SPHN Contrast Agent Active Ingredients could be created from the DICOM ContrastBolusAgentSequence")
+    if coding_scheme_designator is None or code_value is None:
+        logger.debug(" "*(indent+0) + f"DICOM ContrastBolusAdministrationRouteSequence has incomplete coding information: coding scheme designator '{coding_scheme_designator}', code value '{code_value}'")
+        data_store.add_unknown_contrast_bolus_administration_route_sequence_code_to_dict(context, coding_scheme_designator, code_value, code_descr, indent=indent)
         return None
 
-    # Create the SPHN Contrast Agent object
-    # ToDo Edwin Note: Multiple active ingredients can not be included yet, update this once the SPHN schema supports it
-    sphn_contrast_agent = SPHNContrastAgent(
+    logger.debug(" "*(indent+4) + f"DICOM ContrastBolusAdministrationRouteSequence has coding scheme designator '{coding_scheme_designator}' and code value '{code_value}' with description '{code_descr}'")
+
+    # Try to convert the DICOM coding scheme designator and code value to a SPHN administration route SNOMED-CT code
+    result = DataConverter.administration_routes_list.get((coding_scheme_designator, code_value), None)
+
+    # Check if the route is known
+    if result is None:
+        logger.debug(" "*(indent+0) + f"The coding scheme designator: '{coding_scheme_designator}' and code value: '{code_value}' has no corresponding code in the DataConverter")
+        data_store.add_unknown_contrast_bolus_administration_route_sequence_code_to_dict(context, coding_scheme_designator, code_value, code_descr, indent=indent)
+        return None
+
+    assert isinstance(result, tuple) and len(result) == 3
+    assert all(is_valid_string(item) for item in result)
+
+    administration_route_coding_scheme_designator = result[0]
+    administration_route_code_value = result[1]
+    administration_route_code_descr = result[2]
+
+    sphn_code = SPHNCode( 
         sphn_schema = sphn_schema,
-        has_active_ingredient=sphn_contrast_agent_active_ingredient_list[0],
-        has_source_system_list=[data_store.sphn_source_system]
-    )
+        has_coding_system_and_version = administration_route_coding_scheme_designator,
+        has_identifier = administration_route_code_value,
+        has_name = administration_route_code_descr
+        )
 
-    return sphn_contrast_agent
+    logger.debug(" "*(indent+0) + f"The DICOM coding scheme designator: '{coding_scheme_designator}' and code value: '{code_value}'" + 
+                f" with meaning '{code_descr}' was successfully converted to an SPHN Contrast Bolus Administration Route" +
+                f" with coding scheme designator '{administration_route_coding_scheme_designator}' and code value '{administration_route_code_value}'" +
+                f" and code description '{administration_route_code_descr}'")
 
-
-
+    return sphn_code
 
 
 # ---------------------------------------------------------------------------------------------------------------------

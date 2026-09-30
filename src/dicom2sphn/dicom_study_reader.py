@@ -876,7 +876,7 @@ def get_patient_sex_from_dicom(dataset: Dataset, context: Context, indent: int=0
         return None
 
     # Convert to SNOMED CT code (using upper case key)
-    result = DataConverter.dicom_patient_sex_code_to_snomed_ct_code_dict.get(patient_sex_str.upper(), None)
+    result = DataConverter.dicom_patient_sex_code_dict.get(patient_sex_str.upper(), None)
 
     assert result is None or (isinstance(result, tuple) and len(result) == 3)
 
@@ -931,7 +931,7 @@ def get_pregnancy_status_from_dicom(dataset: Dataset, context: Context, indent: 
         return None
 
     # Convert to SNOMED CT code
-    result = DataConverter.dicom_pregnancy_status_code_to_snomed_ct_code_dict.get(value, None)
+    result = DataConverter.dicom_pregnancy_status_code_dict.get(value, None)
 
     # Check conversion is ok
     assert result is None or (isinstance(result, tuple) and len(result) == 3)

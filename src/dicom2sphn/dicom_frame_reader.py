@@ -53,8 +53,11 @@ type URNCodeValue = str  # URN code value as a string
 def get_frame_metadata_from_dicom(dataset: Dataset, frame_number: int, context: Context, indent: int=0) -> None:
     """
     Get the metadata related to SPHN ImagingFrame from the dataset
+    Parameters:
         - dataset is a DICOM dataset (DICOM header) that contains DICOM DataElements (tags)
         - frame_number is the frame number (1-based index) for single- and multi-frame DICOM instances
+        - context: The Context object that holds the data_store, logger and other relevant information
+        - indent: The indentation level for logging (default is 0)
     """
 
     # Checks
@@ -390,10 +393,10 @@ def get_frame_metadata_from_dicom(dataset: Dataset, frame_number: int, context: 
     # BodyPartExamined
     # 
     
-    snomed_ct_code = get_body_part_examined_from_dicom(dataset, context, indent=indent+2)
+    body_part_code = get_body_part_examined_from_dicom(dataset, context, indent=indent+2)
 
-    if snomed_ct_code is not None:
-        logger.debug(" "*(indent+0) + f"BodyPartExamined SNOMED-CT code:'{snomed_ct_code}'")
+    if body_part_code is not None:
+        logger.debug(" "*(indent+0) + f"BodyPartExamined code:'{body_part_code}'")
     else:
         logger.debug(" "*(indent+0) + "BodyPartExamined not found")
 
@@ -417,11 +420,20 @@ def get_frame_metadata_from_dicom(dataset: Dataset, frame_number: int, context: 
     # SPHN BodySite list
     # 
 
-    if snomed_ct_code is not None:
+    if body_part_code is not None:
+
+        assert isinstance(body_part_code, tuple) and len(body_part_code) == 3
+        assert all(is_valid_string(item) for item in body_part_code)
+
+        body_part_coding_scheme_designator = body_part_code[0]
+        body_part_code_value = body_part_code[1]
+        body_part_code_descr = body_part_code[2]
+
         sphn_code = SPHNCode(
             sphn_schema=sphn_schema,
-            has_identifier=snomed_ct_code,
-            has_coding_system_and_version="SNOMED"
+            has_coding_system_and_version=body_part_coding_scheme_designator,
+            has_identifier=body_part_code_value,
+            has_name=body_part_code_descr
         )
 
         # Laterality is not implemented
@@ -675,8 +687,21 @@ def get_frame_metadata_from_dicom(dataset: Dataset, frame_number: int, context: 
     #
     # Read the Contrast/Bolus module from the DICOM dataset and add it to the data_store
     #
-    get_contrast_bolus_module_from_dicom(dataset, context, indent=indent+4)
-    
+    sphn_contrast_agent_administration_event_list = get_contrast_bolus_module_from_dicom(dataset, context, indent=indent+4)
+
+    if sphn_contrast_agent_administration_event_list is not None:
+        if data_store.sphn_contrast_agent_administration_event_list is not None:
+            events_added_counter=0
+            for event in sphn_contrast_agent_administration_event_list:
+                if not already_in_list(event, data_store.sphn_contrast_agent_administration_event_list):
+                    data_store.sphn_contrast_agent_administration_event_list.append(event)
+                    events_added_counter += 1
+            logger.debug(" "*(indent+0) + f"Number of new SPHN Contrast Agent Administration Event object(s) added to the data_store: {events_added_counter}")
+        else:
+            data_store.sphn_contrast_agent_administration_event_list = sphn_contrast_agent_administration_event_list
+            logger.debug(" "*(indent+0) + f"SPHN Contrast Agent Administration Event list initialized in the data_store with {len(sphn_contrast_agent_administration_event_list)} event(s)")
+    else:
+        logger.debug(" "*(indent+0) + "No SPHN Contrast Agent Administration Event metadata found")
 
 # -----------------------------------------------------------------------------------------------------------------
 # DICOM tag reading functions for SPHN ImagingFrame metadata
@@ -691,6 +716,7 @@ def get_image_type_list_from_dicom(dataset: Dataset, context: Context, indent: i
     Returns a list with SPHN ImagingFrame_type ValueSet members corresponding to the values of the DICOM ImageType tag
         - dataset is the DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
         - context is the Context object that contains the logger and other relevant information
+        - indent is the indentation level for logging messages
     """
 
     # Keyword:              ImageType
@@ -749,7 +775,7 @@ def get_image_type_list_from_dicom(dataset: Dataset, context: Context, indent: i
             continue
 
         # Convert to SPHN ImagingFrame_type ValueSet member (using lower case key)
-        type_value_set_member = DataConverter.dicom_image_and_frame_type_2_sphn_imagingframe_type_lower_case_key.get(image_type_item.lower(), None)
+        type_value_set_member = DataConverter.dicom_image_and_frame_type_dict_lower_case_key.get(image_type_item.lower(), None)
 
         if type_value_set_member is None:
             logger.debug(" "*(indent+0) + f"DICOM ImageType tag value-item: '{image_type_item}' could not be converted to a corresponding SPHN ImagingFrame_type ValueSet member.")
@@ -773,7 +799,10 @@ def get_image_type_list_from_dicom(dataset: Dataset, context: Context, indent: i
 def get_pixel_spacing_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> PixelSize|None:
     """
     Returns the row and column spacing value and unit corresponding to the value of the DICOM PixelSpacing tag
+    Parameters:
         - dataset is the DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
+        - context: The Context object that holds the data_store, logger and other relevant information
+        - indent: The indentation level for logging (default is 0)
     """
 
     # Keyword:              PixelSpacing
@@ -842,7 +871,10 @@ def get_pixel_spacing_from_dicom(dataset: Dataset, context: Context, indent: int
 def get_rows_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> NumOfRows | None:
     """
     Returns the number of rows and unit corresponding to the value of the DICOM Rows tag
+    Parameters:
         - dataset is the DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
+        - context: The Context object that holds the data_store, logger and other relevant information
+        - indent: The indentation level for logging (default is 0)
     """
 
     # Keyword:              Rows
@@ -900,7 +932,10 @@ def get_rows_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> Nu
 def get_columns_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> NumOfColumns|None:
     """
     Returns the number of columns and unit corresponding to the value of the DICOM Columns tag
+    Parameters:
         - dataset is the DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
+        - context: The Context object that holds the data_store, logger and other relevant information
+        - indent: The indentation level for logging (default is 0)
     """
 
     # Keyword:              Columns
@@ -958,7 +993,10 @@ def get_columns_from_dicom(dataset: Dataset, context: Context, indent: int=0) ->
 def get_spacing_between_slices_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> SliceSpacing|None:
     """
     Returns the spacing value and unit corresponding to the value of the DICOM SpacingBetweenSlices tag
+    Parameters:
         - dataset is the DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
+        - context: The Context object that holds the data_store, logger and other relevant information
+        - indent: The indentation level for logging (default is 0)
     """
 
     # Keyword:              SpacingBetweenSlices
@@ -1017,7 +1055,10 @@ def get_spacing_between_slices_from_dicom(dataset: Dataset, context: Context, in
 def get_slice_thickness_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> SliceThickness | None:
     """
     Returns the slice thicknes value and unit corresponding to the value of the DICOM SliceThickness tag
+    Parameters:
         - dataset is the DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
+        - context: The Context object that holds the data_store, logger and other relevant information
+        - indent: The indentation level for logging (default is 0)
     """
 
     # Keyword:              SliceThickness
@@ -1081,7 +1122,10 @@ def get_slice_thickness_from_dicom(dataset: Dataset, context: Context, indent: i
 def get_samples_per_pixel_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> NumOfSamples | None:
     """
     Returns the number of samples per pixel and unit corresponding to the value of the DICOM SamplesPerPixel tag
+    Parameters:
         - dataset is the DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
+        - context: The Context object that holds the data_store, logger and other relevant information
+        - indent: The indentation level for logging (default is 0)
     """
 
     # Keyword:              SamplesPerPixel
@@ -1136,10 +1180,13 @@ def get_samples_per_pixel_from_dicom(dataset: Dataset, context: Context, indent:
 #
 #  Edwin 2026-07-31
 #
-def get_body_part_examined_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> SnomedCTCode | None:
+def get_body_part_examined_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> tuple[str, str, str] | None:
     """
     Returns the SNOMED-CT code corresponding to the value of the DICOM BodyPartExamined tag
+    Parameters:
         - dataset is the DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
+        - context: The Context object that holds the data_store, logger and other relevant information
+        - indent: The indentation level for logging (default is 0)
     """
 
     # Keyword:              BodyPartExamined
@@ -1186,17 +1233,18 @@ def get_body_part_examined_from_dicom(dataset: Dataset, context: Context, indent
         return None
 
     # Check if it is in the dictionary and convert to a corresponding SNOMED-CT code
-    snomed_ct_code = DataConverter.dicom_body_part_examined_code_2_snomed_ct.get(body_part_examined.upper(), None)
+    result = DataConverter.dicom_body_part_examined_terms_dict.get(body_part_examined.upper(), None)
 
-    if snomed_ct_code is None:
-        logger.warning(" "*(indent+0) + f"DICOM BodyPartExamined tag value code string: '{body_part_examined}' could not be converted to a corresponding SNOMED-CT code")
+    if result is None:
+        logger.warning(" "*(indent+0) + f"DICOM BodyPartExamined tag value code string: '{body_part_examined}' could not be converted to a corresponding code")
         return None
 
     # Check conversion is ok
-    assert is_clean_string(snomed_ct_code)
+    assert isinstance(result, tuple) and len(result) == 3
+    assert all(is_valid_string(item) for item in result)
     # ToDo: Check if it is a valid SNOMED-CT code
 
-    return snomed_ct_code
+    return result
 
 #
 # Edwin 2026-07-31
@@ -1204,7 +1252,10 @@ def get_body_part_examined_from_dicom(dataset: Dataset, context: Context, indent
 def get_lossy_image_compression_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> bool | None:
     """
     Returns the boolean value corresponding to the value of the DICOM LossyImageCompression tag
+    Parameters:
         - dataset is the DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
+        - context: The Context object that holds the data_store, logger and other relevant information
+        - indent: The indentation level for logging (default is 0)
     """
 
     # Keyword:              LossyImageCompression
@@ -1251,7 +1302,7 @@ def get_lossy_image_compression_from_dicom(dataset: Dataset, context: Context, i
         return None
 
     # Check if it is a know DICOM code and convert to a corresponding boolean value
-    has_lossy_image_compression = DataConverter.dicom_lossy_image_compression_code_2_boolean.get(lossy_image_compression_code, None)
+    has_lossy_image_compression = DataConverter.dicom_lossy_image_compression_code_dict.get(lossy_image_compression_code, None)
 
     if has_lossy_image_compression is None:
         logger.warning(" "*(indent+0) + f"DICOM LossyImageCompression tag value: '{lossy_image_compression_code}' could not be converted to a corresponding boolean value")
@@ -1268,9 +1319,12 @@ def get_lossy_image_compression_from_dicom(dataset: Dataset, context: Context, i
 def get_lossy_image_compression_method_list_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> list[str|None] | None:
     """
     Returns a list with method strings corresponding to the values of the DICOM LossyImageCompressionMethod tag
+    Parameters:
         - dataset is the DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
+        - context: The Context object that holds the data_store, logger and other relevant information
+        - indent: The indentation level for logging (default is 0)
     Note: The output list with methods can have a corresponding list with ratios. Therefore, 
-        the order of methods in this list should correspond to the order of ratios in the other list
+          the order of methods in this list should correspond to the order of ratios in the other list
     """
 
     # Keyword:              LossyImageCompressionMethod
@@ -1359,9 +1413,12 @@ def get_lossy_image_compression_method_list_from_dicom(dataset: Dataset, context
 def get_lossy_image_compression_ratio_list_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> list[float|None] | None:
     """
     Returns a list of ratios corresponding to the values of the DICOM LossyImageCompressionRatio tag
+    Parameters:
         - dataset is the DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
+        - context: The Context object that holds the data_store, logger and other relevant information
+        - indent: The indentation level for logging (default is 0)
     Note: The output list with ratios can have a corresponding list with methods. Therefore, 
-        the order of ratios in this list should correspond to the order of methods in the other list
+          the order of ratios in this list should correspond to the order of methods in the other list
     """
 
     # Keyword:              LossyImageCompressionRatio
@@ -1455,10 +1512,12 @@ def convert_to_data_compression_algorithm_list(
     
     """
     Returns a list with unique SPHN DataCompressionAlgorithm instances corresponding to the values of the DICOM LossyImageCompression, LossyImageCompressionMethod and LossyImageCompressionRatio tags
+    Parameters:
         - has_lossy_compression is a boolean value corresponding to the DICOM LossyImageCompression tag
         - lossy_compression_method_list is a list of strings corresponding to the DICOM LossyImageCompressionMethod tag
         - lossy_compression_ratio_list is a list of floats corresponding to the DICOM LossyImageCompressionRatio tag
-        - context is the Context object that contains the logger and other relevant information
+        - context: The Context object that holds the data_store, logger and other relevant information
+        - indent: The indentation level for logging (default is 0)
     """
 
     # Checks
@@ -1503,7 +1562,7 @@ def convert_to_data_compression_algorithm_list(
 
                 assert isinstance(method, str)
 
-                result = DataConverter.dicom_data_compression_method_2_sphn_method_and_type.get(method.upper(), None)
+                result = DataConverter.dicom_data_compression_method_dict.get(method.upper(), None)
 
                 if result is not None:
 
@@ -1597,7 +1656,10 @@ def get_content_qualification_from_dicom(dataset: Dataset, context: Context, ind
     """
     Returns the SPHN ImagingSeries_contentQualification ValueSet member corresponding to 
         the value of the DICOM ContentQualification tag
-        - dataset is a DICOM dataset (DICOM header) that contains DICOM DataElements (tags)
+    Parameters:
+        - dataset is the DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
+        - context: The Context object that holds the data_store, logger and other relevant information
+        - indent: The indentation level for logging (default is 0)
     """
 
     # Keyword:              ContentQualification
@@ -1645,7 +1707,7 @@ def get_content_qualification_from_dicom(dataset: Dataset, context: Context, ind
         return None
 
     # Check if it is a known DICOM term and convert to a corresponding SPHN ImagingSeries_contentQualification ValueSet member
-    content_qualification_valueset_member = DataConverter.dicom_content_qualification_2_sphn_content_qualification_lower_case_key.get(content_qualification_str.lower(), None)
+    content_qualification_valueset_member = DataConverter.dicom_content_qualification_dict_lower_case_key.get(content_qualification_str.lower(), None)
 
     if content_qualification_valueset_member is None:
         logger.warning(" "*(indent+0) + f"DICOM ContentQualification tag value: '{content_qualification_str}' could not be converted to a corresponding SPHN ImagingSeries_contentQualification ValueSet member")
@@ -1666,7 +1728,10 @@ def get_image_position_from_dicom(dataset: Dataset, context: Context, indent: in
     """
     Returns the values corresponding to the values of the DICOM ImagePositionPatient tag,
         it specifies the x, y, and z coordinates of the upper left hand corner of the image; it is the center of the first voxel transmitted,
+    Parameters:
         - dataset is the DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
+        - context: The Context object that holds the data_store, logger and other relevant information
+        - indent: The indentation level for logging (default is 0)
     """
 
     # Keyword:              ImagePositionPatient
@@ -1733,7 +1798,10 @@ def get_image_orientation_from_dicom(dataset: Dataset, context: Context, indent:
     """
     Returns the values corresponding to the values of the DICOM ImageOrientationPatient tag,
         specifies the direction cosines of the first row and the first column with respect to the patient,
-        dataset is the DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
+    Parameters:
+        - dataset is the DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
+        - context: The Context object that holds the data_store, logger and other relevant information
+        - indent: The indentation level for logging (default is 0)
     """
 
     # Keyword:              ImageOrientationPatient
@@ -1802,7 +1870,10 @@ def get_image_orientation_from_dicom(dataset: Dataset, context: Context, indent:
 def get_contrast_bolus_agent_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> SnomedCTCode | None:
     """
     Returns the string corresponding to the value of the DICOM ContrastBolusAgent tag
+    Parameters:
         - dataset is the DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
+        - context: The Context object that holds the data_store, logger and other relevant information
+        - indent: The indentation level for logging (default is 0)
     """
 
     # Tag:                  (0018,0010)
@@ -1857,7 +1928,10 @@ def get_contrast_bolus_agent_from_dicom(dataset: Dataset, context: Context, inde
 def get_contrast_bolus_agent_sequence_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> Sequence|None:
     """
     Returns the list of Datasets in the DICOM ContrastBolusAgentSequence tag
+    Parameters:
         - dataset is the DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
+        - context: The Context object that holds the data_store, logger and other relevant information
+        - indent: The indentation level for logging (default is 0)
     """
 
     # Keyword:              ContrastBolusAgentSequence
@@ -1915,7 +1989,10 @@ def get_contrast_bolus_agent_sequence_from_dicom(dataset: Dataset, context: Cont
 def get_code_value_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> CodeValue | None:
     """
     Returns the string corresponding to the value of the DICOM CodeValue tag
+    Parameters:
         - dataset is the DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
+        - context: The Context object that holds the data_store, logger and other relevant information
+        - indent: The indentation level for logging (default is 0)
     """
 
     # Tag:                  (0008,0100)
@@ -1971,7 +2048,10 @@ def get_code_value_from_dicom(dataset: Dataset, context: Context, indent: int=0)
 def get_coding_scheme_designator_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> CodingSchemeDesignator | None:
     """
     Returns the string corresponding to the value of the DICOM Coding Scheme Designator tag
+    Parameters:
         - dataset is the DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
+        - context: The Context object that holds the data_store, logger and other relevant information
+        - indent: The indentation level for logging (default is 0)
     """
 
     # Tag:                  (0008,0102)
@@ -2027,7 +2107,10 @@ def get_coding_scheme_designator_from_dicom(dataset: Dataset, context: Context, 
 def get_coding_scheme_version_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> CodingSchemeVersion | None:
     """
     Returns the string corresponding to the value of the DICOM Coding Scheme Version tag
+    Parameters:
         - dataset is the DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
+        - context: The Context object that holds the data_store, logger and other relevant information
+        - indent: The indentation level for logging (default is 0)
     """
 
     # Tag:                  (0008,0103)
@@ -2083,7 +2166,10 @@ def get_coding_scheme_version_from_dicom(dataset: Dataset, context: Context, ind
 def get_code_meaning_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> CodeMeaning | None:
     """
     Returns the string corresponding to the value of the DICOM Code Meaning tag
+    Parameters:
         - dataset is the DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
+        - context: The Context object that holds the data_store, logger and other relevant information
+        - indent: The indentation level for logging (default is 0)
     """
 
     # Tag:                  (0008,0104)
@@ -2139,7 +2225,10 @@ def get_code_meaning_from_dicom(dataset: Dataset, context: Context, indent: int=
 def get_long_code_value_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> LongCodeValue | None:
     """
     Returns the string corresponding to the value of the DICOM LongCodeValue tag
+    Parameters:
         - dataset is the DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
+        - context: The Context object that holds the data_store, logger and other relevant information
+        - indent: The indentation level for logging (default is 0)
     """
 
     # Tag:                  (0008,0119)
@@ -2195,7 +2284,10 @@ def get_long_code_value_from_dicom(dataset: Dataset, context: Context, indent: i
 def get_urn_code_value_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> URNCodeValue | None:
     """
     Returns the string corresponding to the value of the DICOM URNCodeValue tag
+    Parameters:
         - dataset is the DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
+        - context: The Context object that holds the data_store, logger and other relevant information
+        - indent: The indentation level for logging (default is 0)
     """
 
     # Tag:                  (0008,0120)
@@ -2252,7 +2344,10 @@ def get_urn_code_value_from_dicom(dataset: Dataset, context: Context, indent: in
 def get_real_world_value_mapping_sequence_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> Sequence|None:
     """
     Returns the list of Datasets in the DICOM Real World Value Mapping Sequence tag
+    Parameters:
         - dataset is the DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
+        - context: The Context object that holds the data_store, logger and other relevant information
+        - indent: The indentation level for logging (default is 0)
     """
 
     # Keyword:              RealWorldValueMappingSequence

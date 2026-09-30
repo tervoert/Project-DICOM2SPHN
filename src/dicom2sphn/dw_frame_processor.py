@@ -132,6 +132,8 @@ class DWFrameProcessor:
 
         # -------------------------------------------------------------------------------------------------------------
 
+        # ToDo: Edwin: Currently SPHN only allows one contrast agent administration event per imaging frame, change with the new SPHN schema version
+
         # Selecting the general or one of the specific SPHN ImagingFrames based on the SOP Class UID of the DICOM Instance dataset
         if sop_class_uid in [sop_class.CTImageStorage]:
             # Create a specific SPHN ComputedTomographyImagingFrame
@@ -146,7 +148,10 @@ class DWFrameProcessor:
                 has_algorithm_list = data_store.sphn_data_compression_algorithm_list,
                 has_content_qualification = data_store.sphn_imagingframe_content_qualification_valueset_member,
                 has_imaging_metric = None,
-                has_anatomical_projection = None
+                has_anatomical_projection = None,
+                has_contrast_agent_administration_event = data_store.sphn_contrast_agent_administration_event_list[0] \
+                    if data_store.sphn_contrast_agent_administration_event_list is not None \
+                        and len(data_store.sphn_contrast_agent_administration_event_list) > 0 else None
             )
         elif sop_class_uid in [sop_class.MRImageStorage]:
             # Create a specific SPHN MagneticResonanceImagingFrame
@@ -161,7 +166,10 @@ class DWFrameProcessor:
                 has_algorithm_list = data_store.sphn_data_compression_algorithm_list,
                 has_content_qualification = data_store.sphn_imagingframe_content_qualification_valueset_member,
                 has_imaging_metric = None,
-                has_anatomical_projection = None
+                has_anatomical_projection = None,
+                has_contrast_agent_administration_event = data_store.sphn_contrast_agent_administration_event_list[0] \
+                    if data_store.sphn_contrast_agent_administration_event_list is not None \
+                        and len(data_store.sphn_contrast_agent_administration_event_list) > 0 else None
             )
         elif sop_class_uid in [sop_class.PositronEmissionTomographyImageStorage]:
             # Create a specific SPHN PositronEmissionTomographyImagingFrame
@@ -191,7 +199,10 @@ class DWFrameProcessor:
                 has_algorithm_list = data_store.sphn_data_compression_algorithm_list,
                 has_content_qualification = data_store.sphn_imagingframe_content_qualification_valueset_member,
                 has_imaging_metric = None,
-                has_anatomical_projection = None
+                has_anatomical_projection = None,
+                has_contrast_agent_administration_event = data_store.sphn_contrast_agent_administration_event_list[0] \
+                    if data_store.sphn_contrast_agent_administration_event_list is not None \
+                        and len(data_store.sphn_contrast_agent_administration_event_list) > 0 else None
             )
         else:
             # Create a general SPHN ImagingFrame

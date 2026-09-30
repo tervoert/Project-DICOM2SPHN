@@ -161,9 +161,9 @@ class SPHNContrastAgentAdministrationEvent(SPHNDrugAdministrationEvent):
             and ((self.has_drug is None and other.has_drug is None) \
                  or (self.has_drug is not None and other.has_drug is not None \
                      and self.has_drug.is_similar(other.has_drug))) \
-            and ((self.has_administrative_route_code is None and other.has_administrative_route_code is None) \
-                 or (self.has_administrative_route_code is not None and other.has_administrative_route_code is not None \
-                     and self.has_administrative_route_code.is_similar(other.has_administrative_route_code))) \
+            and ((self.has_administration_route_code is None and other.has_administration_route_code is None) \
+                 or (self.has_administration_route_code is not None and other.has_administration_route_code is not None \
+                     and self.has_administration_route_code.is_similar(other.has_administration_route_code))) \
             and ((self.has_reason_to_stop_code is None and other.has_reason_to_stop_code is None) \
                  or (self.has_reason_to_stop_code is not None and other.has_reason_to_stop_code is not None \
                      and self.has_reason_to_stop_code.is_similar(other.has_reason_to_stop_code))) \

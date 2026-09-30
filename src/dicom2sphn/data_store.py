@@ -12,6 +12,9 @@ from pathvalidate import sanitize_filepath
 from pydicom import Dataset
 
 from .sphn_concepts.sphn_body_site import SPHNBodySite
+from .sphn_concepts.sphn_contrast_agent_administration_event import (
+    SPHNContrastAgentAdministrationEvent,
+)
 from .sphn_concepts.sphn_data_compression_algorithm import SPHNDataCompressionAlgorithm
 from .sphn_concepts.sphn_data_provider import SPHNDataProvider
 from .sphn_concepts.sphn_data_release import SPHNDataRelease
@@ -82,17 +85,24 @@ class DataStore:
     skipped_sop_class_uid_dict: dict[str, tuple[int, str]]  # Key: SOPClassUID, Value: (Count, SOPClassUIDName)
     skipped_frame_type_dict: dict[str, int] # Key: FrameType, Value: Count
 
+
     # Dictionary to keep track of DICOM contrast bolus agent
     contrast_bolus_agent_dict: dict[str, int] # Key: ContrastBolusAgent, Value: Count
 
     # Dictionary to keep track of DICOM contrast bolus ingredients
     contrast_bolus_ingredient_dict: dict[str, int] # Key: ContrastBolusIngredient, Value: Count
 
-    # Dictionary to keep track of unknown DICOM contrast bolus agent sequence codes
-    unknown_contrast_bolus_agent_sequence_codes_dict: dict[tuple[str, str, str], int]  # Key: (coding_scheme_designator, code_value, code_meaning), Value: Count
-
     # Dictionary to keep track of DICOM contrast bolus agent sequence codes
-    contrast_bolus_agent_sequence_codes_dict: dict[tuple[str, str, str], int]  # Key: (coding_scheme_designator, code_value, code_meaning), Value: Count
+    contrast_bolus_agent_sequence_codes_dict: dict[tuple[str, str, str], int]  # Key: (coding_scheme_designator, code_value, code_descr), Value: Count
+
+    # Dictionary to keep track of unknown DICOM contrast bolus agent sequence codes
+    unknown_contrast_bolus_agent_sequence_codes_dict: dict[tuple[str, str, str], int]  # Key: (coding_scheme_designator, code_value, code_descr), Value: Count
+
+    # Dictionary to keep track of DICOM contrast bolus administration route sequence codes
+    contrast_bolus_administration_route_sequence_codes_dict: dict[tuple[str, str, str], int]  # Key: (coding_scheme_designator, code_value, code_descr), Value: Count
+
+    # Dictionary to keep track of unknown DICOM contrast bolus administration route sequence codes
+    unknown_contrast_bolus_administration_route_sequence_codes_dict: dict[tuple[str, str, str], int]  # Key: (coding_scheme_designator, code_value, code_descr), Value: Count
 
     # 
     # Patient level
@@ -109,8 +119,8 @@ class DataStore:
     study_instance_uid: str|None=None
     number_of_study_related_series: int|None=None
     number_of_study_related_instances: int|None=None
-    modalities_in_study_dcm_code_list: list[str]|None=None
-    modality_based_imaging_procedure_codes_dict: dict[str,str]|None=None
+    modalities_in_study_code_list: list[tuple[str, str, str]]|None=None                  # ToDo: Edwin: Not Used Yet
+    modality_based_imaging_procedure_code_list: list[tuple[str, str, str]]|None=None
 
     sphn_imaging_series_list: list[SPHNImagingSeries]
 
@@ -121,7 +131,8 @@ class DataStore:
     current_series_number: int|None=None
     series_instance_uid: str|None=None
     number_of_series_related_instances: int|None=None
-    
+
+    modality_coding_scheme_designator: str|None=None
     modality_dcm_code: str|None=None
     modality_dcm_description: str|None=None
 
@@ -164,6 +175,7 @@ class DataStore:
     sphn_data_compression_algorithm_list: list[SPHNDataCompressionAlgorithm]|None=None
     sphn_imagingframe_type_valueset_member_list: list[str]|None=None
 
+    sphn_contrast_agent_administration_event_list: list[SPHNContrastAgentAdministrationEvent]|None=None
     
     #
     # Edwin 2026-07-16
@@ -202,9 +214,12 @@ class DataStore:
 
         self.contrast_bolus_agent_dict = {}
         self.contrast_bolus_ingredient_dict = {}
-        self.unknown_contrast_bolus_agent_sequence_codes_dict = {}
 
         self.contrast_bolus_agent_sequence_codes_dict = {}
+        self.unknown_contrast_bolus_agent_sequence_codes_dict = {}
+
+        self.contrast_bolus_administration_route_sequence_codes_dict = {}
+        self.unknown_contrast_bolus_administration_route_sequence_codes_dict = {}
 
         self.file_id = generate_id()
 
@@ -336,8 +351,8 @@ class DataStore:
         self.study_instance_uid = None
         self.number_of_study_related_series = None
         self.number_of_study_related_instances = None
-        self.modalities_in_study_dcm_code_list = None
-        self.modality_based_imaging_procedure_codes_dict = None
+        self.modalities_in_study_code_list = None
+        self.modality_based_imaging_procedure_code_list = None
         self.sphn_imaging_series_list = []
 
         self.number_of_dicom_series_processed = 0
@@ -360,6 +375,7 @@ class DataStore:
         self.current_series_number = None
         self.series_instance_uid = None
         self.number_of_series_related_instances = None
+        self.modality_coding_scheme_designator = None
         self.modality_dcm_code = None
         self.modality_dcm_description = None
 
@@ -374,6 +390,8 @@ class DataStore:
         self.number_of_dicom_instances_processed = 0
         self.number_of_dicom_instances_skipped = 0
         self.number_of_sphn_imaging_frames_stored = 0
+
+        self.sphn_contrast_agent_administration_event_list = None
 
     # -----------------------------------------------------------------------------------------------------------------
     # Imaging Instance level
@@ -417,7 +435,6 @@ class DataStore:
         self.sphn_body_site_list = None
         self.sphn_imagingframe_type_valueset_member_list = None
         self.sphn_data_compression_algorithm_list = None
-
 
     # -----------------------------------------------------------------------------------------------------------------
     # Statistics
@@ -498,7 +515,24 @@ class DataStore:
     #
     # Edwin 2026-09-24
     #
-    def add_unknown_dicom_contrast_bolus_agent_sequence_code_to_dict(self, coding_scheme_designator: str|None, code_value: str|None, code_meaning: str | None = None) -> None:
+    def add_contrast_bolus_agent_sequence_code_to_dict(self, coding_scheme_designator: str|None, code_value: str|None, code_meaning: str|None = None) -> None:
+
+        # Checks
+        assert coding_scheme_designator is None or is_valid_string(coding_scheme_designator)
+        assert code_value is None or is_valid_string(code_value)
+        assert code_meaning is None or is_valid_string(code_meaning)
+        assert self.contrast_bolus_agent_sequence_codes_dict is not None and isinstance(self.contrast_bolus_agent_sequence_codes_dict, dict)
+
+        key = (coding_scheme_designator, code_value, code_meaning)
+        if key in self.contrast_bolus_agent_sequence_codes_dict:
+            self.contrast_bolus_agent_sequence_codes_dict[key] += 1
+        else:
+            self.contrast_bolus_agent_sequence_codes_dict[key] = 1
+
+    #
+    # Edwin 2026-09-24
+    #
+    def add_unknown_contrast_bolus_agent_sequence_code_to_dict(self, coding_scheme_designator: str|None, code_value: str|None, code_meaning: str | None = None) -> None:
         """
         Adds an unknown contrast bolus agent sequence code to the dictionary for statistics.
         """
@@ -517,25 +551,38 @@ class DataStore:
 
 
     #
-    # Edwin 2026-09-24
+    # Edwin 2026-09-29
     #
-    def add_contrast_bolus_agent_sequence_code_to_dict(self, coding_scheme_designator: str|None, code_value: str|None, code_meaning: str|None = None) -> None:
+    def add_contrast_bolus_administration_route_sequence_code_to_dict(self, coding_scheme_designator: str|None, code_value: str|None, code_meaning: str|None = None) -> None:
 
         # Checks
         assert coding_scheme_designator is None or is_valid_string(coding_scheme_designator)
         assert code_value is None or is_valid_string(code_value)
         assert code_meaning is None or is_valid_string(code_meaning)
-        assert self.contrast_bolus_agent_sequence_codes_dict is not None and isinstance(self.contrast_bolus_agent_sequence_codes_dict, dict)
+        assert self.contrast_bolus_administration_route_sequence_codes_dict is not None and isinstance(self.contrast_bolus_administration_route_sequence_codes_dict, dict)
 
         key = (coding_scheme_designator, code_value, code_meaning)
-        if key in self.contrast_bolus_agent_sequence_codes_dict:
-            self.contrast_bolus_agent_sequence_codes_dict[key] += 1
+        if key in self.contrast_bolus_administration_route_sequence_codes_dict:
+            self.contrast_bolus_administration_route_sequence_codes_dict[key] += 1
         else:
-            self.contrast_bolus_agent_sequence_codes_dict[key] = 1
+            self.contrast_bolus_administration_route_sequence_codes_dict[key] = 1
 
+    #
+    # Edwin 2026-09-29
+    #
+    def add_unknown_contrast_bolus_administration_route_sequence_code_to_dict(self, coding_scheme_designator: str|None, code_value: str|None, code_meaning: str|None = None) -> None:
 
+        # Checks
+        assert coding_scheme_designator is None or is_valid_string(coding_scheme_designator)
+        assert code_value is None or is_valid_string(code_value)
+        assert code_meaning is None or is_valid_string(code_meaning)
+        assert self.unknown_contrast_bolus_administration_route_sequence_codes_dict is not None and isinstance(self.unknown_contrast_bolus_administration_route_sequence_codes_dict, dict)
 
-
+        key = (coding_scheme_designator, code_value, code_meaning)
+        if key in self.unknown_contrast_bolus_administration_route_sequence_codes_dict:
+            self.unknown_contrast_bolus_administration_route_sequence_codes_dict[key] += 1
+        else:
+            self.unknown_contrast_bolus_administration_route_sequence_codes_dict[key] = 1
 
 
     #

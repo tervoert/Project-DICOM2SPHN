@@ -115,29 +115,39 @@ class DWStudyProcessor:
             logger.debug(" "*(indent+4) + "NumberOfStudyRelatedInstances is not defined")
 
         #
-        # ModalitiesInStudy
+        # ModalitiesInStudy DCM code(s)
         #
 
-        # Get the ModalitiesInStudy
-        modalities_in_study_dcm_code_list = self.get_modalities_in_study_from_dicomweb_response(study_search_response_item_ds, context, indent=indent+4)
+        # Not used
 
-        if modalities_in_study_dcm_code_list is not None:
-            data_store.modalities_in_study_dcm_code_list = modalities_in_study_dcm_code_list
-            logger.debug(" "*(indent+4) + f"ModalitiesInStudy list DCM code value(s): '{data_store.modalities_in_study_dcm_code_list}'")
+        # Get the ModalitiesInStudy DCM code(s)
+        modalities_in_study_code_list = self.get_modalities_in_study_from_dicomweb_response(study_search_response_item_ds, context, indent=indent+4)
+
+        if modalities_in_study_code_list is not None:
+
+            assert isinstance(modalities_in_study_code_list, list) and len(modalities_in_study_code_list) > 0
+
+            data_store.modalities_in_study_code_list = modalities_in_study_code_list
+            logger.debug(" "*(indent+4) + f"ModalitiesInStudy code(s): '{data_store.modalities_in_study_code_list}'")
+
         else:
-            logger.debug(" "*(indent+4) + "ModalitiesInStudy is not defined")
+            logger.debug(" "*(indent+4) + "ModalitiesInStudy codes are not defined")
 
 
         #
-        # Imaging Procedure SNOMED-CT code(s) and description(s) based on ModalitiesInStudy DICOM terms
+        # Imaging Procedure SNOMED-CT code(s) based on ModalitiesInStudy DICOM terms
         #
 
-        # Get the modality-based Imaging Procedure SNOMED-CT code(s) and description(s)
-        modality_based_imaging_procedure_codes = self.get_modality_based_imaging_procedure_codes_from_dicomweb_response(study_search_response_item_ds, context, indent=indent+4)
+        # Get the modality-based Imaging Procedure SNOMED-CT code(s)
+        modality_based_imaging_procedure_code_list = self.get_modality_based_imaging_procedure_codes_from_dicomweb_response(study_search_response_item_ds, context, indent=indent+4)
 
-        if modality_based_imaging_procedure_codes is not None:
-            data_store.modality_based_imaging_procedure_codes_dict = modality_based_imaging_procedure_codes
-            logger.debug(" "*(indent+4) + f"Modality-based Imaging Procedure code(s) and description(s): '{data_store.modality_based_imaging_procedure_codes_dict}'")
+        if modality_based_imaging_procedure_code_list is not None:
+            
+            assert isinstance(modality_based_imaging_procedure_code_list, list) and len(modality_based_imaging_procedure_code_list) > 0
+
+            data_store.modality_based_imaging_procedure_code_list = modality_based_imaging_procedure_code_list
+            logger.debug(" "*(indent+4) + f"Modality-based Imaging Procedure code(s): '{data_store.modality_based_imaging_procedure_code_list}'")
+        
         else:
             logger.debug(" "*(indent+4) + "Modality-based Imaging Procedure codes are not defined")
 
@@ -158,10 +168,10 @@ class DWStudyProcessor:
         assert data_store.number_of_study_related_instances is None \
                 or (isinstance(data_store.number_of_study_related_instances, int) and data_store.number_of_study_related_instances>0) 
 
-        assert data_store.modalities_in_study_dcm_code_list is None \
-                or (isinstance(data_store.modalities_in_study_dcm_code_list, list) \
-                    and len(data_store.modalities_in_study_dcm_code_list)>0 \
-                    and all(is_valid_string(modality) for modality in data_store.modalities_in_study_dcm_code_list))
+        assert data_store.modalities_in_study_code_list is None \
+                or (isinstance(data_store.modalities_in_study_code_list, list) \
+                    and len(data_store.modalities_in_study_code_list)>0 \
+                    and all(is_valid_string(item) for code_tuple in data_store.modalities_in_study_code_list for item in code_tuple))
 
         # -------------------------------------------------------------------------------------------------------------
         # Find all DICOM Series belonging to the DICOM Study on the DICOMweb server
@@ -376,7 +386,10 @@ class DWStudyProcessor:
     def get_patient_id_from_dicomweb_response(self, dataset: Dataset, context: Context, indent: int=0) -> str|None:
         """
         Returns the value corresponding to the value of the DICOM PatientID tag
-          - dataset is a DICOM dataset (DICOM header) that contains DICOM DataElements (tags)
+        Parameters:
+            - dataset is a DICOM dataset (DICOM header) that contains DICOM DataElements (tags)
+            - context: The Context object that holds the data_store, logger and other relevant information
+            - indent: The indentation level for logging (default is 0)
         
         Note: The DICOM PatientID tag is part of the DICOMweb API "Study Resource Search 
               Response Payload". It's type is '[R]equired'
@@ -612,12 +625,15 @@ class DWStudyProcessor:
         return number_of_study_related_instances
 
     #
-    # Edwin 2026-07-24
+    # Edwin 2026-09-28
     #
-    def get_modalities_in_study_from_dicomweb_response(self, dataset: Dataset, context: Context, indent: int=0) -> list[str]|None:
+    def get_modalities_in_study_from_dicomweb_response(self, dataset: Dataset, context: Context, indent: int=0) -> list[tuple[str,str,str]]|None:
         """
         Returns a list with DCM codes corresponding to the values of the DICOM ModalitiesInStudy tag
-          - dataset is a DICOM dataset (DICOM header) that contains DICOM DataElements (tags)
+        Parameters:
+            - dataset is a DICOM dataset (DICOM header) that contains DICOM DataElements (tags)
+            - context: The Context object that holds the data_store, logger and other relevant information
+            - indent: The indentation level for logging (default is 0)
 
         Note 1: DICOM codes not having a corresponding DCM code will be skipped.
         Note 2: The DICOM ModalitiesInStudy tag is part of the DICOMweb API "Study Resource Search 
@@ -639,7 +655,7 @@ class DWStudyProcessor:
         logger = context.logger
 
         # Set initial value
-        modality_dcm_code_list = []
+        modality_code_list = []
 
         if "ModalitiesInStudy" not in dataset:
             logger.warning(" "*(indent+0) + "DICOM ModalitiesInStudy tag was not found")  
@@ -678,30 +694,36 @@ class DWStudyProcessor:
                     continue
 
                 # Convert the value to a corresponding DCM code
-                result = DataConverter.modality_table.get(modality_code_str.upper(), None)
+                result = DataConverter.dicom_modality_code_dict.get(modality_code_str.upper(), None)
 
                 # Check if it is a know DICOM modality code
                 if result is None:
                     logger.warning(" "*(indent+0) + f"DICOM ModalitiesInStudy tag value-item: '{modality_code_str}' is unknown")
                     continue
 
-                dcm_code = result[0]
-                dcm_description = result[1]
+                assert isinstance(result, tuple) and len(result) == 2
+                assert isinstance(result[0], tuple) and len(result[0]) == 3
+                assert isinstance(result[0][0], str)
+                assert isinstance(result[0][1], str)
+                assert isinstance(result[0][2], str)
+
+                modality_coding_scheme_designator = result[0][0]
+                modality_code_value = result[0][1]
+                modality_code_descr = result[0][2]
 
                 # Check if the corresponding DCM code and description exists
-                if dcm_code == "":
-                    logger.warning(" "*(indent+0) + f"DICOM ModalitiesInStudy tag value-item: '{modality_code_str}' could not be converted to a DCM code")
-                    continue
-                if dcm_description == "":
-                    logger.warning(" "*(indent+0) + f"DICOM ModalitiesInStudy tag value-item: '{modality_code_str}' could not be converted to a DCM code description")
+                if modality_coding_scheme_designator == "" or modality_code_value == "" or modality_code_descr == "":
+                    logger.warning(" "*(indent+0) + f"DICOM ModalitiesInStudy tag value-item: '{modality_code_str}' could not be converted to a Modality code")
                     continue
 
                 # Check conversion is ok
-                assert is_valid_string(dcm_code)
-                assert is_valid_string(dcm_description)
+                assert is_valid_string(modality_coding_scheme_designator)
+                assert is_valid_string(modality_code_value)
+                assert is_valid_string(modality_code_descr)
 
-                # Add to the list
-                modality_dcm_code_list.append(dcm_code)
+                # Add to the list, ensuring no duplicates
+                if (modality_coding_scheme_designator, modality_code_value, modality_code_descr) not in modality_code_list:
+                    modality_code_list.append((modality_coding_scheme_designator, modality_code_value, modality_code_descr))
 
         # It could be a single-valued tag, a string
         elif value_multiplicity == 1 and isinstance(value, str):
@@ -715,45 +737,53 @@ class DWStudyProcessor:
                 return None
             
             # Convert the value to a corresponding DCM code
-            result = DataConverter.modality_table.get(modality_code_str.upper(), None)
+            result = DataConverter.dicom_modality_code_dict.get(modality_code_str.upper(), None)
 
             # Check if it is a know DICOM modality code
             if result is None:
                 logger.warning(" "*(indent+0) + f"DICOM ModalitiesInStudy tag value: '{modality_code_str}' is unknown")
                 return None
 
-            dcm_code = result[0]
-            dcm_description = result[1]
+            assert isinstance(result, tuple) and len(result) == 2
+            assert isinstance(result[0], tuple) and len(result[0]) == 3
+            assert isinstance(result[0][0], str)
+            assert isinstance(result[0][1], str)
+            assert isinstance(result[0][2], str)
+
+            modality_coding_scheme_designator = result[0][0]
+            modality_code_value = result[0][1]
+            modality_code_descr = result[0][2]
 
             # Check if the corresponding DCM code and description exists
-            if dcm_code == "":
-                logger.warning(" "*(indent+0) + f"DICOM ModalitiesInStudy tag value: '{modality_code_str}' could not be converted to a DCM code")
+            if modality_coding_scheme_designator == "" or modality_code_value == "" or modality_code_descr == "":
+                logger.warning(" "*(indent+0) + f"DICOM ModalitiesInStudy tag value: '{modality_code_str}' could not be converted to a Modality code")
                 return None
-            if dcm_description == "":
-                logger.warning(" "*(indent+0) + f"DICOM ModalitiesInStudy tag value: '{modality_code_str}' could not be converted to a DCM code description")
-                return None
-
+    
             # Check conversion is ok
-            assert is_valid_string(dcm_code)
-            assert is_valid_string(dcm_description)
+            assert is_valid_string(modality_coding_scheme_designator)
+            assert is_valid_string(modality_code_value)
+            assert is_valid_string(modality_code_descr)
 
-            # Add to the list
-            modality_dcm_code_list.append(dcm_code)
+            # Add to the list, ensuring no duplicates
+            modality_code_list = [(modality_coding_scheme_designator, modality_code_value, modality_code_descr)]
 
         else:
             logger.warning(" "*(indent+0) + "DICOM ModalitiesInStudy tag has an unknown format")
             return None
 
-        return modality_dcm_code_list if len(modality_dcm_code_list)>0 else None
+        return modality_code_list if len(modality_code_list)>0 else None
 
 
     #
-    # Edwin 2026-07-24
+    # Edwin 2026-09-28
     #
-    def get_modality_based_imaging_procedure_codes_from_dicomweb_response(self, dataset: Dataset, context: Context, indent: int=0) -> dict[str,str]|None:
+    def get_modality_based_imaging_procedure_codes_from_dicomweb_response(self, dataset: Dataset, context: Context, indent: int=0) -> list[tuple[str, str, str]]|None:
         """
-        Returns a dict with images procedure SNOMED-CT codes and descriptions based on the DICOM ModalitiesInStudy tag values
-          - dataset is a DICOM dataset (DICOM header) that contains DICOM DataElements (tags)
+        Returns a list with SNOMED-CT codes corresponding to the values of the DICOM ModalitiesInStudy tag
+        Parameters:
+            - dataset is a DICOM dataset (DICOM header) that contains DICOM DataElements (tags)
+            - context: The Context object that holds the data_store, logger and other relevant information
+            - indent: The indentation level for logging (default is 0)
 
         Note 1: DICOM codes not having a corresponding Imaging Procedure SNOMED-CT code will be skipped.
         Note 2: The DICOM ModalitiesInStudy tag is part of the DICOMweb API "Study Resource Search 
@@ -775,7 +805,7 @@ class DWStudyProcessor:
         logger = context.logger
 
         # Set initial value
-        imaging_procedure_snomed_ct_codes_dict = {}
+        imaging_procedure_code_list = []
 
         if "ModalitiesInStudy" not in dataset:
             logger.warning(" "*(indent+0) + "DICOM ModalitiesInStudy tag was not found")  
@@ -813,31 +843,37 @@ class DWStudyProcessor:
                     logger.debug(" "*(indent+0) + "DICOM ModalitiesInStudy tag value-item contains only whitespace")
                     continue
 
-                # Convert to upper case
-                modality_code_str_upper_case = modality_code_str.upper()
+                # Convert the value to a corresponding SNOMED CT code
+                result = DataConverter.dicom_modality_code_dict.get(modality_code_str.upper(), None)
 
-                # Check if it is a know DICOM modality code
-                if modality_code_str_upper_case not in DataConverter.modality_table:
+                # Check if it is a know SNOMED-CT code
+                if result is None:
                     logger.warning(" "*(indent+0) + f"DICOM ModalitiesInStudy tag value-item: '{modality_code_str}' is unknown")
                     continue
 
-                # Convert the value to a corresponding Imaging Procedure SNOMED-CT code
-                imaging_procedure_snomed_ct_code = DataConverter.modality_table[modality_code_str_upper_case][2]
-                imaging_procedure_snomed_ct_desc = DataConverter.modality_table[modality_code_str_upper_case][3]
+                assert isinstance(result, tuple) and len(result) == 2
+                assert isinstance(result[1], tuple) and len(result[1]) == 3
+                assert isinstance(result[1][0], str)
+                assert isinstance(result[1][1], str)
+                assert isinstance(result[1][2], str)
 
-                if imaging_procedure_snomed_ct_code == "":
-                    logger.warning(" "*(indent+0) + f"DICOM ModalitiesInStudy tag value-item: '{modality_code_str}' could not be converted to a corresponding Imaging Procedure SNOMED-CT code")
+                # Convert the value to a corresponding Imaging Procedure SNOMED-CT code
+                imaging_procedure_coding_scheme_designator = result[1][0]
+                imaging_procedure_code_value = result[1][1]
+                imaging_procedure_code_descr = result[1][2]
+
+                if imaging_procedure_coding_scheme_designator == "" or imaging_procedure_code_value == "" or imaging_procedure_code_descr == "":
+                    logger.warning(" "*(indent+0) + f"DICOM ModalitiesInStudy tag value-item: '{modality_code_str}' could not be converted to a corresponding Imaging Procedure code")
                     continue
 
-                if imaging_procedure_snomed_ct_desc == "":
-                    logger.warning(" "*(indent+0) + f"DICOM ModalitiesInStudy tag value-item: '{modality_code_str}' could not be converted to a corresponding Imaging Procedure SNOMED-CT description")
-
                 # Check conversion is ok
-                assert is_valid_string(imaging_procedure_snomed_ct_code)
-                assert imaging_procedure_snomed_ct_desc == "" or is_valid_string(imaging_procedure_snomed_ct_desc)
+                assert is_valid_string(imaging_procedure_coding_scheme_designator)
+                assert is_valid_string(imaging_procedure_code_value)
+                assert is_valid_string(imaging_procedure_code_descr)
 
-                # Add to the dict
-                imaging_procedure_snomed_ct_codes_dict.update({imaging_procedure_snomed_ct_code: imaging_procedure_snomed_ct_desc})
+                # Add to the list, ensuring no duplicates
+                if (imaging_procedure_coding_scheme_designator, imaging_procedure_code_value, imaging_procedure_code_descr) not in imaging_procedure_code_list:
+                    imaging_procedure_code_list.append((imaging_procedure_coding_scheme_designator, imaging_procedure_code_value, imaging_procedure_code_descr))
 
         # It could be a single-valued tag, a string
         elif value_multiplicity == 1 and isinstance(value, str):
@@ -849,37 +885,42 @@ class DWStudyProcessor:
             if len(modality_code_str) == 0:
                 logger.debug(" "*(indent+0) + "DICOM ModalitiesInStudy tag value contains only whitespace")
                 return None
-            
-            # Convert to upper case
-            modality_code_str_upper_case = modality_code_str.upper()
 
-            # Check if it is a know DICOM modality code
-            if modality_code_str_upper_case not in DataConverter.modality_table:
+            # Convert the value to a corresponding SNOMED CT code
+            result = DataConverter.dicom_modality_code_dict.get(modality_code_str.upper(), None)
+
+            # Check if it is a know SNOMED-CT code
+            if result is None:
                 logger.warning(" "*(indent+0) + f"DICOM ModalitiesInStudy tag value: '{modality_code_str}' is unknown")
                 return None
 
-            # Convert the value to a corresponding Imaging Procedure SNOMED-CT code
-            imaging_procedure_snomed_ct_code = DataConverter.modality_table[modality_code_str_upper_case][2]
-            imaging_procedure_snomed_ct_desc = DataConverter.modality_table[modality_code_str_upper_case][3]
+            assert isinstance(result, tuple) and len(result) == 2
+            assert isinstance(result[1], tuple) and len(result[1]) == 3
+            assert isinstance(result[1][0], str)
+            assert isinstance(result[1][1], str)
+            assert isinstance(result[1][2], str)
 
-            if imaging_procedure_snomed_ct_code == "":
-                logger.warning(" "*(indent+0) + f"DICOM ModalitiesInStudy tag value: '{modality_code_str}' could not be converted to a corresponding Imaging Procedure SNOMED-CT code")
+            # Convert the value to a corresponding Imaging Procedure SNOMED-CT code
+            imaging_procedure_coding_scheme_designator = result[1][0]
+            imaging_procedure_code_value = result[1][1]
+            imaging_procedure_code_descr = result[1][2]
+
+            if imaging_procedure_coding_scheme_designator == "" or imaging_procedure_code_value == "" or imaging_procedure_code_descr == "":
+                logger.warning(" "*(indent+0) + f"DICOM ModalitiesInStudy tag value: '{modality_code_str}' could not be converted to a corresponding Imaging Procedure code")
                 return None
 
-            if imaging_procedure_snomed_ct_desc == "":
-                logger.warning(" "*(indent+0) + f"DICOM ModalitiesInStudy tag value: '{modality_code_str}' could not be converted to a corresponding Imaging Procedure SNOMED-CT description")
-
             # Check conversion is ok
-            assert is_valid_string(imaging_procedure_snomed_ct_code)
-            assert imaging_procedure_snomed_ct_desc == "" or is_valid_string(imaging_procedure_snomed_ct_desc)
+            assert is_valid_string(imaging_procedure_coding_scheme_designator)
+            assert is_valid_string(imaging_procedure_code_value)
+            assert is_valid_string(imaging_procedure_code_descr)
 
-            # Add to the dict
-            imaging_procedure_snomed_ct_codes_dict.update({imaging_procedure_snomed_ct_code: imaging_procedure_snomed_ct_desc})
+            # Add to the list, ensuring no duplicates
+            imaging_procedure_code_list = [(imaging_procedure_coding_scheme_designator, imaging_procedure_code_value, imaging_procedure_code_descr)]
 
         else:
             logger.warning(" "*(indent+0) + "DICOM ModalitiesInStudy tag has an unknown format")
             return None
 
-        return imaging_procedure_snomed_ct_codes_dict if len(imaging_procedure_snomed_ct_codes_dict)>0 else None
+        return imaging_procedure_code_list if len(imaging_procedure_code_list)>0 else None
 
 

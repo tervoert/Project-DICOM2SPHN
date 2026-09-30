@@ -237,25 +237,33 @@ class DWInstanceProcessor:
             # However, the modalities found by the dw_study_processor in the DICOMweb API "Study Resource Search Response Payload" 
             # can possibly be used to determine a procedure code. They are stored in the data_store in modality_based_imaging_procedure_code_dict
 
-            if data_store.modality_based_imaging_procedure_codes_dict is not None:
+            if data_store.modality_based_imaging_procedure_code_list is not None:
 
-                assert isinstance(data_store.modality_based_imaging_procedure_codes_dict, dict) and len(data_store.modality_based_imaging_procedure_codes_dict) > 0
+                assert isinstance(data_store.modality_based_imaging_procedure_code_list, list) and len(data_store.modality_based_imaging_procedure_code_list) > 0
 
                 sphn_code_list = []
-                for imaging_procedure_snomed_ct_code, imaging_procedure_snomed_ct_description in data_store.modality_based_imaging_procedure_codes_dict.items():
 
-                    assert is_valid_string(imaging_procedure_snomed_ct_code)
-                    assert imaging_procedure_snomed_ct_description == "" or is_valid_string(imaging_procedure_snomed_ct_description)
+                for imaging_procedure_code in data_store.modality_based_imaging_procedure_code_list:
+
+                    assert isinstance(imaging_procedure_code, tuple) and len(imaging_procedure_code) == 3
+
+                    imaging_procedure_coding_scheme_designator = imaging_procedure_code[0]
+                    imaging_procedure_code_value = imaging_procedure_code[1]
+                    imaging_procedure_code_descr = imaging_procedure_code[2]
+
+                    assert is_valid_string(imaging_procedure_coding_scheme_designator)
+                    assert is_valid_string(imaging_procedure_code_value)
+                    assert is_valid_string(imaging_procedure_code_descr)
 
                     # Create an instance of SPHN Code
+                    assert imaging_procedure_coding_scheme_designator == "SNOMED"
                     sphn_code = SPHNCode(
                         sphn_schema = data_store.sphn_schema,
-                        has_coding_system_and_version = "SNOMED",
-                        has_identifier = imaging_procedure_snomed_ct_code,
-                        has_name = imaging_procedure_snomed_ct_description
+                        has_coding_system_and_version = imaging_procedure_coding_scheme_designator,
+                        has_identifier = imaging_procedure_code_value,
+                        has_name = imaging_procedure_code_descr
                     )
                     sphn_code_list.append(sphn_code)
-
 
                 sphn_imaging_procedure = SPHNImagingProcedure(
                     sphn_schema = data_store.sphn_schema,

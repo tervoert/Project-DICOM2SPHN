@@ -27,6 +27,7 @@ class Context(BaseModel):
     dicomweb_api_user: DicomwebAPIUser | None = Field(None, description="DICOMweb API user credentials")
     database_api_user: DatabaseAPIUser | None = Field(None, description="Database user credentials")
 
+    # ToDo: Edwin: Move to configuration file
     ALWAYS_ADD_SPHN_IMAGING_PROCEDURE: bool = True
     ALWAYS_ADD_SPHN_IMAGING_SERIES: bool = True
     ALWAYS_ADD_SPHN_IMAGING_FRAME: bool = True

@@ -96,10 +96,15 @@ class DWSeriesProcessor:
         result = self.get_modality_from_dicomweb_response(series_search_response_item_ds, context, indent=indent+4)
 
         if result is not None:
-            modality_dcm_code, modality_dcm_description = result
+            
+            assert isinstance(result, tuple) and len(result) == 3
+
+            modality_coding_scheme_designator, modality_dcm_code, modality_dcm_description = result
+            data_store.modality_coding_scheme_designator = modality_coding_scheme_designator
             data_store.modality_dcm_code = modality_dcm_code
             data_store.modality_dcm_description = modality_dcm_description
-            logger.debug(" "*(indent+4) + f"Modality DCM code: '{data_store.modality_dcm_code}', description: '{data_store.modality_dcm_description}'")
+            logger.debug(" "*(indent+4) + f"Modality coding scheme designator: '{modality_coding_scheme_designator}', code: '{data_store.modality_dcm_code}', description: '{data_store.modality_dcm_description}'")
+        
         else:
             logger.debug(" "*(indent+4) + "Modality not defined")
 
@@ -397,10 +402,13 @@ class DWSeriesProcessor:
     #
     # Edwin 2026-07-20
     #
-    def get_modality_from_dicomweb_response(self, dataset: Dataset, context: Context, indent: int=0) -> tuple[str, str]|None:
+    def get_modality_from_dicomweb_response(self, dataset: Dataset, context: Context, indent: int=0) -> tuple[str, str, str]|None:
         """
         Returns the DCM code corresponding to the value of the DICOM Modality tag
-          - dataset is a DICOM dataset (DICOM header) that contains DICOM DataElements (tags)
+        Parameters:
+            - dataset is a DICOM dataset (DICOM header) that contains DICOM DataElements (tags)
+            - context: The Context object that holds the data_store, logger and other relevant information
+            - indent: The indentation level for logging (default is 0)
 
         Note: The DICOM Modality tag is part of the DICOMweb API "Series Resource Search 
               Response Payload". It's type is '[R]equired'
@@ -455,26 +463,31 @@ class DWSeriesProcessor:
             return None
         
         # Convert the value to a corresponding DCM code
-        result = DataConverter.modality_table.get(modality_code_str.upper(), None)
+        result = DataConverter.dicom_modality_code_dict.get(modality_code_str.upper(), None)
 
         # Check if it is a know DICOM modality code
         if result is None:
             logger.warning(" "*(indent+0) + f"DICOM Modality tag value: '{modality_code_str}' is unknown")
             return None
 
-        dcm_code = result[0]
-        dcm_description = result[1]
+        assert isinstance(result, tuple) and len(result) == 2
+        assert isinstance(result[0], tuple) and len(result[0]) == 3
+        assert isinstance(result[0][0], str)
+        assert isinstance(result[0][1], str)
+        assert isinstance(result[0][2], str)
+
+        dcm_coding_scheme_designator = result[0][0]
+        dcm_code_value = result[0][1]
+        dcm_code_descr = result[0][2]
 
         # Check if the corresponding DCM code and description exists
-        if dcm_code == "":
+        if dcm_coding_scheme_designator == "" or dcm_code_value == "" or dcm_code_descr == "":
             logger.warning(" "*(indent+0) + f"DICOM Modality tag value: '{modality_code_str}' could not be converted to a DCM code")
-            return None
-        if dcm_description == "":
-            logger.warning(" "*(indent+0) + f"DICOM Modality tag value: '{modality_code_str}' could not be converted to a DCM code description")
             return None
 
         # Check conversion is ok
-        assert is_valid_string(dcm_code)
-        assert is_valid_string(dcm_description)
+        assert is_valid_string(dcm_coding_scheme_designator)
+        assert is_valid_string(dcm_code_value)
+        assert is_valid_string(dcm_code_descr)
 
-        return dcm_code, dcm_description
+        return (dcm_coding_scheme_designator, dcm_code_value, dcm_code_descr)
