@@ -5,15 +5,17 @@ dicom_instance_reader.py:
 """
 
 import itertools
+from datetime import datetime
 
 import numpy as np
 import pydicom
 from pydicom import Dataset
 from pydicom.sequence import Sequence
+from pydicom.valuerep import DA, DT, TM
 
 from .context import Context
 from .data_converter import DataConverter
-from .dicom_contrast_bolus_tags_reader import (
+from .dicom_contrast_bolus_module_reader import (
     get_contrast_bolus_module_from_dicom,
 )
 from .sphn_concepts.sphn_body_site import SPHNBodySite
@@ -23,7 +25,13 @@ from .sphn_concepts.sphn_image_dimensions import SPHNImageDimensions
 from .sphn_concepts.sphn_pixel_dimensions import SPHNPixelDimensions
 from .sphn_concepts.sphn_quantity import SPHNQuantity
 from .sphn_concepts.sphn_unit import SPHNUnit
-from .tools import already_in_list, is_clean_string, is_valid_string
+from .tools import (
+    already_in_list,
+    combine_dicom_date_and_time,
+    complete_dicom_datetime,
+    is_clean_string,
+    is_valid_string,
+)
 
 type SPHN_ImagingFrame_type_ValueSet_Member = str
 type SPHN_ImageFrame_content_qualification_ValueSet_Member = str
@@ -74,6 +82,83 @@ def get_frame_metadata_from_dicom(dataset: Dataset, frame_number: int, context: 
     sphn_schema = data_store.sphn_schema
 
     # -------------------------------------------------------------------------------------------------------------
+
+    # 
+    # AcquisitionDateTime
+    #
+
+    if data_store.acquisition_start_datetime is None:
+        
+        acquisition_datetime_str = get_acquisition_datetime_from_dicom(dataset, context, indent=indent+2)
+        
+        if acquisition_datetime_str is not None:
+
+            assert isinstance(acquisition_datetime_str, str)
+
+            logger.debug(" "*(indent+0) + f"AcquisitionDateTime string from DICOM: '{acquisition_datetime_str}'")
+
+            # Convert the AcquisitionDateTime string into a complete DICOM datetime (DT) object
+            # - acquisition datetime is completed by filling in missing components for Month, Day, Hour, Minute, Second
+            acquisition_datetime_obj = complete_dicom_datetime(acquisition_datetime_str, logger=logger, indent=indent+2)
+
+            if acquisition_datetime_obj is not None:
+                # Set the acquisition start datetime in the data store
+                data_store.acquisition_start_datetime = acquisition_datetime_obj
+
+                logger.debug(" "*(indent+2) + f"AcquisitionDateTime: '{acquisition_datetime_obj!s}'")
+            else:
+                logger.debug(" "*(indent+2) + "AcquisitionDateTime could not be created")
+        else:
+            logger.debug(" "*(indent+0) + "AcquisitionDateTime not found")
+
+    # 
+    # AcquisitionDate and AcquisitionTime
+    #
+    
+    if data_store.acquisition_start_datetime is None:
+
+        # Date
+        acquisition_date = get_acquisition_date_from_dicom(dataset, context, indent=indent+2)
+        
+        if acquisition_date is not None:
+            assert isinstance(acquisition_date, str)
+            logger.debug(" "*(indent+0) + f"AcquisitionDate string from DICOM: '{acquisition_date}'")
+        else:
+            logger.debug(" "*(indent+0) + "AcquisitionDate not found")
+
+        # Time
+        acquisition_time = get_acquisition_time_from_dicom(dataset, context, indent=indent+2)
+        
+        if acquisition_time is not None:
+            assert isinstance(acquisition_time, str)
+            logger.debug(" "*(indent+0) + f"AcquisitionTime string from DICOM: '{acquisition_time}'")
+        else:
+            logger.debug(" "*(indent+0) + "AcquisitionTime not found")
+
+        # Combine AcquisitionDate and AcquisitionTime
+        acquisition_start_datetime_obj = None
+        if acquisition_date and acquisition_time:
+
+            # Combine the AcquisitionDate and AcquisitionTime strings into a single complete DICOM datetime (DT) object
+            # - acquisition datetime is completed by filling in missing components for Month, Day, Hour, Minute, Second
+            acquisition_start_datetime_obj = combine_dicom_date_and_time(acquisition_date, acquisition_time, logger, indent=indent+2)
+        
+        elif acquisition_date and not acquisition_time:
+
+            # Combine the AcquisitionDate and a missing or empty AcquisitionTime strings into a single complete DICOM datetime (DT) object
+            # - acquisition datetime is completed by filling in missing components for Month, Day, Hour, Minute, Second
+            acquisition_start_datetime_obj = combine_dicom_date_and_time(acquisition_date, "", logger, indent=indent+2)
+        else:
+            logger.debug(" "*(indent+0) + "Could not combine AcquisitionDate and AcquisitionTime: Acquisition Date not defined")
+        
+        if acquisition_start_datetime_obj is not None:
+            # Set the acquisition start datetime in the data store
+            data_store.acquisition_start_datetime = acquisition_start_datetime_obj
+
+            logger.debug(" "*(indent+0) + f"Combined Acquisition Date and Time: '{acquisition_start_datetime_obj!s}'")
+        else:
+            logger.debug(" "*(indent+0) + "Could not combine AcquisitionDate and AcquisitionTime")
+
 
     # 
     # FrameAcquisitionDateTime
@@ -706,7 +791,6 @@ def get_frame_metadata_from_dicom(dataset: Dataset, frame_number: int, context: 
 # -----------------------------------------------------------------------------------------------------------------
 # DICOM tag reading functions for SPHN ImagingFrame metadata
 # -----------------------------------------------------------------------------------------------------------------
-
 
 #
 # Edwin 2026-07-30
@@ -1622,11 +1706,11 @@ def convert_to_data_compression_algorithm_list(
 
 
             # Check if values comply with each other
-            if has_lossy_compression == False and method is not None:
+            if not has_lossy_compression and method is not None:
                 logger.warning(" "*(indent+0) + f"DICOM LossyImageCompressionMethod tag has '{method}' indicated, while DICOM LossyImageCompression was set to '{has_lossy_compression}'.")
 
             # Check if values comply with each other
-            if has_lossy_compression == False and ratio is not None:
+            if not has_lossy_compression and ratio is not None:
                 logger.warning(" "*(indent+0) + f"DICOM LossyImageCompressionRatio tag has '{ratio}' indicated, while DICOM LossyImageCompression was set to '{has_lossy_compression}'.")
 
             # Check if there is any usefull info to create an SPHN DataCompressionAlgorithm instance
@@ -1865,9 +1949,143 @@ def get_image_orientation_from_dicom(dataset: Dataset, context: Context, indent:
 
 
 #
-#  Edwin 2026-07-31
+# Edwin 2026-10-13
 #
-def get_contrast_bolus_agent_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> SnomedCTCode | None:
+def get_acquisition_date_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> str|None:
+    """
+    Returns the value corresponding to the value of the DICOM AcquisitionDate tag
+    Parameters:
+        - dataset: The DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
+        - context: The Context object that holds the data_store, logger and other relevant information
+        - indent: The indentation level for logging (default is 0)
+    """
+
+    # Tag:                  (0008,0022)
+    # Type:	                Optional (3)
+    # Keyword:              AcquisitionDate
+    # Value Multiplicity:   1
+    # Value Representation: Date (DA)
+
+    # Note:
+    # The DICOM date format is specified in the DICOM standard as Date (DA) in:
+    # https://dicom.nema.org/medical/dicom/current/output/chtml/part05/sect_6.2.html
+
+    # Check
+    assert isinstance(dataset, Dataset)
+    assert isinstance(context, Context)
+    assert isinstance(indent,int) and indent>=0
+
+    logger = context.logger
+
+    # Get the value of the DICOM AcquisitionDate tag
+    aq_date = dataset.get("AcquisitionDate", None)
+
+    if aq_date is None:
+        logger.debug(" "*(indent+0) + "DICOM AcquisitionDate tag was not found")  
+        return None
+
+    # Convert a possible DICOM DA object to a string representation
+    aq_date_str = str(aq_date)
+
+    return aq_date_str
+
+
+#
+# Edwin 2026-10-13
+#
+def get_acquisition_time_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> str|None:
+    """
+    Returns the value corresponding to the value of the DICOM AcquisitionTime tag
+    Parameters:
+        - dataset: The DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
+        - context: The Context object that holds the data_store, logger and other relevant information
+        - indent: The indentation level for logging (default is 0)
+    """
+
+    # Keyword:              AcquisitionTime
+    # Tag:                  (0008,0032)
+    # Value Representation: Time (TM)
+    # Type:	                Optional (3)
+    # Value Multiplicity:   1
+
+    # Note:
+    # The DICOM time format is specified in the DICOM standard as Time (TM) in:
+    # https://dicom.nema.org/medical/dicom/current/output/chtml/part05/sect_6.2.html
+
+    # Check
+    assert isinstance(dataset, Dataset)
+    assert isinstance(context, Context)
+    assert isinstance(indent,int) and indent>=0
+
+    logger = context.logger
+
+    # Get the value of the DICOM AcquisitionTime tag
+    aq_time = dataset.get("AcquisitionTime", None)
+
+    if aq_time is None:
+        logger.debug(" "*(indent+0) + "DICOM AcquisitionTime tag was not found")  
+        return None
+
+    # Convert a possible DICOM TM object to a string representation
+    aq_time_str = str(aq_time)
+
+    # The string could be in various DICOM TM formats such as HHMMSS.frac, HHMMSS, HHMM, or HH
+    # if len(aq_time_str)<6:
+    #     logger.debug(" "*(indent+0) + f"DICOM AcquisitionTime string shorter than expected (6 char) HHMMSS format: '{aq_time_str}'. Padding with zeros.")
+    #     aq_time_str = aq_time_str.ljust(6, '0')
+
+    return aq_time_str
+
+
+#
+# Edwin 2026-10-13
+#
+def get_acquisition_datetime_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> str|None:
+    """
+    Returns the value corresponding to the value of the DICOM AcquisitionDateTime tag
+    Parameters:
+        - dataset: The DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
+        - context: The Context object that holds the data_store, logger and other relevant information
+        - indent: The indentation level for logging (default is 0)
+    """
+
+    # Keyword:              AcquisitionDateTime
+    # Tag:                  (0008,002A)
+    # Value Representation: DateTime (DT)
+    # Type:	                Optional (3)
+    # Value Multiplicity:   1
+
+    # Note:
+    # The DICOM datetime format is specified in the DICOM standard as Date Time (DT) in:
+    # https://dicom.nema.org/medical/dicom/current/output/chtml/part05/sect_6.2.html
+
+    # Check
+    assert isinstance(dataset, Dataset)
+    assert isinstance(context, Context)
+    assert isinstance(indent,int) and indent>=0
+
+    logger = context.logger
+
+    # Get the value of the DICOM AcquisitionDateTime tag
+    dt_obj = dataset.get("AcquisitionDateTime", None)
+
+    if dt_obj is None:
+        logger.debug(" "*(indent+0) + "DICOM AcquisitionDateTime tag was not found")  
+        return None
+
+    # Convert a possible DICOM DT object to a string representation
+    dt_str = str(dt_obj)
+
+    return dt_str
+
+# ---------------------------------------------------------------------------------------------------------------------
+# Old and/or unused functions
+# ---------------------------------------------------------------------------------------------------------------------
+
+#
+#  Edwin 2026-07-31
+#  Old
+def get_contrast_bolus_agent_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> str | None:
     """
     Returns the string corresponding to the value of the DICOM ContrastBolusAgent tag
     Parameters:
@@ -1924,7 +2142,7 @@ def get_contrast_bolus_agent_from_dicom(dataset: Dataset, context: Context, inde
 
 #
 # Edwin 2026-08-27
-#
+# Old
 def get_contrast_bolus_agent_sequence_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> Sequence|None:
     """
     Returns the list of Datasets in the DICOM ContrastBolusAgentSequence tag
@@ -1981,361 +2199,6 @@ def get_contrast_bolus_agent_sequence_from_dicom(dataset: Dataset, context: Cont
     assert isinstance(value, Sequence)
 
     return value
-
-
-#
-#  Edwin 2026-08-27
-#
-def get_code_value_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> CodeValue | None:
-    """
-    Returns the string corresponding to the value of the DICOM CodeValue tag
-    Parameters:
-        - dataset is the DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
-        - context: The Context object that holds the data_store, logger and other relevant information
-        - indent: The indentation level for logging (default is 0)
-    """
-
-    # Tag:                  (0008,0100)
-    # Type:	                Conditionally Required (1C)
-    # Keyword:	            CodeValue
-    # Value Multiplicity	1
-    # Value Representation:	Short String (SH)
-    
-    # Check
-    assert isinstance(dataset, Dataset)
-    assert isinstance(context, Context)
-    assert isinstance(indent,int) and indent>=0
-
-    logger = context.logger
-
-    if "CodeValue" not in dataset:
-        logger.debug(" "*(indent+0) + "DICOM CodeValue tag was not found")  
-        return None
-
-    # Get the DataElement
-    data_element = dataset["CodeValue"]
-
-    # Get the value
-    value = data_element.value
-    
-    # Get the Value Multiplicity
-    value_multiplicity = data_element.VM
-    
-    # Check if it is empty
-    if value_multiplicity == 0 or value is None:
-        logger.debug(" "*(indent+0) + "DICOM CodeValue tag value was not provided")
-        return None
-
-    # It should be a single-valued tag, a string
-    if value_multiplicity != 1 or not isinstance(value, str):
-        logger.warning(" "*(indent+0) + "DICOM CodeValue tag has an unknown format")
-        return None
-
-    # Remove whitespace
-    code_value = value.strip()
-
-    # Check if value is not empty
-    if len(code_value) == 0:
-        logger.debug(" "*(indent+0) + "DICOM CodeValue tag value contains only whitespace")
-        return None
-
-    return code_value
-
-
-#
-#  Edwin 2026-08-27
-#
-def get_coding_scheme_designator_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> CodingSchemeDesignator | None:
-    """
-    Returns the string corresponding to the value of the DICOM Coding Scheme Designator tag
-    Parameters:
-        - dataset is the DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
-        - context: The Context object that holds the data_store, logger and other relevant information
-        - indent: The indentation level for logging (default is 0)
-    """
-
-    # Tag:                  (0008,0102)
-    # Type:	                Conditionally Required (1C)
-    # Keyword:	            CodingSchemeDesignator
-    # Value Multiplicity	1
-    # Value Representation:	Short String (SH)
-    
-    # Check
-    assert isinstance(dataset, Dataset)
-    assert isinstance(context, Context)
-    assert isinstance(indent,int) and indent>=0
-
-    logger = context.logger
-
-    if "CodingSchemeDesignator" not in dataset:
-        logger.debug(" "*(indent+0) + "DICOM Coding Scheme Designator tag was not found")  
-        return None
-
-    # Get the DataElement
-    data_element = dataset["CodingSchemeDesignator"]
-
-    # Get the value
-    value = data_element.value
-    
-    # Get the Value Multiplicity
-    value_multiplicity = data_element.VM
-    
-    # Check if it is empty
-    if value_multiplicity == 0 or value is None:
-        logger.debug(" "*(indent+0) + "DICOM Coding Scheme Designator tag value was not provided")
-        return None
-
-    # It should be a single-valued tag, a string
-    if value_multiplicity != 1 or not isinstance(value, str):
-        logger.warning(" "*(indent+0) + "DICOM Coding Scheme Designator tag has an unknown format")
-        return None
-
-    # Remove whitespace
-    coding_scheme_designator = value.strip()
-
-    # Check if value is not empty
-    if len(coding_scheme_designator) == 0:
-        logger.debug(" "*(indent+0) + "DICOM Coding Scheme Designator tag value contains only whitespace")
-        return None
-
-    return coding_scheme_designator
-
-
-#
-#  Edwin 2026-08-27
-#
-def get_coding_scheme_version_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> CodingSchemeVersion | None:
-    """
-    Returns the string corresponding to the value of the DICOM Coding Scheme Version tag
-    Parameters:
-        - dataset is the DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
-        - context: The Context object that holds the data_store, logger and other relevant information
-        - indent: The indentation level for logging (default is 0)
-    """
-
-    # Tag:                  (0008,0103)
-    # Type:	                Conditionally Required (1C)
-    # Keyword:	            CodingSchemeVersion
-    # Value Multiplicity	1
-    # Value Representation:	Short String (SH)
-    
-    # Check
-    assert isinstance(dataset, Dataset)
-    assert isinstance(context, Context)
-    assert isinstance(indent,int) and indent>=0
-
-    logger = context.logger
-
-    if "CodingSchemeVersion" not in dataset:
-        logger.debug(" "*(indent+0) + "DICOM Coding Scheme Version tag was not found")  
-        return None
-
-    # Get the DataElement
-    data_element = dataset["CodingSchemeVersion"]
-
-    # Get the value
-    value = data_element.value
-    
-    # Get the Value Multiplicity
-    value_multiplicity = data_element.VM
-    
-    # Check if it is empty
-    if value_multiplicity == 0 or value is None:
-        logger.debug(" "*(indent+0) + "DICOM Coding Scheme Version tag value was not provided")
-        return None
-
-    # It should be a single-valued tag, a string
-    if value_multiplicity != 1 or not isinstance(value, str):
-        logger.warning(" "*(indent+0) + "DICOM Coding Scheme Version tag has an unknown format")
-        return None
-
-    # Remove whitespace
-    coding_scheme_version = value.strip()
-
-    # Check if value is not empty
-    if len(coding_scheme_version) == 0:
-        logger.debug(" "*(indent+0) + "DICOM Coding Scheme Version tag value contains only whitespace")
-        return None
-
-    return coding_scheme_version
-
-
-#
-#  Edwin 2026-08-27
-#
-def get_code_meaning_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> CodeMeaning | None:
-    """
-    Returns the string corresponding to the value of the DICOM Code Meaning tag
-    Parameters:
-        - dataset is the DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
-        - context: The Context object that holds the data_store, logger and other relevant information
-        - indent: The indentation level for logging (default is 0)
-    """
-
-    # Tag:                  (0008,0104)
-    # Type:	                Required (1)
-    # Keyword:	            CodeMeaning
-    # Value Multiplicity	1
-    # Value Representation:	Long String (LO)
-    
-    # Check
-    assert isinstance(dataset, Dataset)
-    assert isinstance(context, Context)
-    assert isinstance(indent,int) and indent>=0
-
-    logger = context.logger
-
-    if "CodeMeaning" not in dataset:
-        logger.debug(" "*(indent+0) + "DICOM Code Meaning tag was not found")  
-        return None
-
-    # Get the DataElement
-    data_element = dataset["CodeMeaning"]
-
-    # Get the value
-    value = data_element.value
-    
-    # Get the Value Multiplicity
-    value_multiplicity = data_element.VM
-    
-    # Check if it is empty
-    if value_multiplicity == 0 or value is None:
-        logger.debug(" "*(indent+0) + "DICOM Code Meaning tag value was not provided")
-        return None
-
-    # It should be a single-valued tag, a string
-    if value_multiplicity != 1 or not isinstance(value, str):
-        logger.warning(" "*(indent+0) + "DICOM Code Meaning tag has an unknown format")
-        return None
-
-    # Remove whitespace
-    code_meaning = value.strip()
-
-    # Check if value is not empty
-    if len(code_meaning) == 0:
-        logger.debug(" "*(indent+0) + "DICOM Code Meaning tag value contains only whitespace")
-        return None
-
-    return code_meaning
-
-
-#
-#  Edwin 2026-08-27
-#
-def get_long_code_value_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> LongCodeValue | None:
-    """
-    Returns the string corresponding to the value of the DICOM LongCodeValue tag
-    Parameters:
-        - dataset is the DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
-        - context: The Context object that holds the data_store, logger and other relevant information
-        - indent: The indentation level for logging (default is 0)
-    """
-
-    # Tag:                  (0008,0119)
-    # Type:	                Conditionally Required (1C)
-    # Keyword:	            LongCodeValue
-    # Value Multiplicity	1
-    # Value Representation:	Unlimited Characters (UC)
-    
-    # Check
-    assert isinstance(dataset, Dataset)
-    assert isinstance(context, Context)
-    assert isinstance(indent,int) and indent>=0
-
-    logger = context.logger
-
-    if "LongCodeValue" not in dataset:
-        logger.debug(" "*(indent+0) + "DICOM Long Code Value tag was not found")  
-        return None
-
-    # Get the DataElement
-    data_element = dataset["LongCodeValue"]
-
-    # Get the value
-    value = data_element.value
-    
-    # Get the Value Multiplicity
-    value_multiplicity = data_element.VM
-    
-    # Check if it is empty
-    if value_multiplicity == 0 or value is None:
-        logger.debug(" "*(indent+0) + "DICOM Long Code Value tag value was not provided")
-        return None
-
-    # It should be a single-valued tag, a string
-    if value_multiplicity != 1 or not isinstance(value, str):
-        logger.warning(" "*(indent+0) + "DICOM Long Code Value tag has an unknown format")
-        return None
-
-    # Remove whitespace
-    long_code_value = value.strip()
-
-    # Check if value is not empty
-    if len(long_code_value) == 0:
-        logger.debug(" "*(indent+0) + "DICOM Long Code Value tag value contains only whitespace")
-        return None
-
-    return long_code_value
-
-
-#
-#  Edwin 2026-08-27
-#
-def get_urn_code_value_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> URNCodeValue | None:
-    """
-    Returns the string corresponding to the value of the DICOM URNCodeValue tag
-    Parameters:
-        - dataset is the DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
-        - context: The Context object that holds the data_store, logger and other relevant information
-        - indent: The indentation level for logging (default is 0)
-    """
-
-    # Tag:                  (0008,0120)
-    # Type:	                Conditionally Required (1C)
-    # Keyword:	            URNCodeValue
-    # Value Multiplicity	1
-    # Value Representation:	URL (UR) 
-    
-    # Check
-    assert isinstance(dataset, Dataset)
-    assert isinstance(context, Context)
-    assert isinstance(indent,int) and indent>=0
-
-    logger = context.logger
-
-    if "URNCodeValue" not in dataset:
-        logger.debug(" "*(indent+0) + "DICOM URNCodeValue tag was not found")  
-        return None
-
-    # Get the DataElement
-    data_element = dataset["URNCodeValue"]
-
-    # Get the value
-    value = data_element.value
-    
-    # Get the Value Multiplicity
-    value_multiplicity = data_element.VM
-    
-    # Check if it is empty
-    if value_multiplicity == 0 or value is None:
-        logger.debug(" "*(indent+0) + "DICOM URN Code Value tag value was not provided")
-        return None
-
-    # It should be a single-valued tag, a string
-    if value_multiplicity != 1 or not isinstance(value, str):
-        logger.warning(" "*(indent+0) + "DICOM URN CodeValue tag has an unknown format")
-        return None
-
-    # Remove whitespace
-    urn_code_value = value.strip()
-
-    # Check if value is not empty
-    if len(urn_code_value) == 0:
-        logger.debug(" "*(indent+0) + "DICOM URN Code Value tag value contains only whitespace")
-        return None
-
-    return urn_code_value
-
 
 
 #

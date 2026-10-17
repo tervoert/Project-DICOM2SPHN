@@ -20,7 +20,7 @@ from .sphn_quantity import SPHNQuantity
 class SPHNBodyWeight(SPHNConcept):
 
     has_quantity: SPHNQuantity                                 # (1:1) SPHN Quantity
-    has_date_time: datetime|None=None                          # (0:1) xsd:dateTime
+    has_datetime: datetime|None=None                          # (0:1) xsd:dateTime
     has_data_determination: SPHNDataDetermination|None=None    # (0:1) SPHNDataDetermination
 
     sphn_schema: SPHNSchemaGraph
@@ -50,8 +50,8 @@ class SPHNBodyWeight(SPHNConcept):
         if self.has_quantity is not None:
             json_dict_content_inline[f"{SPHN.hasQuantity.n3(self.sphn_schema.namespace_manager())}"] = self.has_quantity.get_json_dict(content, self.id)
 
-        if self.has_date_time is not None:
-            json_dict_content_inline[f"{SPHN.hasDateTime.n3(self.sphn_schema.namespace_manager())}"] = self.has_date_time.isoformat(timespec='milliseconds')
+        if self.has_datetime is not None:
+            json_dict_content_inline[f"{SPHN.hasDateTime.n3(self.sphn_schema.namespace_manager())}"] = self.has_datetime.isoformat(timespec='milliseconds')
 
         if self.has_data_determination is not None:
             json_dict_content_inline[f"{SPHN.hasDataDetermination.n3(self.sphn_schema.namespace_manager())}"] = self.has_data_determination.get_json_dict(content, self.id)
@@ -69,7 +69,7 @@ class SPHNBodyWeight(SPHNConcept):
         """
 
         return isinstance(other, type(self)) \
-            and self.has_date_time == other.has_date_time \
+            and self.has_datetime == other.has_datetime \
             and self.has_quantity.is_similar(other.has_quantity) \
             and ((self.has_data_determination is None and other.has_data_determination is None) \
                  or (self.has_data_determination is not None and other.has_data_determination is not None \

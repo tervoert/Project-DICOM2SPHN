@@ -18,7 +18,7 @@ from .sphn_location import SPHNLocation
 #
 class SPHNDischarge(SPHNConcept):
 
-    has_date_time: datetime                        # (1:1) xsd:dateTime
+    has_datetime: datetime                        # (1:1) xsd:dateTime
     has_target_location: SPHNLocation|None=None    # (0:1) SPHN Location
 
     sphn_schema: SPHNSchemaGraph
@@ -45,8 +45,8 @@ class SPHNDischarge(SPHNConcept):
             "id": f"{self.id}"
         }
 
-        if self.has_date_time is not None:
-            json_dict_content_inline[f"{SPHN.hasDateTime.n3(self.sphn_schema.namespace_manager())}"] = self.has_date_time.isoformat(timespec='milliseconds')
+        if self.has_datetime is not None:
+            json_dict_content_inline[f"{SPHN.hasDateTime.n3(self.sphn_schema.namespace_manager())}"] = self.has_datetime.isoformat(timespec='milliseconds')
 
         if self.has_target_location is not None:
             json_dict_content_inline[f"{SPHN.hasTargetLocation.n3(self.sphn_schema.namespace_manager())}"] = self.has_target_location.get_json_dict(content, self.id)
@@ -64,7 +64,7 @@ class SPHNDischarge(SPHNConcept):
         """
 
         return isinstance(other, type(self)) \
-            and self.has_date_time == other.has_date_time \
+            and self.has_datetime == other.has_datetime \
             and ((self.has_target_location is None and other.has_target_location is None) \
                  or (self.has_target_location is not None and other.has_target_location is not None \
                      and self.has_target_location.is_similar(other.has_target_location)))

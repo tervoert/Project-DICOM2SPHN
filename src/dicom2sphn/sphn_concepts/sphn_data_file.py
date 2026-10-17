@@ -32,7 +32,7 @@ class SPHNDataFile(SPHNConcept):
     has_name: str|None=None                                                             # (0:1) xsd:string 
     has_encoding: str|None=None                                                         # (0:1) SPHN Data_File_Encoding ValueSet member
     has_uniform_resource_identifier: str|None=None                                      # (0:1) xsd:string
-    has_creation_date_time: datetime|None=None                                          # (0:1) xsd:dateTime
+    has_creation_datetime: datetime|None=None                                          # (0:1) xsd:dateTime
     has_format_code: SPHNCode|None=None                                                 # (0:1) SPHN Code
     has_hash: SPHNHash|None=None                                                        # (0:1) SPHN Hash
     has_subject_pseudo_identifier_list: list[SPHNSubjectPseudoIdentifier]|None=None     # (0:n) SPHN SubjectPseudoIdentifier (list)
@@ -123,8 +123,8 @@ class SPHNDataFile(SPHNConcept):
                 "iri": SPHN_IND + self.has_encoding
             }
 
-        if self.has_creation_date_time is not None:
-            json_dict_content[f"{SPHN.hasCreationDateTime.n3(self.sphn_schema.namespace_manager())}"] = self.has_creation_date_time.isoformat(timespec='milliseconds')
+        if self.has_creation_datetime is not None:
+            json_dict_content[f"{SPHN.hasCreationDateTime.n3(self.sphn_schema.namespace_manager())}"] = self.has_creation_datetime.isoformat(timespec='milliseconds')
 
         if self.has_uniform_resource_identifier is not None:
             json_dict_content[f"{SPHN.hasUniformResourceIdentifier.n3(self.sphn_schema.namespace_manager())}"] = self.has_uniform_resource_identifier
@@ -177,7 +177,7 @@ class SPHNDataFile(SPHNConcept):
             and self.has_name == other.has_name \
             and self.has_encoding == other.has_encoding \
             and self.has_uniform_resource_identifier == other.has_uniform_resource_identifier \
-            and self.has_creation_date_time == other.has_creation_date_time \
+            and self.has_creation_datetime == other.has_creation_datetime \
             and ((self.has_format_code is None and other.has_format_code is None) \
                  or (self.has_format_code is not None and other.has_format_code is not None \
                      and self.has_format_code.is_similar(other.has_format_code))) \

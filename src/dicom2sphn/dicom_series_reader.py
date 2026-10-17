@@ -37,46 +37,56 @@ def get_series_metadata_from_dicom(dataset: Dataset, context: Context, indent: i
     # -------------------------------------------------------------------------------------------------------------
 
     # 
-    # SeriesDate
+    # SeriesDate and SeriesTime
     #
 
-    series_date_str = get_series_date_from_dicom(dataset, context, indent=indent+2)
-    
-    if series_date_str is not None:
-        logger.debug(" "*(indent+0) + f"SeriesDate: '{series_date_str}'")
-    else:
-        logger.debug(" "*(indent+0) + "No DICOM SeriesDate found")
+    if data_store.series_start_datetime is None:
 
-    # 
-    # SeriesTime
-    #
+        # Date
+        series_date = get_series_date_from_dicom(dataset, context, indent=indent+2)
 
-    series_time_str = get_series_time_from_dicom(dataset, context, indent=indent+2)
+        if series_date is not None:
+            assert isinstance(series_date, str)
+            logger.debug(" "*(indent+0) + f"SeriesDate string from DICOM: '{series_date}'")
+        else:
+            logger.debug(" "*(indent+0) + "SeriesDate not found")
 
-    if series_time_str is not None:
-        logger.debug(" "*(indent+0) + f"SeriesTime: '{series_time_str}'")
-    else:
-        logger.debug(" "*(indent+0) + "No DICOM SeriesTime found")
+        # Time
+        series_time = get_series_time_from_dicom(dataset, context, indent=indent+2)
 
-    # 
-    # Combine SeriesDate and SeriesTime
-    #
+        if series_time is not None:
+            assert isinstance(series_time, str)
+            logger.debug(" "*(indent+0) + f"SeriesTime string from DICOM: '{series_time}'")
+        else:
+            logger.debug(" "*(indent+0) + "SeriesTime not found")
 
-    if series_date_str is not None and series_time_str is not None:
-        # Combine date and time
-        series_start_datetime = combine_dicom_date_and_time(series_date_str, series_time_str, logger=logger, indent=indent+2)
-    else:
-        series_start_datetime = None
+        # Combine StudyDate and StudyTime
+        series_start_datetime_obj = None
+        if series_date and series_time:
 
-    if series_start_datetime is not None:
-        assert isinstance(series_start_datetime, datetime)
-        assert isinstance(data_store.sphn_imaging_series, SPHNImagingSeries)
+            # Combine the SeriesDate and SeriesTime strings into a single complete DICOM datetime (DT) object
+            # - series datetime is completed by filling in missing components for Month, Day, Hour, Minute, Second
+            series_start_datetime_obj = combine_dicom_date_and_time(series_date, series_time, logger, indent=indent+2)
+        
+        elif series_date and not series_time:
 
-        # Set the ImagingProcedure property
-        data_store.sphn_imaging_series.has_start_datetime =  series_start_datetime
-        logger.debug(" "*(indent+0) + f"Added SPHN ImagingSeries has_start_datetime: '{series_start_datetime.isoformat(timespec='milliseconds')}'")
-    else:
-        logger.debug(" "*(indent+0) + "SPHN ImagingSeries has_start_datetime not defined")
+            # Combine the SeriesDate and SeriesTime strings into a single complete DICOM datetime (DT) object
+            # - series datetime is completed by filling in missing components for Month, Day, Hour, Minute, Second
+            series_start_datetime_obj = combine_dicom_date_and_time(series_date, "", logger, indent=indent+2)
+        else:
+            logger.debug(" "*(indent+0) + "Could not combine SeriesDate and SeriesTime: Series Date not defined")
+        
+        if series_start_datetime_obj is not None:
+            # Set the series start datetime in the data store
+            data_store.series_start_datetime = series_start_datetime_obj
+            logger.debug(" "*(indent+0) + f"Combined Series Date and Time: '{series_start_datetime_obj!s}'")
+
+            # Update the SPHN ImagingSeries start datetime
+            assert isinstance(data_store.sphn_imaging_series, SPHNImagingSeries)            
+            data_store.sphn_imaging_series.has_start_datetime = series_start_datetime_obj
+            logger.debug(" "*(indent+0) + f"Updated SPHN ImagingSeries has_start_datetime: '{series_start_datetime_obj.isoformat(timespec='milliseconds')}'")
+        else:
+            logger.debug(" "*(indent+0) + "Could not combine SeriesDate and SeriesTime")
 
     # -------------------------------------------------------------------------------------------------------------
 

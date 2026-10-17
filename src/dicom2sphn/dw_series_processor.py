@@ -3,8 +3,8 @@ dw_series_processor.py:
     Part of the example dicom2sphn package.
     It processes the DICOM(web) Series level data.
 """
+import time
 from datetime import timedelta
-from time import time
 
 import pydicom
 from pydicom import Dataset
@@ -44,7 +44,7 @@ class DWSeriesProcessor:
         dw_client = context.dw_client
 
         logger.debug(" "*(indent+0) + "SeriesProcessor: Start processing...")
-        start_time_t1 = time()
+        start_time_t1 = time.perf_counter()
 
         # Update the DataStore
         data_store.current_series_number = current_series_number    
@@ -128,7 +128,7 @@ class DWSeriesProcessor:
         logger.debug(" "*(indent+2) + "Start querying DICOMweb server for DICOM Instances" +
                      " related to the DICOM Series in the DICOM Study"
         )
-        start_time_t99 = time()
+        start_time_t99 = time.perf_counter()
 
         # Run Query
         # The instance_search_response_json is the DICOMweb API "Instance Resource Search Response Payload" 
@@ -140,10 +140,11 @@ class DWSeriesProcessor:
             get_remaining = False
         )
 
-        stop_time_t99 = time()
+        stop_time_t99 = time.perf_counter()
         logger.debug(" "*(indent+2) + "Done  querying DICOMweb server for DICOM Instances" +
                      " related to the DICOM Series in the DICOM Study" +
-                     " in: " + str(timedelta(seconds=(stop_time_t99 - start_time_t99)))
+                     f" in '{stop_time_t99 - start_time_t99:.6f}' seconds" +
+                     f" ({timedelta(seconds=(stop_time_t99 - start_time_t99))!s})"
         )
 
         # Get number of instances in the current series
@@ -172,7 +173,7 @@ class DWSeriesProcessor:
                         f" in study number : '{data_store.current_study_number}'" +
                         f" for patient with PatientID: '{data_store.patient_id}'"
             )
-            start_time_t2 = time()
+            start_time_t2 = time.perf_counter()
 
             # Reset any previous DICOM Instance level information in the data_store
             data_store.reset_imaging_instance_level()
@@ -228,13 +229,14 @@ class DWSeriesProcessor:
             # Reset any previous DICOM Instance level information in the data_store
             data_store.reset_imaging_instance_level()
 
-            stop_time_t2 = time()
+            stop_time_t2 = time.perf_counter()
             logger.debug(" "*(indent+2) + f"Done  processing DICOM Instance number: '{current_instance_number}'" + 
                         f" of '{number_of_instances_in_current_series}'" +
                         f" in series number : '{current_series_number}'" +
                         f" in study number : '{data_store.current_study_number}'" +
-                        f" for patient with PatientID: '{data_store.patient_id}'"
-                         " in: " + str(timedelta(seconds=(stop_time_t2 - start_time_t2)))
+                        f" for patient with PatientID: '{data_store.patient_id}'" +
+                        f" in '{stop_time_t2 - start_time_t2:.2f}' seconds" +
+                        f" ({timedelta(seconds=(stop_time_t2 - start_time_t2))!s})"
             )
             logger.debug("")
 
@@ -242,9 +244,10 @@ class DWSeriesProcessor:
         # -------------------------------------------------------------------------------------------------------------
         # Done processing all DICOM Instances in the current DICOM Series
 
-        stop_time_t1 = time()
+        stop_time_t1 = time.perf_counter()
         logger.debug(" "*(indent+0) + "SeriesProcessor: Done processing..." +
-                    " in: " + str(timedelta(seconds=(stop_time_t1 - start_time_t1)))
+                    f" in '{stop_time_t1 - start_time_t1:.2f}' seconds" +
+                    f" ({timedelta(seconds=(stop_time_t1 - start_time_t1))!s})"
         )
 
         # Statistics

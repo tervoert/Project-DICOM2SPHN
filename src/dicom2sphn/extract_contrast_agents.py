@@ -1,27 +1,58 @@
 """
 extract_contrast_agents.py: 
     Part of the example dicom2sphn package.
-    It contains the DataStore class, which handles data storage.
+    It attempts to extract contrast agent or active ingredient and related concentration and dose information from free text.
 """
 
 import json
 import logging
 import re
 import time
+from datetime import timedelta
 from enum import Enum
 
 from .context import Context
 from .data_converter import DataConverter
 from .protocols import LoggerProtocol
 
+# Notes: 
+# 1) The DICOM Contrast/Bolus tag should contain a text string with information about the contrast agent used.
+# 2) Technicians may not always provide complete or accurate information in the free text.
+# 3) The free text might also contain default values which are incorrect as the technician might not have updated them.
+# 4) There can also be multiple contrast agents mentioned in the free text. For example one oral and one intravenous contrast agent.
+# 5) The contrast agent may be represented by a brand name, its generic name, or only the active ingredient.
+# 6) It may also contain "unknown" or empty values. 
+#    Or "Oral" or "IV" indicating the route of administration.
+#    Or "Y" or "Yes" indicating the presence of a contrast agent without specifying details.
+
+# Here we try to extract at least the contrast agent name(s) from the free text and optionally the concentration and dose information, if available.
+# For example:
+# The free text might contain one or two (sub)strings like "Omnipaque 300 50ml"
+# "Omnipaque" is then the example agent brand name
+# The 300 refers to the concentration of the active ingredient in the contrast agent. The unit is typically in mg/ml or %, but it is not written explicitly in the text.
+# The 50ml refers to the volume of the contrast agent administered. It is called "dose" here.
+ 
+
+# The location of the dose information relative to the contrast agent name can vary, and is here indicated by the DoseLocation enum.
+# For example:
+# "Omnipaque 300 50ml" -> DoseLocation.AFTER
+# "50ml Omnipaque 300" -> DoseLocation.BEFORE
+# "Omnipaque 300" or "Omnipaque" -> DoseLocation.NODOSE
 
 class DoseLocation(Enum):
     BEFORE = 1 # Dose information is located before the Contrast Agent name
     AFTER = 2  # Dose information is located after the Contrast Agent name
     NODOSE = 3 # No dose information available for the Contrast Agent
 
+# In case there are two or more contrast agents mentioned in the text, things get complicated as we need to correctly associate each dose with its corresponding contrast agent.
+# This may easily fail and then we only extract the contrast agent names without the concentration or dose information.
+# For example:
+# "Omnipaque 300 50ml Barium Sulfate 100ml" -> Two contrast agents with their respective doses
+# "Omnipaque 300 50ml Barium Sulfate" -> Two contrast agents but it remains unclear to which agent the dose belongs
+
+
 #
-# Edwin: 2026-09-18
+# Edwin: 2026-10-09
 #
 def extract_contrast_agents(text: str, context: Context, indent: int=0) -> list:
     """
@@ -59,20 +90,16 @@ def extract_contrast_agents(text: str, context: Context, indent: int=0) -> list:
 
     contrast_agent_names_list = DataConverter.all_contrast_agent_and_ingredient_names_list
 
-    assert not contrast_agent_names_list \
-        or (isinstance(contrast_agent_names_list, list) \
-            and all(isinstance(item, str) for item in contrast_agent_names_list))
-
     if not contrast_agent_names_list:
         contrast_agent_names_list = [
             "Dotarem", "Gadobutrol", "Magnevist", "Omnipaque", "Visipaque", 
             "Isovue", "Clariscan", "ProHance", "Optiray", "Ultravist", "Gadavist",
             "Cholographin", "Cholographin Meglumine", "Iomeron", "Xenetix", "Gadovist"
         ]
-        #logger.debug(" "*(indent+2) + f"Using default contrast agents list: '{contrast_agent_names_list}'")
-    #else:
-        #logger.debug(" "*(indent+2) + f"Using contrast agents list: '{contrast_agent_names_list}'")
 
+    assert contrast_agent_names_list \
+        and isinstance(contrast_agent_names_list, list) \
+        and all(isinstance(item, str) for item in contrast_agent_names_list)
 
     # CRUCIAL: Sort the list by the length of the string, from long to short.
     # This ensures that e.g. "Cholographin Meglumine" is always evaluated before "Cholographin".
@@ -90,18 +117,19 @@ def extract_contrast_agents(text: str, context: Context, indent: int=0) -> list:
 
     concentrations_list = DataConverter.contrast_agent_active_ingredient_concentrations_list
 
-    assert not concentrations_list \
-        or (isinstance(concentrations_list, list) \
-            and all(isinstance(item, str) for item in concentrations_list))
-
     if not concentrations_list:
         concentrations_list = ["30", "240", "250", "260", "270", "300", "320", "350", "360", "370", "380", "390", "400"]
-        #logger.debug(" "*(indent+2) + f"Using default concentrations list: '{concentrations_list}'")
-    #else:
-        #logger.debug(" "*(indent+2) + f"Using concentrations list: '{concentrations_list}'")
+
+    assert concentrations_list \
+        and isinstance(concentrations_list, list) \
+        and all(isinstance(item, str) for item in concentrations_list)
+
+    # CRUCIAL: Sort the list by the length of the string, from long to short.
+    # This ensures that e.g. "300" is always evaluated before "30".
+    conc_sorted = sorted(concentrations_list, key=len, reverse=True)
 
     # Create a regex pattern for the concentrations
-    conc_pattern = "|".join(re.escape(conc) for conc in concentrations_list)
+    conc_pattern = "|".join(re.escape(conc) for conc in conc_sorted)
 
     # 
     # 3. Dictionary for standardizing units
@@ -489,8 +517,9 @@ def extract_contrast_agents(text: str, context: Context, indent: int=0) -> list:
     logger.debug(" "*(indent+0) + f"Result: '{json.dumps(results)}'" )
 
     stop_time_t1 = time.perf_counter()
-    logger.debug(" "*(indent+0) + "Done  extracting contrast agent info from text string"
-                 + f" in: {stop_time_t1 - start_time_t1:.6f} seconds"
+    logger.debug(" "*(indent+0) + "Done  extracting contrast agent info from text string" +
+                 f" in: {stop_time_t1 - start_time_t1:.6f} seconds" +
+                 f" ({timedelta(seconds=(stop_time_t1 - start_time_t1))!s})"
     )
 
     return results

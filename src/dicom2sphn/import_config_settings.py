@@ -124,11 +124,11 @@ def import_config_settings(config_file: Path, context: Context, indent: int=0) -
     # Timestamp: The time in seconds since the epoch. The epoch is: 1 January 1970 at 00:00:00 UTC.
     timestamp = time()
     # Convert to dateTime string
-    extraction_date_time = datetime.fromtimestamp(timestamp, tz=UTC)
-    # extraction_date_time_str = extraction_date_time.strftime("%Y-%m-%dT%H:%M:%S")
-    # extraction_date_time_str = extraction_date_time.isoformat(timespec='milliseconds')
+    extraction_datetime = datetime.fromtimestamp(timestamp, tz=UTC)
+    # extraction_datetime_str = extraction_datetime.strftime("%Y-%m-%dT%H:%M:%S")
+    # extraction_datetime_str = extraction_datetime.isoformat(timespec='milliseconds')
 
-    context.logger.info(" "*(indent+2) + f"Using the extraction date/time: '{extraction_date_time.isoformat(timespec='milliseconds')}'.")
+    context.logger.info(" "*(indent+2) + f"Using the extraction date/time: '{extraction_datetime.isoformat(timespec='milliseconds')}'.")
 
     # Get the SPHN Schema version, like: "https://biomedit.ch/rdf/sphn-schema/sphn/2026/1"
     sphn_schema_version = context.sphn_schema.get_version()
@@ -136,7 +136,7 @@ def import_config_settings(config_file: Path, context: Context, indent: int=0) -
     sphn_data_release = SPHNDataRelease(
         has_data_provider=sphn_data_provider,
         conforms_to=sphn_schema_version,
-        has_extraction_datetime=extraction_date_time,
+        has_extraction_datetime=extraction_datetime,
         sphn_schema=context.sphn_schema)
 
     context.logger.info(" "*(indent+0) + "Successfully created the SPHN DataRelease concept.")
@@ -159,9 +159,9 @@ def import_config_settings(config_file: Path, context: Context, indent: int=0) -
 
     context.logger.info(" "*(indent+0) + "Trying to process the StudyDate and StudyTime settings for DICOM Studies without a date/time.")
 
-    fallback_study_date_time = get_fallback_study_date_time_from_dicom_options_settings(settings, context, indent=indent+2)
+    fallback_study_datetime = get_fallback_study_datetime_from_dicom_options_settings(settings, context, indent=indent+2)
 
-    context.logger.info(" "*(indent+2) + f"Using StudyDateTime: '{fallback_study_date_time}' for DICOM Studies without a date/time.")
+    context.logger.info(" "*(indent+2) + f"Using StudyDateTime: '{fallback_study_datetime}' for DICOM Studies without a date/time.")
 
     context.logger.info(" "*(indent+0) + "Successfully processed the StudyDate and StudyTime settings.")
 
@@ -177,7 +177,7 @@ def import_config_settings(config_file: Path, context: Context, indent: int=0) -
         sphn_source_system=sphn_source_system,
         sphn_schema=context.sphn_schema,
         valid_sop_classes=sop_classes_specified,
-        fallback_study_date_time=fallback_study_date_time)
+        fallback_study_datetime=fallback_study_datetime)
     
     context.data_store = data_store
 
@@ -727,7 +727,7 @@ def get_allowed_sop_classes_from_dicom_options_settings(settings:dict, context: 
 #
 # Edwin 2026-08-07
 #
-def get_fallback_study_date_time_from_dicom_options_settings(settings:dict, context: Context, indent: int=0) -> datetime:
+def get_fallback_study_datetime_from_dicom_options_settings(settings:dict, context: Context, indent: int=0) -> datetime:
     """
     Get the Fallback StudyDate and StudyTime from the 'dicom_options' 
     in the configuration settings and return them as a combined datetime.

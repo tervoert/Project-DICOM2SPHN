@@ -4,9 +4,9 @@ main.py:
     It contains the main application logic.
 """
 import logging
+import time
 from datetime import timedelta
 from pathlib import Path
-from time import time
 
 import pydicom
 from dicomweb_client.api import DICOMwebClient
@@ -35,7 +35,7 @@ def main(patient_id: str, output_file_path_specification: str, config_file: str)
     # Initializing 
     # -----------------------------------------------------------------------------------------------------------------
 
-    start_time_t1 = time()
+    start_time_t1 = time.perf_counter()
 
     # Create a logger for the application
     logger = create_logger()
@@ -123,28 +123,34 @@ def main(patient_id: str, output_file_path_specification: str, config_file: str)
     # -----------------------------------------------------------------------------------------------------------------
 
     logger.info(" "*(indent+2) + "Starting to process patient data from DICOMweb.")
-    start_time_t2 = time()
+    start_time_t2 = time.perf_counter()
     dw_patient_processor = DWPatientProcessor()
     dw_patient_processor.process(patient_id, context,indent=indent+4)
-    stop_time_t2 = time()
-    logger.info(" "*(indent+2) + f"Successfully processed patient data from DICOMweb in '{stop_time_t2 - start_time_t2:.2f}' seconds (" + str(timedelta(seconds=(stop_time_t2 - start_time_t2))) + ").") 
+    stop_time_t2 = time.perf_counter()
+    logger.info(" "*(indent+2) + "Successfully processed patient data from DICOMweb" +
+                f" in '{stop_time_t2 - start_time_t2:.2f}' seconds" + 
+                f" ({timedelta(seconds=(stop_time_t2 - start_time_t2))!s})") 
     logger.info("")
 
     # Generate and write JSON only if there is a subject pseudo identifier and at least one imaging procedure
     if data_store.sphn_subject_pseudo_identifier is not None and len(data_store.sphn_imaging_procedure_list) > 0:
 
         logger.info(" "*(indent+2) + "Starting to generate JSON.")
-        start_time_t2 = time()
+        start_time_t2 = time.perf_counter()
         json_string = data_store.generate_json_string_for_sphn_connector(indent=indent+4)
-        stop_time_t2 = time()
-        logger.info(" "*(indent+2) + f"Successfully generated JSON in '{stop_time_t2 - start_time_t2:.2f}' seconds (" + str(timedelta(seconds=(stop_time_t2 - start_time_t2))) + ").")
+        stop_time_t2 = time.perf_counter()
+        logger.info(" "*(indent+2) + "Successfully generated JSON" +
+                    f" in '{stop_time_t2 - start_time_t2:.2f}' seconds" +
+                    f" ({timedelta(seconds=(stop_time_t2 - start_time_t2))!s})")
         logger.info("")
 
         logger.info(" "*(indent+2) + "Starting to write JSON to file.")
-        start_time_t2 = time()
+        start_time_t2 = time.perf_counter()
         data_store.write_json_string_to_file(json_string, output_file_path_specification, indent=indent+4)
-        stop_time_t2 = time()
-        logger.info(" "*(indent+2) + f"Successfully wrote JSON to file in '{stop_time_t2 - start_time_t2:.2f}' seconds (" + str(timedelta(seconds=(stop_time_t2 - start_time_t2))) + ").")
+        stop_time_t2 = time.perf_counter()
+        logger.info(" "*(indent+2) + "Successfully wrote JSON to file" +
+                    f" in '{stop_time_t2 - start_time_t2:.2f}' seconds" +
+                    f" ({timedelta(seconds=(stop_time_t2 - start_time_t2))!s})")
         logger.info("")
 
     else:
@@ -207,8 +213,9 @@ def main(patient_id: str, output_file_path_specification: str, config_file: str)
             logger.info(" "*(indent+2) + f"Unknown Contrast Bolus Administration Route Sequence code: coding scheme designator: '{coding_scheme_designator}', code value: '{code_value}', code meaning: '{code_meaning}' with count: '{count}'.")
         logger.info("")
 
-    stop_time_t1 = time()
-    logger.info(" "*(indent+2) + f"Total processing time:'{stop_time_t1 - start_time_t1:.2f}' seconds (" + str(timedelta(seconds=(stop_time_t1 - start_time_t1))) + ").")
+    stop_time_t1 = time.perf_counter()
+    logger.info(" "*(indent+2) + f"Total processing time:'{stop_time_t1 - start_time_t1:.2f}' seconds" +
+                f" ({timedelta(seconds=(stop_time_t1 - start_time_t1))!s})")
 
     logger.info(" "*(indent+0) + "Done...")
 
@@ -327,7 +334,7 @@ def process_dicom_tags(datasets: list[Dataset|None], output_file: Path, logger: 
             f.write(out_string + "\n")
 
         # Process the sequence tags separately
-        if sequence_found is True:
+        if sequence_found:
             sequences = []
             for ds in datasets:
                 if ds is not None and tag in ds:

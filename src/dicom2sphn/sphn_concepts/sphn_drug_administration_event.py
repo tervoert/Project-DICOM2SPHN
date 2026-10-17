@@ -25,8 +25,8 @@ from .sphn_time_pattern import SPHNTimePattern
 #
 class SPHNDrugAdministrationEvent(SPHNConcept):
 
-    has_start_date_time: datetime                                        # (1:1) xsd:dateTime
-    has_end_date_time: datetime|None=None                                # (0:1) xsd:dateTime
+    has_start_datetime: datetime                                        # (1:1) xsd:dateTime
+    has_end_datetime: datetime|None=None                                # (0:1) xsd:dateTime
     has_drug: SPHNDrug                                                  # (1:1) SPHN Drug
     has_administration_route_code: SPHNCode|None=None                   # (0:1) SPHN Code
     has_reason_to_stop_code: SPHNCode|None=None                         # (0:1) SPHN Code
@@ -92,11 +92,11 @@ class SPHNDrugAdministrationEvent(SPHNConcept):
             "id": f"{self.id}"
         }
 
-        if self.has_start_date_time is not None:
-            json_dict_content[f"{SPHN.hasStartDateTime.n3(self.sphn_schema.namespace_manager())}"] = self.has_start_date_time.isoformat(timespec='milliseconds')
+        if self.has_start_datetime is not None:
+            json_dict_content[f"{SPHN.hasStartDateTime.n3(self.sphn_schema.namespace_manager())}"] = self.has_start_datetime.isoformat(timespec='milliseconds')
 
-        if self.has_end_date_time is not None:
-            json_dict_content[f"{SPHN.hasEndDateTime.n3(self.sphn_schema.namespace_manager())}"] = self.has_end_date_time.isoformat(timespec='milliseconds')
+        if self.has_end_datetime is not None:
+            json_dict_content[f"{SPHN.hasEndDateTime.n3(self.sphn_schema.namespace_manager())}"] = self.has_end_datetime.isoformat(timespec='milliseconds')
 
         if self.has_duration is not None:
             json_dict_content[f"{SPHN.hasDuration.n3(self.sphn_schema.namespace_manager())}"] = self.has_duration.get_json_dict(content, self.id)
@@ -152,8 +152,8 @@ class SPHNDrugAdministrationEvent(SPHNConcept):
         """
 
         return isinstance(other, type(self)) \
-            and self.has_start_date_time == other.has_start_date_time \
-            and self.has_end_date_time == other.has_end_date_time \
+            and self.has_start_datetime == other.has_start_datetime \
+            and self.has_end_datetime == other.has_end_datetime \
             and ((self.has_drug is None and other.has_drug is None) \
                  or (self.has_drug is not None and other.has_drug is not None \
                      and self.has_drug.is_similar(other.has_drug))) \

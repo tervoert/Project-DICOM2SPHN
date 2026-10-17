@@ -21,7 +21,7 @@ from .sphn_subject_pseudo_identifier import SPHNSubjectPseudoIdentifier
 class SPHNAge(SPHNConcept):
 
     has_quantity: SPHNQuantity                                  # (1:1) SPHN Quantity
-    has_determination_date_time: datetime                       # (1:1) xsd:dateTime
+    has_determination_datetime: datetime                       # (1:1) xsd:dateTime
     has_subject_pseudo_identifier: SPHNSubjectPseudoIdentifier  # (1:1) SPHN SubjectPseudoIdentifier
     has_source_system_list: list[SPHNSourceSystem]              # (1:n) SPHN SourceSystem (list)
 
@@ -84,8 +84,8 @@ class SPHNAge(SPHNConcept):
         if self.has_quantity is not None:
             json_dict_content[f"{SPHN.hasQuantity.n3(self.sphn_schema.namespace_manager())}"] = self.has_quantity.get_json_dict(content, self.id)
 
-        if self.has_determination_date_time is not None:
-            json_dict_content[f"{SPHN.hasDeterminationDateTime.n3(self.sphn_schema.namespace_manager())}"] = self.has_determination_date_time.isoformat(timespec='milliseconds')
+        if self.has_determination_datetime is not None:
+            json_dict_content[f"{SPHN.hasDeterminationDateTime.n3(self.sphn_schema.namespace_manager())}"] = self.has_determination_datetime.isoformat(timespec='milliseconds')
 
         if self.has_source_system_list is not None and len(self.has_source_system_list)>0:
             json_dict_content[f"{SPHN.hasSourceSystem.n3(self.sphn_schema.namespace_manager())}"] = [source_system.get_json_dict(content, self.id) for source_system in self.has_source_system_list]
@@ -123,7 +123,7 @@ class SPHNAge(SPHNConcept):
         """
 
         return isinstance(other, type(self)) \
-            and self.has_determination_date_time == other.has_determination_date_time \
+            and self.has_determination_datetime == other.has_determination_datetime \
             and self.has_quantity.is_similar(other.has_quantity) \
             and self.has_subject_pseudo_identifier.is_similar(other.has_subject_pseudo_identifier) \
             and are_similar_lists(self.has_source_system_list, other.has_source_system_list)

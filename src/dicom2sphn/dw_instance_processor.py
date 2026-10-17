@@ -3,8 +3,8 @@ dw_instance_processor.py:
     Part of the example dicom2sphn package.
     It processes the DICOM(web) Instance level data.
 """
+import time
 from datetime import timedelta
-from time import time
 
 import pydicom
 from pydicom import Dataset
@@ -63,7 +63,7 @@ class DWInstanceProcessor:
         dw_client = context.dw_client
 
         logger.debug(" "*(indent+0) + "InstanceProcessor: Start processing...")
-        start_time_t1 = time()
+        start_time_t1 = time.perf_counter()
 
         # Update the DataStore
         data_store.current_instance_number = current_instance_number
@@ -164,7 +164,7 @@ class DWInstanceProcessor:
         logger.debug(" "*(indent+2) + "Start querying DICOMweb server for the metadata of this DICOM Instance" + 
                      " related to the DICOM Series and DICOM Study"
         )
-        start_time_t99 = time()
+        start_time_t99 = time.perf_counter()
 
         # Run Query
         # Get all SOP Instance metadata (Entire DICOM Header)
@@ -174,10 +174,11 @@ class DWInstanceProcessor:
             sop_instance_uid=data_store.sop_instance_uid
         )
         
-        stop_time_t99 = time()
+        stop_time_t99 = time.perf_counter()
         logger.debug(" "*(indent+2) + "Done  querying DICOMweb server for the metadata of this DICOM Instance" + 
                      " related to the DICOM Series and DICOM Study" +
-                     " in: " + str(timedelta(seconds=(stop_time_t99 - start_time_t99)))
+                     f" in '{stop_time_t99 - start_time_t99:.6f}' seconds" +
+                     f" ({timedelta(seconds=(stop_time_t99 - start_time_t99))!s})"
         )
 
         # Check if there is any metadata defined (There should always be metadata)
@@ -476,7 +477,7 @@ class DWInstanceProcessor:
                         f" in study number : '{data_store.current_study_number}'" +
                         f" for patient with PatientID: '{data_store.patient_id}'"
             )
-            start_time_t2 = time()
+            start_time_t2 = time.perf_counter()
 
             # Reset any previous DICOM Frame level information in the data_store
             data_store.reset_imaging_frame_level()
@@ -537,22 +538,24 @@ class DWInstanceProcessor:
             # Reset any previous DICOM Frame level information in the data_store
             data_store.reset_imaging_frame_level()
 
-            stop_time_t2 = time()
+            stop_time_t2 = time.perf_counter()
             logger.debug(" "*(indent+2) + f"Done  processing DICOM frame number: '{current_frame_number}'" + 
                         f" of '{data_store.number_of_frames_in_instance}'" +
                         f" in instance number : '{data_store.current_instance_number}'" +
                         f" in series number : '{data_store.current_series_number}'" +
                         f" in study number : '{data_store.current_study_number}'" +
-                        f" for patient with PatientID: '{data_store.patient_id}'"
-                         " in: " + str(timedelta(seconds=(stop_time_t2 - start_time_t2)))
+                        f" for patient with PatientID: '{data_store.patient_id}'" +
+                        f" in '{stop_time_t2 - start_time_t2:.2f}' seconds" +
+                        f" ({timedelta(seconds=(stop_time_t2 - start_time_t2))!s})"
             )
 
         # -------------------------------------------------------------------------------------------------------------
         # Done processing all DICOM Frames in this DICOM Instance
         logger.debug("")
-        stop_time_t1 = time()
+        stop_time_t1 = time.perf_counter()
         logger.debug(" "*(indent+0) + "InstanceProcessor: Done processing..." +
-                    " in: " + str(timedelta(seconds=(stop_time_t1 - start_time_t1)))
+                    f" in '{stop_time_t1 - start_time_t1:.2f}' seconds" +
+                    f" ({timedelta(seconds=(stop_time_t1 - start_time_t1))!s})"
         )
 
         # Statistics

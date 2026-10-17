@@ -20,9 +20,9 @@ class SPHNFlowProfileInterval(SPHNConcept):
 
     has_start_datetime: datetime|None=None                              # (0:1) xsd:dateTime
     has_end_datetime: datetime|None=None                                # (0:1) xsd:dateTime
-    has_duration: SPHNQuantity|None=None                                # (0:1) SPHN Quantity
     has_volume: SPHNQuantity|None=None                                  # (0:1) SPHN Quantity
     has_volumetric_flow_rate: SPHNQuantity|None=None                    # (0:1) SPHN Quantity
+    has_duration: SPHNQuantity|None=None                                # (0:1) SPHN Quantity
 
     sphn_schema: SPHNSchemaGraph
     id: str = Field(default_factory=lambda: generate_id())
@@ -48,11 +48,11 @@ class SPHNFlowProfileInterval(SPHNConcept):
             "id": f"{self.id}"
         }
 
-        if self.has_start_date_time is not None:
-            json_dict_content_inline[f"{SPHN.hasStartDateTime.n3(self.sphn_schema.namespace_manager())}"] = self.has_start_date_time.isoformat(timespec='milliseconds')
+        if self.has_start_datetime is not None:
+            json_dict_content_inline[f"{SPHN.hasStartDateTime.n3(self.sphn_schema.namespace_manager())}"] = self.has_start_datetime.isoformat(timespec='milliseconds')
 
-        if self.has_end_date_time is not None:
-            json_dict_content_inline[f"{SPHN.hasEndDateTime.n3(self.sphn_schema.namespace_manager())}"] = self.has_end_date_time.isoformat(timespec='milliseconds')
+        if self.has_end_datetime is not None:
+            json_dict_content_inline[f"{SPHN.hasEndDateTime.n3(self.sphn_schema.namespace_manager())}"] = self.has_end_datetime.isoformat(timespec='milliseconds')
 
         if self.has_duration is not None:
             json_dict_content_inline[f"{SPHN.hasDuration.n3(self.sphn_schema.namespace_manager())}"] = self.has_duration.get_json_dict(content, self.id)

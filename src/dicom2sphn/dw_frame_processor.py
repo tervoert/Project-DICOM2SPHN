@@ -3,8 +3,8 @@ dw_frame_processor.py:
     Part of the example dicom2sphn package.
     It processes the DICOM(web) Frame level data.
 """
+import time
 from datetime import timedelta
-from time import time
 
 from pydicom import Dataset
 from pynetdicom import sop_class
@@ -53,7 +53,7 @@ class DWFrameProcessor:
         sop_class_uid = data_store.sop_class_uid
 
         logger.debug(" "*(indent+0) + "FrameProcessor: Start processing...")
-        start_time_t1 = time()
+        start_time_t1 = time.perf_counter()
 
         # Update the DataStore
         data_store.current_frame_number = current_frame_number
@@ -229,9 +229,10 @@ class DWFrameProcessor:
         # ---------------------------------------------------------------------------------------------------------
         # ---------------------------------------------------------------------------------------------------------
 
-        stop_time_t1 = time()
+        stop_time_t1 = time.perf_counter()
         logger.debug(" "*(indent+0) + "FrameProcessor: Done processing..." +
-                    " in: " + str(timedelta(seconds=(stop_time_t1 - start_time_t1)))
+                    f" in '{stop_time_t1 - start_time_t1:.2f}' seconds" +
+                    f" ({timedelta(seconds=(stop_time_t1 - start_time_t1))!s})"
         )
         logger.debug("")
 

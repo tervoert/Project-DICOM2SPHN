@@ -3,8 +3,8 @@ dw_study_processor.py:
     Part of the example dicom2sphn package.
     It processes the DICOM(web) Study level data.
 """
+import time
 from datetime import timedelta
-from time import time
 
 import pydicom
 from pydicom import Dataset
@@ -47,7 +47,7 @@ class DWStudyProcessor:
         dw_client = context.dw_client
 
         logger.debug(" "*(indent+0) + "StudyProcessor: Start processing...")
-        start_time_t1 = time()
+        start_time_t1 = time.perf_counter()
 
         # Update the DataStore
         data_store.current_study_number = current_study_number
@@ -180,7 +180,7 @@ class DWStudyProcessor:
         logger.debug(" "*(indent+2) + "Start querying DICOMweb server for DICOM Series" + 
                      " related to the DICOM Study")
         # Set timing
-        start_time_t99 = time()
+        start_time_t99 = time.perf_counter()
 
         # Run Query
         # The series_search_response_json is the DICOMweb API "Series Resource Search Response Payload" 
@@ -192,10 +192,11 @@ class DWStudyProcessor:
         )
 
         # Set timing
-        stop_time_t99 = time()
+        stop_time_t99 = time.perf_counter()
         logger.debug(" "*(indent+2) + "Done  querying DICOMweb server for DICOM Series" + 
                      " related to the DICOM Study" +
-                     " in: " + str(timedelta(seconds=(stop_time_t99 - start_time_t99)))
+                     f" in '{stop_time_t99 - start_time_t99:.6f}' seconds" +
+                     f" ({timedelta(seconds=(stop_time_t99 - start_time_t99))!s})"
         )
 
         # Get number of series in current study
@@ -223,7 +224,7 @@ class DWStudyProcessor:
                         f" in study number : '{data_store.current_study_number}'" +
                         f" for patient with PatientID: '{data_store.patient_id}'"
             )
-            start_time_t2 = time()
+            start_time_t2 = time.perf_counter()
 
             # Reset any previous DICOM Series level information in the data_store
             data_store.reset_imaging_series_level()
@@ -315,12 +316,13 @@ class DWStudyProcessor:
             # Reset any previous DICOM Series level information in the data_store
             data_store.reset_imaging_series_level()
 
-            stop_time_t2 = time()
+            stop_time_t2 = time.perf_counter()
             logger.info(" "*(indent+2) + f"Done  processing DICOM Series number: '{current_series_number}'" + 
                         f" of '{number_of_series_in_current_study}'" +
                         f" in study number : '{current_study_number}'" +
                         f" for patient with PatientID: '{data_store.patient_id}'" +
-                        " in: " + str(timedelta(seconds=(stop_time_t2 - start_time_t2)))
+                        f" in '{stop_time_t2 - start_time_t2:.2f}' seconds" +
+                        f" ({timedelta(seconds=(stop_time_t2 - start_time_t2))!s})"
             )
             logger.info("")
 
@@ -349,9 +351,10 @@ class DWStudyProcessor:
         #     )
         # logger.debug("")
 
-        stop_time_t1 = time()
+        stop_time_t1 = time.perf_counter()
         logger.debug(" "*(indent+0) + "StudyProcessor: Done processing..." +
-                    " in: " + str(timedelta(seconds=(stop_time_t1 - start_time_t1)))
+                    f" in '{stop_time_t1 - start_time_t1:.2f}' seconds" +
+                    f" ({timedelta(seconds=(stop_time_t1 - start_time_t1))!s})"
         )
         logger.debug("")
 

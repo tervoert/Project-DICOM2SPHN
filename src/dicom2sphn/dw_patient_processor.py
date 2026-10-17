@@ -3,9 +3,8 @@ dw_patient_processor.py:
     Part of the example dicom2sphn package.
     It processes the DICOM(web) Patient level data.
 """
-
+import time
 from datetime import timedelta
-from time import time
 
 from pydicom import Dataset
 
@@ -42,7 +41,7 @@ class DWPatientProcessor:
         dw_client = context.dw_client
 
         logger.debug(" "*(indent+0) + "PatientProcessor: Start processing...")
-        start_time_t1 = time()
+        start_time_t1 = time.perf_counter()
 
         # Update the DataStore
         data_store.patient_id = patient_id
@@ -63,7 +62,7 @@ class DWPatientProcessor:
         logger.debug(" "*(indent+2) + "Start querying DICOMweb server for DICOM Studies" +
                     f" with DICOM PatientID: '{data_store.patient_id}'"
         )
-        start_time_t99 = time()
+        start_time_t99 = time.perf_counter()
 
         # Run Query
         # The study_search_response_json is the DICOMweb API "Study Resource Search Response Payload" 
@@ -74,10 +73,11 @@ class DWPatientProcessor:
             get_remaining=False
         ) 
 
-        stop_time_t99 = time()
+        stop_time_t99 = time.perf_counter()
         logger.debug(" "*(indent+2) + "Done  querying DICOMweb server for DICOM Studies" + 
                     f" with DICOM PatientID: '{data_store.patient_id}'" +
-                    " in: " + str(timedelta(seconds=(stop_time_t99 - start_time_t99)))
+                    f" in '{stop_time_t99 - start_time_t99:.6f}' seconds" +
+                    f" ({timedelta(seconds=(stop_time_t99 - start_time_t99))!s})"
         )
 
         # Get number of studies in current patient dataset
@@ -101,7 +101,7 @@ class DWPatientProcessor:
                         f" of '{number_of_studies_in_current_patient_dataset}'" +
                         f" for patient with PatientID: '{data_store.patient_id}'"
             )
-            start_time_t2 = time()
+            start_time_t2 = time.perf_counter()
 
             # Reset any previous DICOM Study level information in the data_store
             data_store.reset_imaging_study_level()
@@ -153,11 +153,12 @@ class DWPatientProcessor:
             data_store.reset_imaging_study_level()
 
             # Set timing
-            stop_time_t2 = time()
+            stop_time_t2 = time.perf_counter()
             logger.info(" "*(indent+2) + f"Done  processing DICOM Study number: '{current_study_number}'" + 
                         f" of '{number_of_studies_in_current_patient_dataset}'" +
                         f" for patient with PatientID: '{data_store.patient_id}'" +
-                        " in: " + str(timedelta(seconds=(stop_time_t2 - start_time_t2)))
+                        f" in '{stop_time_t2 - start_time_t2:.2f}' seconds" +
+                        f" ({timedelta(seconds=(stop_time_t2 - start_time_t2))!s})"
             )
             logger.info("")
 
@@ -172,9 +173,10 @@ class DWPatientProcessor:
         # -------------------------------------------------------------------------------------------------------------
         # Done processing all DICOM Studies for the current DICOM Patient
 
-        stop_time_t1 = time()
+        stop_time_t1 = time.perf_counter()
         logger.debug(" "*(indent+0) + "PatientProcessor: Done processing..." +
-                    " in: " + str(timedelta(seconds=(stop_time_t1 - start_time_t1)))
+                    f" in '{stop_time_t1 - start_time_t1:.2f}' seconds" +
+                    f" ({timedelta(seconds=(stop_time_t1 - start_time_t1))!s})"
         )
         logger.debug("")
 

@@ -24,7 +24,7 @@ class SPHNAdministrativeSex(SPHNConcept):
     has_code: SPHNCode                                             # (1:1) SPHN Quantity
     has_subject_pseudo_identifier: SPHNSubjectPseudoIdentifier     # (1:1) SPHN SubjectPseudoIdentifier
     has_source_system_list: list[SPHNSourceSystem]                 # (1:n) SPHN SourceSystem (list)
-    has_record_date_time: datetime|None=None                       # (0:1) xsd:dateTime
+    has_record_datetime: datetime|None=None                       # (0:1) xsd:dateTime
 
     sphn_schema: SPHNSchemaGraph
     id: str = Field(default_factory=lambda: generate_id())
@@ -83,8 +83,8 @@ class SPHNAdministrativeSex(SPHNConcept):
         if self.has_code is not None:
             json_dict_content[f"{SPHN.hasCode.n3(self.sphn_schema.namespace_manager())}"] = self.has_code.get_json_dict(content, self.id)
 
-        if self.has_record_date_time is not None:
-            json_dict_content[f"{SPHN.hasRecordDateTime.n3(self.sphn_schema.namespace_manager())}"] = self.has_record_date_time.isoformat(timespec='milliseconds')
+        if self.has_record_datetime is not None:
+            json_dict_content[f"{SPHN.hasRecordDateTime.n3(self.sphn_schema.namespace_manager())}"] = self.has_record_datetime.isoformat(timespec='milliseconds')
 
         if self.has_source_system_list is not None and len(self.has_source_system_list)>0:
             json_dict_content[f"{SPHN.hasSourceSystem.n3(self.sphn_schema.namespace_manager())}"] = [source_system.get_json_dict(content, self.id) for source_system in self.has_source_system_list]
@@ -122,7 +122,7 @@ class SPHNAdministrativeSex(SPHNConcept):
         """
 
         return isinstance(other, type(self)) \
-            and self.has_record_date_time == other.has_record_date_time \
+            and self.has_record_datetime == other.has_record_datetime \
             and self.has_code.is_similar(other.has_code) \
             and self.has_subject_pseudo_identifier.is_similar(other.has_subject_pseudo_identifier) \
             and are_similar_lists(self.has_source_system_list, other.has_source_system_list)

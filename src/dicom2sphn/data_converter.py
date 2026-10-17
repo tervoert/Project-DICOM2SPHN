@@ -921,6 +921,25 @@ class DataConverter:
         "EZCat":                  ("Bracco",           [("SCT",    "25419009",  "Barium Sulfate")]),            # SNOMED: 25419009 | Product containing barium sulfate (medicinal product) |    # Alternative writing for "E-Z-Cat"
 
         "E-Z-PAQUE":              ("Bracco",           [("SCT",    "25419009",  "Barium Sulfate")]),            # SNOMED: 25419009 | Product containing barium sulfate (medicinal product) |
+        # Other writing variations:
+        "EZ-PAQUE":               ("Bracco",           [("SCT",    "25419009",  "Barium Sulfate")]),            # SNOMED: 25419009 | Product containing barium sulfate (medicinal product) |    # Alternative writing for "E-Z-PAQUE"
+        "EZPAQUE":                ("Bracco",           [("SCT",    "25419009",  "Barium Sulfate")]),            # SNOMED: 25419009 | Product containing barium sulfate (medicinal product) |    # Alternative writing for "E-Z-PAQUE"
+        "E-Z-PAK":                ("Bracco",           [("SCT",    "25419009",  "Barium Sulfate")]),            # SNOMED: 25419009 | Product containing barium sulfate (medicinal product) |    # Alternative writing for "E-Z-PAQUE"
+        "EZ-PAK":                 ("Bracco",           [("SCT",    "25419009",  "Barium Sulfate")]),            # SNOMED: 25419009 | Product containing barium sulfate (medicinal product) |    # Alternative writing for "E-Z-PAQUE"
+        "EZPAK":                  ("Bracco",           [("SCT",    "25419009",  "Barium Sulfate")]),            # SNOMED: 25419009 | Product containing barium sulfate (medicinal product) |    # Alternative writing for "E-Z-PAQUE"
+        "E-Z-PAQ":                ("Bracco",           [("SCT",    "25419009",  "Barium Sulfate")]),            # SNOMED: 25419009 | Product containing barium sulfate (medicinal product) |    # Alternative writing for "E-Z-PAQUE"
+        "EZ-PAQ":                 ("Bracco",           [("SCT",    "25419009",  "Barium Sulfate")]),            # SNOMED: 25419009 | Product containing barium sulfate (medicinal product) |    # Alternative writing for "E-Z-PAQUE"
+        "EZPAQ":                  ("Bracco",           [("SCT",    "25419009",  "Barium Sulfate")]),            # SNOMED: 25419009 | Product containing barium sulfate (medicinal product) |    # Alternative writing for "E-Z-PAQUE"
+        "E-Z-PAQE":               ("Bracco",           [("SCT",    "25419009",  "Barium Sulfate")]),            # SNOMED: 25419009 | Product containing barium sulfate (medicinal product) |    # Alternative writing for "E-Z-PAQUE"
+        "EZ-PAQE":                ("Bracco",           [("SCT",    "25419009",  "Barium Sulfate")]),            # SNOMED: 25419009 | Product containing barium sulfate (medicinal product) |    # Alternative writing for "E-Z-PAQUE"
+        "EZPAQE":                 ("Bracco",           [("SCT",    "25419009",  "Barium Sulfate")]),            # SNOMED: 25419009 | Product containing barium sulfate (medicinal product) |    # Alternative writing for "E-Z-PAQUE"
+
+        "Liquid POLIBAR PLUS":    ("Bracco",           [("SCT",    "25419009",  "Barium Sulfate")]),            # SNOMED: 25419009 | Product containing barium sulfate (medicinal product) |
+        # Other writing variations:
+        "POLIBAR PLUS":           ("Bracco",           [("SCT",    "25419009",  "Barium Sulfate")]),            # SNOMED: 25419009 | Product containing barium sulfate (medicinal product) |    # Alternative writing for "Liquid POLIBAR PLUS"
+        "Liquid POLIBAR":         ("Bracco",           [("SCT",    "25419009",  "Barium Sulfate")]),            # SNOMED: 25419009 | Product containing barium sulfate (medicinal product) |    # Alternative writing for "Liquid POLIBAR PLUS"
+        "POLIBAR":                ("Bracco",           [("SCT",    "25419009",  "Barium Sulfate")]),            # SNOMED: 25419009 | Product containing barium sulfate (medicinal product) |    # Alternative writing for "Liquid POLIBAR PLUS"
+
         "Telebrix":               ("Guerbet",          [("SCT",    "712698009", "Ioxitalamate meglumine")]),    # SNOMED: 712698009 | Ioxitalamate meglumine (substance) |
         "MD-60":                  ("Mallinckrodt",     [("SCT",     "12335007", "Diatrizoate")]),               # SNOMED: 12335007 | Product containing amidotrizoate (medicinal product) |
         "MD-76":                  ("Mallinckrodt",     [("SCT",     "12335007", "Diatrizoate")]),               # SNOMED: 12335007 | Product containing amidotrizoate (medicinal product) |
@@ -1064,7 +1083,25 @@ class DataConverter:
     }
 
     # A list of common contrast agent active ingredient concentrations in % or mg/mL
-    contrast_agent_active_ingredient_concentrations_list: ClassVar[ReadOnly[list[str]]] = ["30", "60", "76", "240", "250", "260", "270", "300", "320", "350", "360", "370", "380", "390", "400"]
+    contrast_agent_active_ingredient_concentrations_list: ClassVar[ReadOnly[list[str]]] = ["30", "60", "76", "140", "150", "160", "180", "200", "240", "250", "260", "270", "282", "292", "300", "320", "350", "360", "370", "380", "390", "400"]
+
+    # Omnipaque (Iohexol):      Available in 140, 180, 240, 300, and 350 mg I/mL. (Omnipaque 300 and 350 are standard for routine body CTs).
+    # Isovue (Iopamidol):       Formulated as 200, 250, 300, and 370 mg I/mL. (Isovue 370 is widely used for high-velocity CT angiograms).
+    # Visipaque (Iodixanol):    Available in 270 and 320 mg I/mL. This is an iso-osmolar agent frequently used in patients with compromised kidney function.
+    # Ultravist (Iopromide):    Supplied as 150, 240, 300, and 370 mg I/mL.
+    # Optiray (Ioversol):       Packaged as 160, 240, 300, and 350 mg I/mL.
+
+    # Dotarem (Gadoterate meglumine):        0.5  mmol/mL	Standard macrocyclic agent
+    # ProHance (Gadoteridol):	             0.5  mmol/mL	Standard macrocyclic agent
+    # Magnevist (Gadopentetate dimeglumine): 0.5  mmol/mL	Linear agent (mostly historical/discontinued)
+    # MultiHance (Gadobenate dimeglumine):	 0.5  mmol/mL	Weak protein-binding; higher real-world signal
+    # Gadavist / Gadovist (Gadobutrol):	     1.0  mmol/mL	Double-concentration formulation; allows for half the injection volume.
+    # Vueway / Elucirem (Gadopiclenol):	     0.5  mmol/mL	High-relaxivity agent; allows a half-dose (0.05 mmol/kg) to provide identical clarity to a full standard dose.
+    # Eovist / Primovist (Gadoxetic acid):	 0.25 mmol/mL	Half-concentration hepatobiliary-specific agent used exclusively for targeted liver mapping.
+
+    # Readi-Cat 2 (Barium Sulfate): Formulated precisely at 2.1% w/v. It is deliberately a very low concentration so that it opacifies the bowel loops during a CT scan without causing harsh white artifacts that ruin the image.
+    # E-Z-Paque (Barium Sulfate): Prepared at 96% w/v when reconstituted, used for standard upper GI radiographic tracking.
+    # Liquid Polibar: Supplied as a high-density 105% w/v suspension, typically utilized for double-contrast barium enemas.
 
     # A list of all above mentioned contrast agent (brand) names and ingredient names:
     all_contrast_agent_and_ingredient_names_list: ClassVar[ReadOnly[list[str]]] = \

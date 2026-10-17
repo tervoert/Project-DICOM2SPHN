@@ -24,7 +24,7 @@ class SPHNBodyMassIndex(SPHNConcept):
     has_quantity: SPHNQuantity                                     # (1:1) SPHN Quantity
     has_subject_pseudo_identifier: SPHNSubjectPseudoIdentifier     # (1:1) SPHN SubjectPseudoIdentifier
     has_source_system_list: list[SPHNSourceSystem]                 # (1:n) SPHN SourceSystem (list)
-    has_determination_date_time: datetime|None=None                # (0:1) xsd:dateTime
+    has_determination_datetime: datetime|None=None                # (0:1) xsd:dateTime
     has_administrative_case: SPHNAdministrativeCase|None=None      # (0:1) SPHN SPHNAdministrativeCase
 
     sphn_schema: SPHNSchemaGraph
@@ -84,8 +84,8 @@ class SPHNBodyMassIndex(SPHNConcept):
         if self.has_quantity is not None:
             json_dict_content[f"{SPHN.hasQuantity.n3(self.sphn_schema.namespace_manager())}"] = self.has_quantity.get_json_dict(content, self.id)
 
-        if self.has_determination_date_time is not None:
-            json_dict_content[f"{SPHN.hasDeterminationDateTime.n3(self.sphn_schema.namespace_manager())}"] = self.has_determination_date_time.isoformat(timespec='milliseconds')
+        if self.has_determination_datetime is not None:
+            json_dict_content[f"{SPHN.hasDeterminationDateTime.n3(self.sphn_schema.namespace_manager())}"] = self.has_determination_datetime.isoformat(timespec='milliseconds')
 
         if self.has_administrative_case is not None:
             json_dict_content[f"{SPHN.hasAdministrativeCase.n3(self.sphn_schema.namespace_manager())}"] = self.has_administrative_case.get_json_dict(content, self.id)
@@ -126,7 +126,7 @@ class SPHNBodyMassIndex(SPHNConcept):
         """
 
         return isinstance(other, type(self)) \
-            and self.has_determination_date_time == other.has_determination_date_time \
+            and self.has_determination_datetime == other.has_determination_datetime \
             and self.has_quantity.is_similar(other.has_quantity) \
             and self.has_subject_pseudo_identifier.is_similar(other.has_subject_pseudo_identifier) \
             and ((self.has_administrative_case is None and other.has_administrative_case is None) \

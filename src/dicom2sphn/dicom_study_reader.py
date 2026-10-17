@@ -56,48 +56,68 @@ def get_study_metadata_from_dicom(dataset: Dataset, context: Context, indent: in
     # -------------------------------------------------------------------------------------------------------------
 
     # 
-    # StudyDate
+    # StudyDate and StudyTime
     #
 
-    study_date_str = get_study_date_from_dicom(dataset, context, indent=indent+2)
+    if data_store.study_start_datetime is None:
 
-    if study_date_str is not None:
-        logger.debug(" "*(indent+0) + f"StudyDate: '{study_date_str}'")
-    else:
-        logger.debug(" "*(indent+0) + "No DICOM StudyDate found")
+        # Date
+        study_date = get_study_date_from_dicom(dataset, context, indent=indent+2)
 
-    # 
-    # StudyTime
-    #
+        if study_date is not None:
+            assert isinstance(study_date, str)
+            logger.debug(" "*(indent+0) + f"StudyDate string from DICOM: '{study_date}'")
+        else:
+            logger.debug(" "*(indent+0) + "StudyDate not found")
 
-    study_time_str = get_study_time_from_dicom(dataset, context, indent=indent+2)
+        # Time
+        study_time = get_study_time_from_dicom(dataset, context, indent=indent+2)
 
-    if study_time_str is not None:
-        logger.debug(" "*(indent+0) + f"StudyTime: '{study_time_str}'")
-    else:
-        logger.debug(" "*(indent+0) + "No DICOM StudyTime found")
+        if study_time is not None:
+            assert isinstance(study_time, str)
+            logger.debug(" "*(indent+0) + f"StudyTime string from DICOM: '{study_time}'")
+        else:
+            logger.debug(" "*(indent+0) + "StudyTime not found")
 
-    # 
-    # Combine StudyDate and StudyTime
-    #
+        # Combine StudyDate and StudyTime
+        study_start_datetime_obj = None
+        if study_date and study_time:
 
-    study_start_datetime = None
-    if study_date_str is not None and study_time_str is not None:
-        # Combine date and time
-        study_start_datetime = combine_dicom_date_and_time(study_date_str, study_time_str, logger=logger, indent=indent+2)
+            # Combine the StudyDate and StudyTime strings into a single complete DICOM datetime (DT) object
+            # - study datetime is completed by filling in missing components for Month, Day, Hour, Minute, Second
+            study_start_datetime_obj = combine_dicom_date_and_time(study_date, study_time, logger, indent=indent+2)
+        
+        elif study_date and not study_time:
 
-    if study_start_datetime is None:
-        # Use the fallback StudyDate and StudyTime for SPHN ImagingProcedure has_start_datetime as it is mandatory in SPHN
-        logger.debug(" "*(indent+0) + f"Using 'fallback_study_date_time': '{data_store.fallback_study_date_time.isoformat(timespec='milliseconds')}'")
-        study_start_datetime = data_store.fallback_study_date_time
+            # Combine the StudyDate and a missing or empty StudyTime strings into a single complete DICOM datetime (DT) object
+            # - study datetime is completed by filling in missing components for Month, Day, Hour, Minute, Second
+            study_start_datetime_obj = combine_dicom_date_and_time(study_date, "", logger, indent=indent+2)
+        else:
+            logger.debug(" "*(indent+0) + "Could not combine StudyDate and StudyTime: Study Date not defined")
+        
+        if study_start_datetime_obj is not None:
+            # Set the study start datetime in the data store
+            data_store.study_start_datetime = study_start_datetime_obj
+            logger.debug(" "*(indent+0) + f"Combined Study Date and Time: '{study_start_datetime_obj!s}'")
 
-    assert isinstance(study_start_datetime, datetime)
+            # Update the SPHN ImagingProcedure start datetime
+            assert isinstance(data_store.sphn_imaging_procedure, SPHNImagingProcedure)            
+            data_store.sphn_imaging_procedure.has_start_datetime = study_start_datetime_obj
+            logger.debug(" "*(indent+0) + f"Updated SPHN ImagingProcedure has_start_datetime: '{study_start_datetime_obj.isoformat(timespec='milliseconds')}'")
+        else:
+            logger.debug(" "*(indent+0) + "Could not combine StudyDate and StudyTime")
+
+    # Set the start datetime for the SPHN ImagingProcedure if it has not been set already
     assert isinstance(data_store.sphn_imaging_procedure, SPHNImagingProcedure)
+    if data_store.sphn_imaging_procedure.has_start_datetime is None:
+        # Use the fallback StudyDate and StudyTime for SPHN ImagingProcedure has_start_datetime as it is mandatory in SPHN
+        study_start_datetime = data_store.fallback_study_datetime
+        assert isinstance(study_start_datetime, datetime)
+        logger.debug(" "*(indent+0) + f"Using 'fallback_study_datetime': '{study_start_datetime!s}'")
+        # Set the ImagingProcedure property
+        data_store.sphn_imaging_procedure.has_start_datetime =  study_start_datetime
+        logger.debug(" "*(indent+0) + f"Added SPHN ImagingProcedure has_start_datetime: '{study_start_datetime.isoformat(timespec='milliseconds')}'")
 
-    # Set the ImagingProcedure property
-    data_store.sphn_imaging_procedure.has_start_datetime =  study_start_datetime
-    logger.debug(" "*(indent+0) + f"Added SPHN ImagingProcedure has_start_datetime: '{study_start_datetime.isoformat(timespec='milliseconds')}'")
-    
     # -------------------------------------------------------------------------------------------------------------
 
     # 
@@ -157,7 +177,7 @@ def get_study_metadata_from_dicom(dataset: Dataset, context: Context, indent: in
         sphn_age = SPHNAge(
             sphn_schema = sphn_schema,
             has_quantity = sphn_quantity_age,
-            has_determination_date_time = data_store.sphn_imaging_procedure.has_start_datetime,
+            has_determination_datetime = data_store.sphn_imaging_procedure.has_start_datetime,
             has_subject_pseudo_identifier = data_store.sphn_subject_pseudo_identifier,
             has_source_system_list = [data_store.sphn_source_system]
             )
@@ -211,7 +231,7 @@ def get_study_metadata_from_dicom(dataset: Dataset, context: Context, indent: in
         sphn_body_height = SPHNBodyHeight(
             sphn_schema = sphn_schema,
             has_quantity = sphn_quantity_body_height,
-            has_date_time = data_store.sphn_imaging_procedure.has_start_datetime,
+            has_datetime = data_store.sphn_imaging_procedure.has_start_datetime,
             has_data_determination = sphn_data_determination
             )
 
@@ -264,7 +284,7 @@ def get_study_metadata_from_dicom(dataset: Dataset, context: Context, indent: in
         sphn_body_weight = SPHNBodyWeight(
             sphn_schema = sphn_schema,
             has_quantity = sphn_quantity_body_weight,
-            has_date_time = data_store.sphn_imaging_procedure.has_start_datetime,
+            has_datetime = data_store.sphn_imaging_procedure.has_start_datetime,
             has_data_determination = sphn_data_determination
             )
 
@@ -310,7 +330,7 @@ def get_study_metadata_from_dicom(dataset: Dataset, context: Context, indent: in
             has_quantity = sphn_quantity_bmi,
             has_subject_pseudo_identifier = data_store.sphn_subject_pseudo_identifier,
             has_source_system_list = [data_store.sphn_source_system],
-            has_determination_date_time = data_store.sphn_imaging_procedure.has_start_datetime,
+            has_determination_datetime = data_store.sphn_imaging_procedure.has_start_datetime,
             has_administrative_case = None
             )
 
@@ -349,7 +369,7 @@ def get_study_metadata_from_dicom(dataset: Dataset, context: Context, indent: in
             has_code = sphn_code_sex,
             has_subject_pseudo_identifier = data_store.sphn_subject_pseudo_identifier,
             has_source_system_list = [data_store.sphn_source_system],
-            has_record_date_time = data_store.sphn_imaging_procedure.has_start_datetime
+            has_record_datetime = data_store.sphn_imaging_procedure.has_start_datetime
             )
         
         data_store.sphn_imaging_procedure.has_subject_administrative_sex = sphn_administrative_sex

@@ -46,7 +46,7 @@ class DataStore:
     sphn_source_system: SPHNSourceSystem
     sphn_schema: SPHNSchemaGraph
     valid_sop_classes: dict[str, str]
-    fallback_study_date_time: datetime
+    fallback_study_datetime: datetime
 
     # -----------------------------------------------------------------------------------------------------------------------------
     # Class variables set during the processing of the DICOM Patient - Study - Series - Instance hierarchical tree
@@ -138,6 +138,7 @@ class DataStore:
 
     number_of_frames_in_series: int=0
 
+
     # 
     # Imaging Device related
     #
@@ -163,6 +164,7 @@ class DataStore:
     sphn_imaging_procedure: SPHNImagingProcedure|None=None
     sphn_imaging_series: SPHNImagingSeries|None=None
 
+
     # 
     # Frame level - Values are set by the dw_frame_processor.py module
     #
@@ -176,6 +178,10 @@ class DataStore:
     sphn_imagingframe_type_valueset_member_list: list[str]|None=None
 
     sphn_contrast_agent_administration_event_list: list[SPHNContrastAgentAdministrationEvent]|None=None
+
+    study_start_datetime: datetime|None = None
+    series_start_datetime: datetime|None = None
+    acquisition_start_datetime: datetime|None = None
     
     #
     # Edwin 2026-07-16
@@ -186,7 +192,7 @@ class DataStore:
                  sphn_source_system: SPHNSourceSystem, 
                  sphn_schema: SPHNSchemaGraph, 
                  valid_sop_classes: dict[str, str],
-                 fallback_study_date_time: datetime):
+                 fallback_study_datetime: datetime):
         """
         Initializes the DataStore instance.
         """
@@ -197,14 +203,16 @@ class DataStore:
         assert isinstance(sphn_source_system, SPHNSourceSystem)
         assert isinstance(sphn_schema, SPHNSchemaGraph)
         assert isinstance(valid_sop_classes, dict) and all(isinstance(k, str) and isinstance(v, str) for k, v in valid_sop_classes.items())
-        assert isinstance(fallback_study_date_time, datetime)
+        assert isinstance(fallback_study_datetime, datetime)
 
         self.sphn_data_release = sphn_data_release
         self.sphn_data_provider = sphn_data_provider
         self.sphn_source_system = sphn_source_system
         self.sphn_schema = sphn_schema
         self.valid_sop_classes = valid_sop_classes
-        self.fallback_study_date_time = fallback_study_date_time
+
+        self.fallback_study_datetime = fallback_study_datetime
+        self.study_start_datetime = None
 
         self.sphn_imaging_procedure_list = []
         self.sphn_imaging_series_list = []
@@ -241,9 +249,6 @@ class DataStore:
         assert self.sphn_data_provider is not None and isinstance(self.sphn_data_provider, SPHNDataProvider)
         assert self.sphn_subject_pseudo_identifier is not None and isinstance(self.sphn_subject_pseudo_identifier, SPHNSubjectPseudoIdentifier)
         assert self.file_id is not None and is_valid_string(self.file_id)
-
-        
-
 
         # Get the sphn:DataRelease output (for the special concepts)
         data_release_dict = self.sphn_data_release.get_json_dict()
@@ -360,6 +365,8 @@ class DataStore:
 
         self.number_of_sphn_imaging_series_added_to_sphn_imaging_procedure = 0
 
+        self.study_start_datetime = None
+
     # -----------------------------------------------------------------------------------------------------------------
     # Imaging Series level - SPHNImagingSeries
     # -----------------------------------------------------------------------------------------------------------------
@@ -393,6 +400,9 @@ class DataStore:
 
         self.sphn_contrast_agent_administration_event_list = None
 
+        self.series_start_datetime = None
+
+
     # -----------------------------------------------------------------------------------------------------------------
     # Imaging Instance level
     # -----------------------------------------------------------------------------------------------------------------
@@ -415,6 +425,7 @@ class DataStore:
         self.number_of_dicom_frames_processed = 0
         self.number_of_sphn_imaging_frames_added_to_sphn_imaging_series = 0
 
+        self.acquisition_start_datetime = None
 
     # -----------------------------------------------------------------------------------------------------------------
     # Imaging Frame level - SPHNImagingFrame
@@ -515,7 +526,7 @@ class DataStore:
     #
     # Edwin 2026-09-24
     #
-    def add_contrast_bolus_agent_sequence_code_to_dict(self, coding_scheme_designator: str|None, code_value: str|None, code_meaning: str|None = None) -> None:
+    def add_known_contrast_bolus_agent_sequence_code_to_dict(self, coding_scheme_designator: str|None, code_value: str|None, code_meaning: str|None = None) -> None:
 
         # Checks
         assert coding_scheme_designator is None or is_valid_string(coding_scheme_designator)
@@ -553,7 +564,7 @@ class DataStore:
     #
     # Edwin 2026-09-29
     #
-    def add_contrast_bolus_administration_route_sequence_code_to_dict(self, coding_scheme_designator: str|None, code_value: str|None, code_meaning: str|None = None) -> None:
+    def add_known_contrast_bolus_administration_route_sequence_code_to_dict(self, coding_scheme_designator: str|None, code_value: str|None, code_meaning: str|None = None) -> None:
 
         # Checks
         assert coding_scheme_designator is None or is_valid_string(coding_scheme_designator)
