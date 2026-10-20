@@ -7,7 +7,7 @@ sphn_imaging_device.py:
 from pydantic import Field, ValidationInfo, field_validator
 
 from ..sphn_schema_graph import SPHN, SPHNSchemaGraph
-from ..tools import already_in_list, are_similar_lists, generate_id, is_valid_string
+from ..tools import generate_id, is_valid_string
 from .sphn_code import SPHNCode
 from .sphn_concept import SPHNConcept
 from .sphn_software import SPHNSoftware
@@ -66,7 +66,7 @@ class SPHNImagingDevice(SPHNConcept):
         if self.has_software_list is None:
             self.has_software_list = [software]
         else:
-            if not already_in_list(software, self.has_software_list):
+            if software not in self.has_software_list:
                 self.has_software_list.append(software)
 
 
@@ -107,25 +107,27 @@ class SPHNImagingDevice(SPHNConcept):
 
 
     #
-    # Edwin 2026-08-05
+    # Edwin 2026-10-19
     #
-    def is_similar(self, other: SPHNConcept) -> bool:
-        """
-        Compare this instance with another instance of the same class
-        """
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return (
+                    self.has_type_code, 
+                    self.has_product_code, 
+                    self.has_manufacturer_name, 
+                    self.has_model_name, 
+                    self.has_serial_number, 
+                    sorted(self.has_software_list) if self.has_software_list is not None else None
+                ) == (
+                    other.has_type_code, 
+                    other.has_product_code, 
+                    other.has_manufacturer_name, 
+                    other.has_model_name, 
+                    other.has_serial_number, 
+                    sorted(other.has_software_list) if other.has_software_list is not None else None
+                )
 
-        return isinstance(other, type(self)) \
-            and self.has_manufacturer_name == other.has_manufacturer_name \
-            and self.has_model_name == other.has_model_name \
-            and self.has_serial_number == other.has_serial_number \
-            and ((self.has_type_code is None and other.has_type_code is None) \
-                 or (self.has_type_code is not None and other.has_type_code is not None \
-                     and self.has_type_code.is_similar(other.has_type_code))) \
-            and ((self.has_product_code is None and other.has_product_code is None) \
-                 or (self.has_product_code is not None and other.has_product_code is not None \
-                     and self.has_product_code.is_similar(other.has_product_code))) \
-            and are_similar_lists(self.has_software_list, other.has_software_list)
-    
     # -----------------------------------------------------------------------------------------------------------------
     # Private functions
     # -----------------------------------------------------------------------------------------------------------------

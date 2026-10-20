@@ -7,7 +7,7 @@ sphn_radiopharmaceutical.py:
 from pydantic import Field, field_validator
 
 from ..sphn_schema_graph import SPHN, SPHNSchemaGraph
-from ..tools import already_in_list, are_similar_lists, generate_id, is_valid_string
+from ..tools import generate_id, is_valid_string
 from .sphn_drug import SPHNDrug
 from .sphn_drug_article import SPHNDrugArticle
 from .sphn_quantity import SPHNQuantity
@@ -74,7 +74,7 @@ class SPHNRadiopharmaceutical(SPHNDrug):
         # Checks
         assert isinstance(source_system, SPHNSourceSystem)
 
-        if not already_in_list(source_system, self.has_source_system_list):
+        if source_system not in self.has_source_system_list:
             self.has_source_system_list.append(source_system)
     
     #
@@ -116,30 +116,27 @@ class SPHNRadiopharmaceutical(SPHNDrug):
 
     
     #
-    # Edwin 2026-08-13
+    # Edwin 2026-10-19
     #
-    def is_similar(self, other) -> bool :
-        """
-        Compare this instance with another instance of the same class
-        """
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return (
+                    self.has_quantity, 
+                    self.has_article, 
+                    self.has_radionuclide, 
+                    sorted(self.has_active_ingredient_list) if self.has_active_ingredient_list is not None else None, 
+                    sorted(self.has_inactive_ingredient_list) if self.has_inactive_ingredient_list is not None else None, 
+                    sorted(self.has_source_system_list) if self.has_source_system_list is not None else None
+                ) == (
+                    other.has_quantity, 
+                    other.has_article, 
+                    other.has_radionuclide, 
+                    sorted(other.has_active_ingredient_list) if other.has_active_ingredient_list is not None else None, 
+                    sorted(other.has_inactive_ingredient_list) if other.has_inactive_ingredient_list is not None else None, 
+                    sorted(other.has_source_system_list) if other.has_source_system_list is not None else None
+                )
 
-        return isinstance(other, type(self)) \
-            and ((self.has_quantity is None and other.has_quantity is None) \
-                 or (self.has_quantity is not None and other.has_quantity is not None \
-                     and self.has_quantity.is_similar(other.has_quantity))) \
-            and ((self.has_article is None and other.has_article is None) \
-                 or (self.has_article is not None and other.has_article is not None \
-                     and self.has_article.is_similar(other.has_article))) \
-            and ((self.has_radionuclide is None and other.has_radionuclide is None) \
-                 or (self.has_radionuclide is not None and other.has_radionuclide is not None \
-                     and self.has_radionuclide.is_similar(other.has_radionuclide))) \
-            and ((self.has_active_ingredient_list is None and other.has_active_ingredient_list is None) \
-                 or (self.has_active_ingredient_list is not None and other.has_active_ingredient_list is not None \
-                     and are_similar_lists(self.has_active_ingredient_list, other.has_active_ingredient_list))) \
-            and ((self.has_inactive_ingredient_list is None and other.has_inactive_ingredient_list is None) \
-                 or (self.has_inactive_ingredient_list is not None and other.has_inactive_ingredient_list is not None \
-                     and are_similar_lists(self.has_inactive_ingredient_list, other.has_inactive_ingredient_list))) \
-            and are_similar_lists(self.has_source_system_list, other.has_source_system_list)
 
     # -----------------------------------------------------------------------------------------------------------------
     # Private functions

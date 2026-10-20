@@ -11,8 +11,6 @@ from pydantic import Field, ValidationInfo, field_validator, model_validator
 
 from ..sphn_schema_graph import SPHN, SPHN_IND, SPHNSchemaGraph
 from ..tools import (
-    already_in_list,
-    are_similar_lists,
     generate_id,
     is_clean_string,
     is_valid_string,
@@ -91,7 +89,7 @@ class SPHNDataFile(SPHNConcept):
         # Checks
         assert isinstance(source_system, SPHNSourceSystem)
 
-        if not already_in_list(source_system, self.has_source_system_list):
+        if source_system not in self.has_source_system_list:
             self.has_source_system_list.append(source_system)
 
     #
@@ -166,28 +164,30 @@ class SPHNDataFile(SPHNConcept):
 
 
     #
-    # Edwin 2026-08-05
+    # Edwin 2026-10-19
     #
-    def is_similar(self, other: SPHNConcept) -> bool:
-        """
-        Compare this instance with another instance of the same class
-        """
-
-        return isinstance(other, type(self)) \
-            and self.has_name == other.has_name \
-            and self.has_encoding == other.has_encoding \
-            and self.has_uniform_resource_identifier == other.has_uniform_resource_identifier \
-            and self.has_creation_datetime == other.has_creation_datetime \
-            and ((self.has_format_code is None and other.has_format_code is None) \
-                 or (self.has_format_code is not None and other.has_format_code is not None \
-                     and self.has_format_code.is_similar(other.has_format_code))) \
-            and ((self.has_hash is None and other.has_hash is None) \
-                 or (self.has_hash is not None and other.has_hash is not None \
-                     and self.has_hash.is_similar(other.has_hash))) \
-            and ((self.has_subject_pseudo_identifier_list is None and other.has_subject_pseudo_identifier_list is None) \
-                 or (self.has_subject_pseudo_identifier_list is not None and other.has_subject_pseudo_identifier_list is not None \
-                     and are_similar_lists(self.has_subject_pseudo_identifier_list, other.has_subject_pseudo_identifier_list))) \
-            and are_similar_lists(self.has_source_system_list, other.has_source_system_list)
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return (    
+                    self.has_name, 
+                    self.has_encoding, 
+                    self.has_uniform_resource_identifier, 
+                    self.has_creation_datetime, 
+                    self.has_format_code, 
+                    self.has_hash, 
+                    sorted(self.has_subject_pseudo_identifier_list) if self.has_subject_pseudo_identifier_list is not None else None, 
+                    sorted(self.has_source_system_list) if self.has_source_system_list is not None else None
+                ) == (
+                    other.has_name, 
+                    other.has_encoding, 
+                    other.has_uniform_resource_identifier, 
+                    other.has_creation_datetime, 
+                    other.has_format_code, 
+                    other.has_hash, 
+                    sorted(other.has_subject_pseudo_identifier_list) if other.has_subject_pseudo_identifier_list is not None else None, 
+                    sorted(other.has_source_system_list) if other.has_source_system_list is not None else None
+                )
 
     # ----------------------------------------------------------------------------------------------------------
     # Private functions

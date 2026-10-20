@@ -26,7 +26,6 @@ from .sphn_concepts.sphn_pixel_dimensions import SPHNPixelDimensions
 from .sphn_concepts.sphn_quantity import SPHNQuantity
 from .sphn_concepts.sphn_unit import SPHNUnit
 from .tools import (
-    already_in_list,
     combine_dicom_date_and_time,
     complete_dicom_datetime,
     is_clean_string,
@@ -587,9 +586,11 @@ def get_frame_metadata_from_dicom(dataset: Dataset, frame_number: int, context: 
             n = 0
             for image_compression_algorithm in image_compression_algorithm_list:
                 # Add if not similar to a previous SPHN ImagingFrame in the list (to avoid duplicates)
-                if not already_in_list(image_compression_algorithm, data_store.sphn_data_compression_algorithm_list):
+                if image_compression_algorithm not in data_store.sphn_data_compression_algorithm_list:
                     data_store.sphn_data_compression_algorithm_list.append(image_compression_algorithm)
                     n += 1
+                else:
+                    logger.debug(" "*(indent+2) + "SPHN DataCompressionAlgorithm is already in the list")
 
         logger.debug(" "*(indent+0) + f"Added {n} SPHN DataCompressionAlgorithm instances to the data_store.")
     else:
@@ -772,15 +773,20 @@ def get_frame_metadata_from_dicom(dataset: Dataset, frame_number: int, context: 
     #
     # Read the Contrast/Bolus module from the DICOM dataset and add it to the data_store
     #
-    sphn_contrast_agent_administration_event_list = get_contrast_bolus_module_from_dicom(dataset, context, indent=indent+4)
+    
+    logger.debug(" "*(indent+0) + "Start reading Contrast/Bolus module from DICOM dataset")
+
+    sphn_contrast_agent_administration_event_list = get_contrast_bolus_module_from_dicom(dataset, context, indent=indent+2)
 
     if sphn_contrast_agent_administration_event_list is not None:
         if data_store.sphn_contrast_agent_administration_event_list is not None:
             events_added_counter=0
             for event in sphn_contrast_agent_administration_event_list:
-                if not already_in_list(event, data_store.sphn_contrast_agent_administration_event_list):
+                if event not in data_store.sphn_contrast_agent_administration_event_list:
                     data_store.sphn_contrast_agent_administration_event_list.append(event)
                     events_added_counter += 1
+                else:
+                    logger.debug(" "*(indent+2) + "SPHN Contrast Agent Administration Event object is already in the list")
             logger.debug(" "*(indent+0) + f"Number of new SPHN Contrast Agent Administration Event object(s) added to the data_store: {events_added_counter}")
         else:
             data_store.sphn_contrast_agent_administration_event_list = sphn_contrast_agent_administration_event_list
@@ -1728,8 +1734,10 @@ def convert_to_data_compression_algorithm_list(
                 )
 
                 # Check if it is already in the list
-                if not already_in_list(sphn_data_compression_algorithm, image_compression_algorithm_list):
+                if sphn_data_compression_algorithm not in image_compression_algorithm_list:
                     image_compression_algorithm_list.append(sphn_data_compression_algorithm)
+                else:
+                    logger.debug(" "*(indent+2) + "SPHN DataCompressionAlgorithm is already in the list")
 
     return image_compression_algorithm_list if len(image_compression_algorithm_list)>0 else None
 

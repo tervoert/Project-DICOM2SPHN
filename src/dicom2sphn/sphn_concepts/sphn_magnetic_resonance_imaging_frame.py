@@ -11,8 +11,6 @@ from pydantic import Field, ValidationInfo, field_validator, model_validator
 
 from ..sphn_schema_graph import SPHN, SPHN_IND, SPHNSchemaGraph
 from ..tools import (
-    already_in_list,
-    are_similar_lists,
     generate_id,
     is_clean_string,
     is_valid_string,
@@ -136,7 +134,7 @@ class SPHNMagneticResonanceImagingFrame(SPHNImagingFrame):
         if self.has_body_site_list is None:
             self.has_body_site_list = [body_site]
         else:
-            if not already_in_list(body_site, self.has_body_site_list):
+            if body_site not in self.has_body_site_list:
                 self.has_body_site_list.append(body_site)
 
 
@@ -153,7 +151,7 @@ class SPHNMagneticResonanceImagingFrame(SPHNImagingFrame):
         if self.has_algorithm_list is None:
             self.has_algorithm_list = [data_compression_algorithm]
         else:
-            if not already_in_list(data_compression_algorithm, self.has_algorithm_list):
+            if data_compression_algorithm not in self.has_algorithm_list:
                 self.has_algorithm_list.append(data_compression_algorithm)
 
 
@@ -218,42 +216,39 @@ class SPHNMagneticResonanceImagingFrame(SPHNImagingFrame):
 
 
     #
-    # Edwin 2026-08-13
+    # Edwin 2026-10-19
     #
-    def is_similar(self, other, rel_tol: float=1e-4, abs_tol: float=1e-9) -> bool:
-        """
-        Compare this instance with another instance of the same class
-        """
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return (
+                    self.has_start_datetime, 
+                    self.has_end_datetime, 
+                    self.has_content_qualification, 
+                    self.has_image_dimensions,
+                    self.has_imaging_metric,
+                    self.has_anatomical_projection,
+                    self.has_contrast_agent_administration_event,
+                    self.has_contrast_agent_phase,
+                    self.has_synchronization,
+                    sorted(self.has_type_list) if self.has_type_list is not None else None,
+                    sorted(self.has_body_site_list) if self.has_body_site_list is not None else None,
+                    sorted(self.has_algorithm_list) if self.has_algorithm_list is not None else None
+                ) == (
+                    other.has_start_datetime, 
+                    other.has_end_datetime, 
+                    other.has_content_qualification, 
+                    other.has_image_dimensions, 
+                    other.has_imaging_metric,
+                    other.has_anatomical_projection,
+                    other.has_contrast_agent_administration_event,
+                    other.has_contrast_agent_phase,
+                    other.has_synchronization,
+                    sorted(other.has_type_list) if other.has_type_list is not None else None,
+                    sorted(other.has_body_site_list) if other.has_body_site_list is not None else None,
+                    sorted(other.has_algorithm_list) if other.has_algorithm_list is not None else None
+                )
 
-        return isinstance(other, type(self)) \
-            and self.has_start_datetime == other.has_start_datetime \
-            and self.has_end_datetime == other.has_end_datetime \
-            and self.has_content_qualification == other.has_content_qualification \
-            and sorted(self.has_type_list) == sorted(other.has_type_list) \
-            and ((self.has_image_dimensions is None and other.has_image_dimensions is None) \
-                 or (self.has_image_dimensions is not None and other.has_image_dimensions is not None \
-                     and self.has_image_dimensions.is_similar(other.has_image_dimensions))) \
-            and ((self.has_imaging_metric is None and other.has_imaging_metric is None) \
-                 or (self.has_imaging_metric is not None and other.has_imaging_metric is not None \
-                     and self.has_imaging_metric.is_similar(other.has_imaging_metric))) \
-            and ((self.has_anatomical_projection is None and other.has_anatomical_projection is None) \
-                 or (self.has_anatomical_projection is not None and other.has_anatomical_projection is not None \
-                     and self.has_anatomical_projection.is_similar(other.has_anatomical_projection))) \
-            and ((self.has_body_site_list is None and other.has_body_site_list is None) \
-                 or (self.has_body_site_list is not None and other.has_body_site_list is not None \
-                     and are_similar_lists(self.has_body_site_list, other.has_body_site_list))) \
-            and ((self.has_algorithm_list is None and other.has_algorithm_list is None) \
-                 or (self.has_algorithm_list is not None and other.has_algorithm_list is not None \
-                     and are_similar_lists(self.has_algorithm_list, other.has_algorithm_list))) \
-            and ((self.has_contrast_agent_administration_event is None and other.has_contrast_agent_administration_event is None) \
-                 or (self.has_contrast_agent_administration_event is not None and other.has_contrast_agent_administration_event is not None \
-                     and self.has_contrast_agent_administration_event.is_similar(other.has_contrast_agent_administration_event))) \
-            and ((self.has_contrast_agent_phase is None and other.has_contrast_agent_phase is None) \
-                 or (self.has_contrast_agent_phase is not None and other.has_contrast_agent_phase is not None \
-                     and self.has_contrast_agent_phase.is_similar(other.has_contrast_agent_phase))) \
-            and ((self.has_synchronization is None and other.has_synchronization is None) \
-                 or (self.has_synchronization is not None and other.has_synchronization is not None \
-                     and self.has_synchronization.is_similar(other.has_synchronization)))
 
     # -----------------------------------------------------------------------------------------------------------------
     # Private functions

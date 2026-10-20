@@ -73,16 +73,18 @@ class SPHNHash(SPHNConcept):
 
 
     #
-    # Edwin 2026-08-05
+    # Edwin 2026-10-19
     #
-    def is_similar(self, other) -> bool :
-        """
-        Compare this instance with another instance of the same class
-        """
-
-        return isinstance(other, type(self)) \
-            and self.has_algorithm == other.has_algorithm \
-            and self.has_string_value == other.has_string_value 
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return (
+                    self.has_algorithm,
+                    self.has_string_value
+                ) == (
+                    other.has_algorithm,
+                    other.has_string_value
+                )
 
     # ----------------------------------------------------------------------------------------------------------
     # Private functions

@@ -56,19 +56,19 @@ class SPHNDischarge(SPHNConcept):
 
     
     #
-    # Edwin 2026-08-05
+    # Edwin 2026-10-19
     #
-    def is_similar(self, other: SPHNConcept) -> bool :
-        """
-        Compare this instance with another instance of the same class
-        """
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return (
+                    self.has_datetime,
+                    self.has_target_location,
+                ) == (
+                    other.has_datetime,
+                    other.has_target_location,
+                )
 
-        return isinstance(other, type(self)) \
-            and self.has_datetime == other.has_datetime \
-            and ((self.has_target_location is None and other.has_target_location is None) \
-                 or (self.has_target_location is not None and other.has_target_location is not None \
-                     and self.has_target_location.is_similar(other.has_target_location)))
-    
     # -----------------------------------------------------------------------------------------------------------------
     # Private functions
     # -----------------------------------------------------------------------------------------------------------------

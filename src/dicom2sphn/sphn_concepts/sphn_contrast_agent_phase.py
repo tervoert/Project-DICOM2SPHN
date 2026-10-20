@@ -57,20 +57,18 @@ class SPHNContrastAgentPhase(SPHNConcept):
 
 
     #
-    # Edwin 2026-08-13
+    # Edwin 2026-10-19
     #
-    def is_similar(self, other, rel_tol: float=1e-4, abs_tol: float=1e-9) -> bool:
-        """
-        Compare this instance with another instance of the same class
-        """
-
-        return isinstance(other, type(self)) \
-            and ((self.has_timing_code is None and other.has_timing_code is None) \
-                 or (self.has_timing_code is not None and other.has_timing_code is not None \
-                     and self.has_timing_code.is_similar(other.has_timing_code))) \
-            and ((self.has_localization is None and other.has_localization is None) \
-                 or (self.has_localization is not None and other.has_localization is not None \
-                     and self.has_localization.is_similar(other.has_localization)))
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return (
+                    self.has_timing_code, 
+                    self.has_localization
+                ) == (
+                    other.has_timing_code, 
+                    other.has_localization
+                )
 
     # -----------------------------------------------------------------------------------------------------------------
     # Private functions

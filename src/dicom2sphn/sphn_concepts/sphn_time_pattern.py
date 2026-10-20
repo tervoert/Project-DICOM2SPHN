@@ -64,26 +64,24 @@ class SPHNTimePattern(SPHNConcept):
 
     
     #
-    # Edwin 2026-08-13
+    # Edwin 2026-10-19
     #
-    def is_similar(self, other: SPHNConcept) -> bool:
-        """
-        Compare this instance with another instance of the same class
-        """
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return (
+                    self.has_offset, 
+                    self.has_frequency, 
+                    self.has_type_code, 
+                    self.has_time_of_day_code
+                ) == (
+                    other.has_offset, 
+                    other.has_frequency, 
+                    other.has_type_code, 
+                    other.has_time_of_day_code
+                )
 
-        return isinstance(other, type(self)) \
-            and (self.has_offset is None and other.has_offset is None \
-                 or (self.has_offset is not None and other.has_offset is not None \
-                     and self.has_offset.is_similar(other.has_offset))) \
-            and (self.has_frequency is None and other.has_frequency is None \
-                 or (self.has_frequency is not None and other.has_frequency is not None \
-                     and self.has_frequency.is_similar(other.has_frequency))) \
-            and (self.has_type_code is None and other.has_type_code is None \
-                 or (self.has_type_code is not None and other.has_type_code is not None \
-                        and self.has_type_code.is_similar(other.has_type_code))) \
-            and (self.has_time_of_day_code is None and other.has_time_of_day_code is None \
-                 or (self.has_time_of_day_code is not None and other.has_time_of_day_code is not None \
-                        and self.has_time_of_day_code.is_similar(other.has_time_of_day_code))) \
+
 
     # -----------------------------------------------------------------------------------------------------------------
     # Private functions

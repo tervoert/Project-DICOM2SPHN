@@ -15,7 +15,7 @@ from .dw_series_processor import DWSeriesProcessor
 from .sphn_concepts.sphn_code import SPHNCode
 from .sphn_concepts.sphn_quantity import SPHNQuantity
 from .sphn_concepts.sphn_unit import SPHNUnit
-from .tools import already_in_list, is_valid_string
+from .tools import is_valid_string
 
 
 class DWStudyProcessor:
@@ -290,7 +290,7 @@ class DWStudyProcessor:
 
                     # Add if not similar to a previous SPHN ImagingSeries in the list (to avoid duplicates)
                     if context.ALWAYS_ADD_SPHN_IMAGING_SERIES \
-                        or not already_in_list(data_store.sphn_imaging_series, data_store.sphn_imaging_procedure.has_imaging_series_list):
+                        or data_store.sphn_imaging_series not in data_store.sphn_imaging_procedure.has_imaging_series_list:
                         data_store.sphn_imaging_procedure.has_imaging_series_list.append(data_store.sphn_imaging_series)
                         logger.debug(" "*(indent+2) + "Added the SPHN ImagingSeries to the SPHN ImagingProcedure in the data_store")
                         data_store.increment_sphn_imaging_series_added_to_sphn_imaging_procedure_counter()

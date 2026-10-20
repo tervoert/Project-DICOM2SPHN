@@ -108,23 +108,28 @@ class SPHNDataCompressionAlgorithm(SPHNConcept):
 
 
     #
-    # Edwin 2026-08-05
+    # Edwin 2026-10-19
     #
-    def is_similar(self, other: SPHNConcept) -> bool:
-        """
-        Compare this instance with another instance of the same class
-        """
-
-        return isinstance(other, type(self)) \
-            and self.has_name == other.has_name \
-            and self.has_version == other.has_version \
-            and self.has_description == other.has_description \
-            and self.has_uniform_resource_locator == other.has_uniform_resource_locator \
-            and self.has_type == other.has_type \
-            and self.has_method == other.has_method \
-            and ((self.has_ratio is None and other.has_ratio is None) \
-                 or (self.has_ratio is not None and other.has_ratio is not None \
-                     and self.has_ratio.is_similar(other.has_ratio)))
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return (    
+                    self.has_name, 
+                    self.has_version, 
+                    self.has_description, 
+                    self.has_uniform_resource_locator, 
+                    self.has_type, 
+                    self.has_method, 
+                    self.has_ratio
+                ) == (
+                    other.has_name, 
+                    other.has_version, 
+                    other.has_description, 
+                    other.has_uniform_resource_locator, 
+                    other.has_type, 
+                    other.has_method, 
+                    other.has_ratio
+                )
 
     # -----------------------------------------------------------------------------------------------------------------
     # Private functions

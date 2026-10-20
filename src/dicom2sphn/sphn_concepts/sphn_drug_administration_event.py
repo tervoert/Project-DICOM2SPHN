@@ -9,7 +9,7 @@ from datetime import datetime
 from pydantic import Field, field_validator
 
 from ..sphn_schema_graph import SPHN, SPHNSchemaGraph
-from ..tools import already_in_list, are_similar_lists, generate_id, is_valid_string
+from ..tools import generate_id, is_valid_string
 from .sphn_administrative_case import SPHNAdministrativeCase
 from .sphn_code import SPHNCode
 from .sphn_concept import SPHNConcept
@@ -64,7 +64,7 @@ class SPHNDrugAdministrationEvent(SPHNConcept):
         # Checks
         assert isinstance(source_system, SPHNSourceSystem)
 
-        if not already_in_list(source_system, self.has_source_system_list):
+        if source_system not in self.has_source_system_list:
             self.has_source_system_list.append(source_system)
 
     
@@ -144,36 +144,35 @@ class SPHNDrugAdministrationEvent(SPHNConcept):
 
     
     #
-    # Edwin 2026-08-13
+    # Edwin 2026-10-19
     #
-    def is_similar(self, other) -> bool :
-        """
-        Compare this instance with another instance of the same class
-        """
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return (
+                    self.has_start_datetime, 
+                    self.has_end_datetime, 
+                    self.has_drug, 
+                    self.has_administration_route_code, 
+                    self.has_reason_to_stop_code, 
+                    self.has_duration, 
+                    self.has_time_pattern, 
+                    self.has_subject_pseudo_identifier, 
+                    self.has_administrative_case, 
+                    sorted(self.has_source_system_list) if self.has_source_system_list is not None else None
+                ) == (
+                    other.has_start_datetime, 
+                    other.has_end_datetime, 
+                    other.has_drug, 
+                    other.has_administration_route_code, 
+                    other.has_reason_to_stop_code, 
+                    other.has_duration, 
+                    other.has_time_pattern, 
+                    other.has_subject_pseudo_identifier, 
+                    other.has_administrative_case, 
+                    sorted(other.has_source_system_list) if other.has_source_system_list is not None else None
+                )
 
-        return isinstance(other, type(self)) \
-            and self.has_start_datetime == other.has_start_datetime \
-            and self.has_end_datetime == other.has_end_datetime \
-            and ((self.has_drug is None and other.has_drug is None) \
-                 or (self.has_drug is not None and other.has_drug is not None \
-                     and self.has_drug.is_similar(other.has_drug))) \
-            and ((self.has_administration_route_code is None and other.has_administration_route_code is None) \
-                 or (self.has_administration_route_code is not None and other.has_administration_route_code is not None \
-                     and self.has_administration_route_code.is_similar(other.has_administration_route_code))) \
-            and ((self.has_reason_to_stop_code is None and other.has_reason_to_stop_code is None) \
-                 or (self.has_reason_to_stop_code is not None and other.has_reason_to_stop_code is not None \
-                     and self.has_reason_to_stop_code.is_similar(other.has_reason_to_stop_code))) \
-            and ((self.has_duration is None and other.has_duration is None) \
-                 or (self.has_duration is not None and other.has_duration is not None \
-                     and self.has_duration.is_similar(other.has_duration))) \
-            and ((self.has_time_pattern is None and other.has_time_pattern is None) \
-                 or (self.has_time_pattern is not None and other.has_time_pattern is not None \
-                     and self.has_time_pattern.is_similar(other.has_time_pattern))) \
-            and self.has_subject_pseudo_identifier.is_similar(other.has_subject_pseudo_identifier) \
-            and ((self.has_administrative_case is None and other.has_administrative_case is None) \
-                 or (self.has_administrative_case is not None and other.has_administrative_case is not None \
-                     and self.has_administrative_case.is_similar(other.has_administrative_case))) \
-            and are_similar_lists(self.has_source_system_list, other.has_source_system_list)
 
     # -----------------------------------------------------------------------------------------------------------------
     # Private functions

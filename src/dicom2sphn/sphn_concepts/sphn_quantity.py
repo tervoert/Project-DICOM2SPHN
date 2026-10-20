@@ -73,19 +73,20 @@ class SPHNQuantity(SPHNConcept):
 
 
     #
-    # Edwin 2026-08-05
+    # Edwin 2026-10-19
     #
-    def is_similar(self, other: SPHNConcept, rel_tol: float=1e-4, abs_tol: float=1e-9) -> bool :
-        """
-        Compare this instance with another instance of the same class
-        """
-
-        return isinstance(other, type(self)) \
-            and self.has_comparator == other.has_comparator \
-            and self.has_unit.is_similar(other.has_unit) \
-            and isinstance(other.has_value, type(self.has_value)) \
-            and ((isinstance(self.has_value, int) and self.has_value == other.has_value) \
-                 or (isinstance(self.has_value, float) and isclose(self.has_value, other.has_value, rel_tol=rel_tol, abs_tol=abs_tol)))
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return (
+                    self.has_unit, 
+                    self.has_comparator
+                ) == (
+                    other.has_unit, 
+                    other.has_comparator
+                ) \
+                and ((isinstance(self.has_value, int) and self.has_value == other.has_value) \
+                    or (isinstance(self.has_value, float) and isclose(self.has_value, other.has_value, rel_tol=1e-4, abs_tol=1e-9)))
 
     # -----------------------------------------------------------------------------------------------------------------
     # Private functions

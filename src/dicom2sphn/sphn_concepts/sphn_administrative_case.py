@@ -7,7 +7,7 @@ sphn_administrative_case.py:
 from pydantic import Field, ValidationInfo, field_validator
 
 from ..sphn_schema_graph import SPHN, SPHNSchemaGraph
-from ..tools import already_in_list, are_similar_lists, generate_id, is_valid_string
+from ..tools import generate_id, is_valid_string
 from .sphn_admission import SPHNAdmission
 from .sphn_care_handling import SPHNCareHandling
 from .sphn_concept import SPHNConcept
@@ -56,7 +56,6 @@ class SPHNAdministrativeCase(SPHNConcept):
     #
     # Edwin 2026-08-05
     #
-    # It is a Core Concept
     def add_sphn_source_system(self, source_system: SPHNSourceSystem) -> None:
         """ 
         Adds the source_system to the list
@@ -64,12 +63,13 @@ class SPHNAdministrativeCase(SPHNConcept):
         # Checks
         assert isinstance(source_system, SPHNSourceSystem)
 
-        if not already_in_list(source_system, self.has_source_system_list):
+        if source_system not in self.has_source_system_list:
             self.has_source_system_list.append(source_system)
 
     #
     # Edwin 2026-08-05
     #
+    # It is a Core Concept
     def get_json_dict(self, content: dict, source_concept_id: str|None=None) -> dict:
         """ 
         Gets the dict for json output
@@ -130,24 +130,27 @@ class SPHNAdministrativeCase(SPHNConcept):
 
     
     #
-    # Edwin 2026-08-05
+    # Edwin 2026-10-19
     #
-    def is_similar(self, other) -> bool :
-        """
-        Compare this instance with another instance of the same class
-        """
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return (
+                    self.has_identifier, 
+                    self.has_admission, 
+                    self.has_subject_pseudo_identifier, 
+                    self.has_discharge, 
+                    self.has_care_handling, 
+                    sorted(self.has_source_system_list) if self.has_source_system_list is not None else None
+                ) == (
+                    other.has_identifier, 
+                    other.has_admission, 
+                    other.has_subject_pseudo_identifier, 
+                    other.has_discharge, 
+                    other.has_care_handling, 
+                    sorted(other.has_source_system_list) if other.has_source_system_list is not None else None
+                )
 
-        return isinstance(other, type(self)) \
-            and self.has_identifier == other.has_identifier \
-            and self.has_admission.is_similar(other.has_admission) \
-            and self.has_subject_pseudo_identifier.is_similar(other.has_subject_pseudo_identifier) \
-            and ((self.has_discharge is None and other.has_discharge is None) \
-                or (self.has_discharge is not None and other.has_discharge is not None \
-                    and self.has_discharge.is_similar(other.has_discharge))) \
-            and ((self.has_care_handling is None and other.has_care_handling is None) \
-                or (self.has_care_handling is not None and other.has_care_handling is not None \
-                    and self.has_care_handling.is_similar(other.has_care_handling))) \
-            and are_similar_lists(self.has_source_system_list, other.has_source_system_list)    
 
     # -----------------------------------------------------------------------------------------------------------------
     # Private functions

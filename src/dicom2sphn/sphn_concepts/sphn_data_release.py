@@ -66,17 +66,20 @@ class SPHNDataRelease(SPHNConcept):
 
     
     #
-    # Edwin 2026-08-05
+    # Edwin 2026-10-19
     #
-    def is_similar(self, other: SPHNConcept) -> bool:
-        """
-        Compare this instance with another instance of the same class
-        """
-
-        return isinstance(other, type(self)) \
-            and self.conforms_to == other.conforms_to \
-            and self.has_extraction_datetime == other.has_extraction_datetime \
-            and self.has_data_provider.is_similar(other.has_data_provider)
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return (
+                    self.has_data_provider, 
+                    self.conforms_to, 
+                    self.has_extraction_datetime
+                ) == (
+                    other.has_data_provider, 
+                    other.conforms_to, 
+                    other.has_extraction_datetime
+                )
 
     # -----------------------------------------------------------------------------------------------------------------
     # Private functions

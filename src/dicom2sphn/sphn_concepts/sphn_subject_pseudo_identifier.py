@@ -7,7 +7,7 @@ sphn_subject_pseudo_identifier.py:
 from pydantic import Field, field_validator
 
 from ..sphn_schema_graph import SPHN, SPHNSchemaGraph
-from ..tools import are_similar_lists, generate_id, is_valid_string
+from ..tools import generate_id, is_valid_string
 from .sphn_concept import SPHNConcept
 from .sphn_data_provider import SPHNDataProvider
 
@@ -76,19 +76,20 @@ class SPHNSubjectPseudoIdentifier(SPHNConcept):
 
 
     #
-    # Edwin 2026-08-05
+    # Edwin 2026-10-19
     #
-    def is_similar(self, other: SPHNConcept) -> bool:
-        """
-        Compare this instance with another instance of the same class
-        """
-
-        return isinstance(other, type(self)) \
-            and self.has_identifier == other.has_identifier \
-            and self.has_data_provider.is_similar(other.has_data_provider) \
-            and ((self.has_shared_identifier_list is None and other.has_shared_identifier_list is None) \
-                 or (self.has_shared_identifier_list is not None and other.has_shared_identifier_list is not None \
-                     and are_similar_lists(self.has_shared_identifier_list, other.has_shared_identifier_list)))
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return (
+                    self.has_identifier, 
+                    self.has_data_provider, 
+                    sorted(self.has_shared_identifier_list) if self.has_shared_identifier_list is not None else None
+                ) == (
+                    other.has_identifier, 
+                    other.has_data_provider, 
+                    sorted(other.has_shared_identifier_list) if other.has_shared_identifier_list is not None else None
+                )
 
     # -----------------------------------------------------------------------------------------------------------------
     # Private functions

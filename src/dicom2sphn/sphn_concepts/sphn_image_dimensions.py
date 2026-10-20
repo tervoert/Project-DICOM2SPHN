@@ -74,32 +74,26 @@ class SPHNImageDimensions(SPHNConcept):
 
     
     #
-    # Edwin 2026-08-05
+    # Edwin 2026-10-19
     #
-    def is_similar(self, other: SPHNConcept) -> bool:
-        """
-        Compare this instance with another instance of the same class
-        """
-
-        return isinstance(other, type(self)) \
-            and ((self.has_number_of_rows is None and other.has_number_of_rows is None) \
-                 or (self.has_number_of_rows is not None and other.has_number_of_rows is not None \
-                     and self.has_number_of_rows.is_similar(other.has_number_of_rows))) \
-            and ((self.has_number_of_columns is None and other.has_number_of_columns is None) \
-                 or (self.has_number_of_columns is not None and other.has_number_of_columns is not None \
-                     and self.has_number_of_columns.is_similar(other.has_number_of_columns))) \
-            and ((self.has_number_of_slices is None and other.has_number_of_slices is None) \
-                 or (self.has_number_of_slices is not None and other.has_number_of_slices is not None \
-                     and self.has_number_of_slices.is_similar(other.has_number_of_slices))) \
-            and ((self.has_slice_spacing is None and other.has_slice_spacing is None) \
-                 or (self.has_slice_spacing is not None and other.has_slice_spacing is not None \
-                     and self.has_slice_spacing.is_similar(other.has_slice_spacing))) \
-            and ((self.has_slice_thickness is None and other.has_slice_thickness is None) \
-                 or (self.has_slice_thickness is not None and other.has_slice_thickness is not None \
-                     and self.has_slice_thickness.is_similar(other.has_slice_thickness))) \
-            and ((self.has_pixel_dimensions is None and other.has_pixel_dimensions is None) \
-                 or (self.has_pixel_dimensions is not None and other.has_pixel_dimensions is not None \
-                     and self.has_pixel_dimensions.is_similar(other.has_pixel_dimensions)))
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return (
+                    self.has_number_of_rows, 
+                    self.has_number_of_columns, 
+                    self.has_number_of_slices, 
+                    self.has_slice_spacing, 
+                    self.has_slice_thickness, 
+                    self.has_pixel_dimensions
+                ) == (
+                    other.has_number_of_rows, 
+                    other.has_number_of_columns, 
+                    other.has_number_of_slices, 
+                    other.has_slice_spacing, 
+                    other.has_slice_thickness, 
+                    other.has_pixel_dimensions
+                )
 
     # -----------------------------------------------------------------------------------------------------------------
     # Private functions

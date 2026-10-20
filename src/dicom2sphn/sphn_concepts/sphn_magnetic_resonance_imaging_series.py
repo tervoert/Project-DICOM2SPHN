@@ -9,7 +9,7 @@ from datetime import datetime
 from pydantic import Field, ValidationInfo, field_validator
 
 from ..sphn_schema_graph import SPHN, SPHNSchemaGraph
-from ..tools import already_in_list, are_similar_lists, generate_id, is_valid_string
+from ..tools import generate_id, is_valid_string
 from .sphn_administrative_case import SPHNAdministrativeCase
 from .sphn_body_position import SPHNBodyPosition
 from .sphn_code import SPHNCode
@@ -100,7 +100,7 @@ class SPHNMagneticResonanceImagingSeries(SPHNImagingSeries):
         if self.has_imaging_frame_list is None:
             self.has_imaging_frame_list = [imaging_frame]
         else:
-            if not already_in_list(imaging_frame, self.has_imaging_frame_list):
+            if imaging_frame not in self.has_imaging_frame_list:
                 self.has_imaging_frame_list.append(imaging_frame)
 
 
@@ -117,7 +117,7 @@ class SPHNMagneticResonanceImagingSeries(SPHNImagingSeries):
         if self.has_data_file_list is None:
             self.has_data_file_list = [data_file]
         else:
-            if not already_in_list(data_file, self.has_data_file_list):
+            if data_file not in self.has_data_file_list:
                 self.has_data_file_list.append(data_file)
 
 
@@ -131,7 +131,7 @@ class SPHNMagneticResonanceImagingSeries(SPHNImagingSeries):
         # Checks
         assert isinstance(source_system, SPHNSourceSystem)
 
-        if not already_in_list(source_system, self.has_source_system_list):
+        if source_system not in self.has_source_system_list:
             self.has_source_system_list.append(source_system)
 
 
@@ -220,41 +220,41 @@ class SPHNMagneticResonanceImagingSeries(SPHNImagingSeries):
 
 
     #
-    # Edwin 2026-08-13
+    # Edwin 2026-10-19
     #
-    def is_similar(self, other, rel_tol: float=1e-4, abs_tol: float=1e-9) -> bool:
-        """
-        Compare this instance with another instance of the same class
-        """
-
-        return isinstance(other, type(self)) \
-            and self.has_start_datetime == other.has_start_datetime \
-            and self.has_end_datetime == other.has_end_datetime \
-            and self.has_description == other.has_description \
-            and self.has_protocol_name == other.has_protocol_name \
-            and self.has_subject_pseudo_identifier.is_similar(other.has_subject_pseudo_identifier) \
-            and ((self.has_imaging_modality_code is None and other.has_imaging_modality_code is None) \
-                 or (self.has_imaging_modality_code is not None and other.has_imaging_modality_code is not None \
-                    and self.has_imaging_modality_code.is_similar(other.has_imaging_modality_code))) \
-            and ((self.has_number_of_frames is None and other.has_number_of_frames is None) \
-                 or (self.has_number_of_frames is not None and other.has_number_of_frames is not None \
-                    and self.has_number_of_frames.is_similar(other.has_number_of_frames, rel_tol=rel_tol, abs_tol=abs_tol))) \
-            and ((self.has_medical_device is None and other.has_medical_device is None) \
-                 or (self.has_medical_device is not None and other.has_medical_device is not None \
-                    and self.has_medical_device.is_similar(other.has_medical_device))) \
-            and ((self.has_administrative_case is None and other.has_administrative_case is None) \
-                 or (self.has_administrative_case is not None and other.has_administrative_case is not None \
-                    and self.has_administrative_case.is_similar(other.has_administrative_case))) \
-            and ((self.has_imaging_frame_list is None and other.has_imaging_frame_list is None) \
-                 or (self.has_imaging_frame_list is not None and other.has_imaging_frame_list is not None \
-                    and are_similar_lists(self.has_imaging_frame_list, other.has_imaging_frame_list))) \
-            and ((self.has_body_position_list is None and other.has_body_position_list is None) \
-                 or (self.has_body_position_list is not None and other.has_body_position_list is not None \
-                    and are_similar_lists(self.has_body_position_list, other.has_body_position_list))) \
-            and ((self.has_data_file_list is None and other.has_data_file_list is None) \
-                 or (self.has_data_file_list is not None and other.has_data_file_list is not None \
-                    and are_similar_lists(self.has_data_file_list, other.has_data_file_list))) \
-            and are_similar_lists(self.has_source_system_list, other.has_source_system_list)
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return (
+                    self.has_start_datetime,
+                    self.has_end_datetime,
+                    self.has_description,
+                    self.has_protocol_name,
+                    self.has_subject_pseudo_identifier,
+                    self.has_imaging_modality_code,
+                    self.has_number_of_frames,
+                    self.has_medical_device,
+                    self.has_administrative_case,
+                    sorted(self.has_imaging_frame_list) if self.has_imaging_frame_list is not None else None,
+                    sorted(self.has_body_position_list) if self.has_body_position_list is not None else None,
+                    sorted(self.has_data_file_list) if self.has_data_file_list is not None else None,
+                    sorted(self.has_source_system_list) if self.has_source_system_list is not None else None
+                ) == (
+                    other.has_start_datetime,
+                    other.has_end_datetime,
+                    other.has_description,
+                    other.has_protocol_name,
+                    other.has_subject_pseudo_identifier,
+                    other.has_imaging_modality_code,
+                    other.has_number_of_frames,
+                    other.has_medical_device,
+                    other.has_administrative_case,
+                    sorted(other.has_imaging_frame_list) if other.has_imaging_frame_list is not None else None,
+                    sorted(other.has_body_position_list) if other.has_body_position_list is not None else None,
+                    sorted(other.has_data_file_list) if other.has_data_file_list is not None else None,
+                    sorted(other.has_source_system_list) if other.has_source_system_list is not None else None
+                )
+    
 
     # -----------------------------------------------------------------------------------------------------------------
     # Private functions

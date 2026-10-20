@@ -78,18 +78,20 @@ class SPHNSynchronization(SPHNConcept):
 
     
     #
-    # Edwin 2026-08-13
+    # Edwin 2026-10-19
     #
-    def is_similar(self, other: SPHNConcept) -> bool:
-        """
-        Compare this instance with another instance of the same class
-        """
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return (
+                    self.has_method, 
+                    self.has_signal_source
+                ) == (
+                    other.has_method, 
+                    other.has_signal_source
+                )
 
-        return isinstance(other, type(self)) \
-            and self.has_method == other.has_method \
-            and self.has_signal_source == other.has_signal_source
-            
-    
+
     # -----------------------------------------------------------------------------------------------------------------
     # Private functions
     # -----------------------------------------------------------------------------------------------------------------

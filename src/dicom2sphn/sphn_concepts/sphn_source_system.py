@@ -121,20 +121,23 @@ class SPHNSourceSystem(SPHNConcept):
 
 
     #
-    # Edwin 2026-08-05
+    # Edwin 2026-10-19
     #
-    def is_similar(self, other: SPHNConcept) -> bool:
-        """
-        Compare this instance with another instance of the same class
-        """
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return (
+                    self.has_name, 
+                    self.has_purpose, 
+                    self.has_category, 
+                    self.has_primary_system
+                ) == (
+                    other.has_name, 
+                    other.has_purpose, 
+                    other.has_category, 
+                    other.has_primary_system
+                )
 
-        return isinstance(other, type(self)) \
-            and self.has_name == other.has_name \
-            and self.has_purpose == other.has_purpose \
-            and self.has_category == other.has_category \
-            and ((self.has_primary_system is None and other.has_primary_system is None) \
-                 or (self.has_primary_system is not None and other.has_primary_system is not None \
-                    and self.has_primary_system.is_similar(other.has_primary_system)))
     
     # ----------------------------------------------------------------------------------------------------------
     # Private functions

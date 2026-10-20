@@ -51,16 +51,17 @@ class SPHNIntent(SPHNConcept):
 
 
     #
-    # Edwin 2026-08-05
+    # Edwin 2026-10-19
     #
-    def is_similar(self, other: SPHNConcept) -> bool :
-        """
-        Compare this instance with another instance of the same class
-        """
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return (
+                    self.has_code,
+                ) == (
+                    other.has_code,
+                )
 
-        return isinstance(other, type(self)) \
-            and self.has_code.is_similar(other.has_code)
-    
     # ----------------------------------------------------------------------------------------------------------
     # Private functions
     # ----------------------------------------------------------------------------------------------------------

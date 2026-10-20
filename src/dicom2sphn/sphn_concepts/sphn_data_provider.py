@@ -96,20 +96,20 @@ class SPHNDataProvider(SPHNConcept):
 
     
     #
-    # Edwin 2026-08-05
+    # Edwin 2026-10-19
     #
-    def is_similar(self, other: SPHNConcept) -> bool:
-        """
-        Compare this instance with another instance of the same class
-        """
-
-        return isinstance(other, type(self)) \
-            and self.has_category == other.has_category \
-            and self.has_institution_code.is_similar(other.has_institution_code) \
-            and (self.has_department is None and other.has_department is None \
-                or self.has_department is not None and other.has_department is not None \
-                    and self.has_department.is_similar(other.has_department))
-            
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return (
+                    self.has_category, 
+                    self.has_institution_code, 
+                    self.has_department
+                ) == (
+                    other.has_category, 
+                    other.has_institution_code, 
+                    other.has_department
+                )
     
     # -----------------------------------------------------------------------------------------------------------------
     # Private functions

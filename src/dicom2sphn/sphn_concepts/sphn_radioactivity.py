@@ -61,21 +61,20 @@ class SPHNRadioactivity(SPHNConcept):
 
 
     #
-    # Edwin 2026-08-05
+    # Edwin 2026-10-19
     #
-    def is_similar(self, other) -> bool :
-        """
-        Compare this instance with another instance of the same class
-        """
-
-        return isinstance(other, type(self)) \
-            and self.has_datetime == other.has_datetime \
-            and ((self.has_quantity is None and other.has_quantity is None) \
-                 or (self.has_quantity is not None and other.has_quantity is not None \
-                        and self.has_quantity.is_similar(other.has_quantity))) \
-            and ((self.has_data_determination is None and other.has_data_determination is None) \
-                 or (self.has_data_determination is not None and other.has_data_determination is not None \
-                     and self.has_data_determination.is_similar(other.has_data_determination)))
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return (
+                    self.has_datetime, 
+                    self.has_quantity, 
+                    self.has_data_determination
+                ) == (
+                    other.has_datetime, 
+                    other.has_quantity, 
+                    other.has_data_determination
+                )
 
     # -----------------------------------------------------------------------------------------------------------------
     # Private functions

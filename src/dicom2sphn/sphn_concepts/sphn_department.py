@@ -78,15 +78,16 @@ class SPHNDepartment(SPHNConcept):
 
 
     #
-    # Edwin 2026-07-09
+    # Edwin 2026-10-19
     #
-    def is_similar(self, other: SPHNConcept) -> bool:
-        """
-        Compare this instance with another instance of the same class
-        """
-
-        return isinstance(other, type(self)) \
-            and self.has_name == other.has_name
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return (
+                    self.has_name,
+                ) == (
+                    other.has_name,
+                )
 
     # -----------------------------------------------------------------------------------------------------------------
     # Private functions

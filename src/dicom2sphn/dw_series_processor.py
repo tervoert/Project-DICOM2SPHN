@@ -12,7 +12,7 @@ from pydicom import Dataset
 from .context import Context
 from .data_converter import DataConverter
 from .dw_instance_processor import DWInstanceProcessor
-from .tools import already_in_list, is_valid_string
+from .tools import is_valid_string
 
 
 class DWSeriesProcessor:

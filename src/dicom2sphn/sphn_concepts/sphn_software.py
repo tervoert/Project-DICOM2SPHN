@@ -76,18 +76,24 @@ class SPHNSoftware(SPHNConcept):
 
 
     #
-    # Edwin 2026-08-05
+    # Edwin 2026-10-19
     #
-    def is_similar(self, other: SPHNConcept) -> bool:
-        """
-        Compare this instance with another instance of the same class
-        """
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return (
+                    self.has_name, 
+                    self.has_version, 
+                    self.has_description, 
+                    self.has_uniform_resource_locator
+                ) == (
+                    other.has_name, 
+                    other.has_version, 
+                    other.has_description, 
+                    other.has_uniform_resource_locator
+                )
 
-        return isinstance(other, type(self)) \
-            and self.has_name == other.has_name \
-            and self.has_version == other.has_version \
-            and self.has_description == other.has_description \
-            and self.has_uniform_resource_locator == other.has_uniform_resource_locator
+
 
     # -----------------------------------------------------------------------------------------------------------------
     # Private functions

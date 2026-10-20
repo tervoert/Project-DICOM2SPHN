@@ -8,7 +8,6 @@ from pydicom import Dataset
 
 from .context import Context
 from .sphn_concepts.sphn_software import SPHNSoftware
-from .tools import already_in_list
 
 
 #
@@ -72,6 +71,7 @@ def get_imaging_device_metadata_from_dicom(dataset: Dataset, context: Context, i
 
     if software_versions_list is not None:
 
+        counter=0
         for software_version in software_versions_list:
             
             # ToDo: Edwin - 2026-07-24
@@ -86,13 +86,16 @@ def get_imaging_device_metadata_from_dicom(dataset: Dataset, context: Context, i
             # Add the SPHN Software to the data_store if it is not already in the list
             if data_store.software_list is None:
                 data_store.software_list = [sphn_software]
+                counter += 1
 
-            elif not already_in_list(sphn_software, data_store.software_list):
+            elif sphn_software not in data_store.software_list:
                 data_store.software_list.append(sphn_software)
-                logger.debug(" "*(indent+0) + f"SoftwareVersions item: '{software_version}'")
+                counter += 1
             else:
-                logger.debug(" "*(indent+0) + f"SoftwareVersions item: '{software_version}' already exists in the list, not adding it again")
+                logger.debug(" "*(indent+0) + "SoftwareVersion is already in the list")
                 continue
+
+        logger.debug(" "*(indent+0) + f"Total new SoftwareVersions added: {counter}")
 
     else:
         logger.debug(" "*(indent+0) + "SoftwareVersions not defined")

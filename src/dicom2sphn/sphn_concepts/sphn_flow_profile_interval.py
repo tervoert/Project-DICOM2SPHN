@@ -68,25 +68,24 @@ class SPHNFlowProfileInterval(SPHNConcept):
 
     
     #
-    # Edwin 2026-08-13
+    # Edwin 2026-10-19
     #
-    def is_similar(self, other) -> bool :
-        """
-        Compare this instance with another instance of the same class
-        """
-
-        return isinstance(other, type(self)) \
-            and self.has_start_datetime == other.has_start_datetime \
-            and self.has_end_datetime == other.has_end_datetime \
-            and ((self.has_duration is None and other.has_duration is None) \
-                 or (self.has_duration is not None and other.has_duration is not None \
-                     and self.has_duration.is_similar(other.has_duration))) \
-            and ((self.has_volume is None and other.has_volume is None) \
-                 or (self.has_volume is not None and other.has_volume is not None \
-                     and self.has_volume.is_similar(other.has_volume))) \
-            and ((self.has_volumetric_flow_rate is None and other.has_volumetric_flow_rate is None) \
-                 or (self.has_volumetric_flow_rate is not None and other.has_volumetric_flow_rate is not None \
-                     and self.has_volumetric_flow_rate.is_similar(other.has_volumetric_flow_rate)))
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return (
+                    self.has_start_datetime, 
+                    self.has_end_datetime, 
+                    self.has_duration, 
+                    self.has_volume, 
+                    self.has_volumetric_flow_rate
+                ) == (
+                    other.has_start_datetime, 
+                    other.has_end_datetime, 
+                    other.has_duration, 
+                    other.has_volume, 
+                    other.has_volumetric_flow_rate
+                )
 
     # -----------------------------------------------------------------------------------------------------------------
     # Private functions

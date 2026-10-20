@@ -31,7 +31,7 @@ from .sphn_concepts.sphn_positron_emission_tomography_imaging_series import (
 )
 from .sphn_concepts.sphn_subject_pseudo_identifier import SPHNSubjectPseudoIdentifier
 from .sphn_concepts.sphn_xray_imaging_series import SPHNXRayImagingSeries
-from .tools import already_in_list, is_valid_string
+from .tools import is_valid_string
 
 
 class DWInstanceProcessor:
@@ -511,7 +511,7 @@ class DWInstanceProcessor:
 
                     # Add if not similar to a previous SPHN ImagingFrame in the list (to avoid duplicates)
                     if context.ALWAYS_ADD_SPHN_IMAGING_FRAME \
-                        or not already_in_list(data_store.sphn_imaging_frame, data_store.sphn_imaging_series.has_imaging_frame_list):
+                        or data_store.sphn_imaging_frame not in data_store.sphn_imaging_series.has_imaging_frame_list:
                         data_store.sphn_imaging_series.has_imaging_frame_list.append(data_store.sphn_imaging_frame)
                         logger.debug(" "*(indent+2) + "Added the SPHN ImagingFrame to the SPHN ImagingSeries in the data_store")
                         data_store.increment_sphn_imaging_frames_added_to_sphn_imaging_series_counter()

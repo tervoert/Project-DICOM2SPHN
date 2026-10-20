@@ -10,7 +10,7 @@ from pydicom import Dataset
 
 from .context import Context
 from .dw_study_processor import DWStudyProcessor
-from .tools import already_in_list, is_valid_string
+from .tools import is_valid_string
 
 
 class DWPatientProcessor:
@@ -131,7 +131,7 @@ class DWPatientProcessor:
 
                 # Add if not similar to a previous SPHN ImagingProcedure in the list (to avoid duplicates)
                 if context.ALWAYS_ADD_SPHN_IMAGING_PROCEDURE \
-                    or not already_in_list(data_store.sphn_imaging_procedure, data_store.sphn_imaging_procedure_list):
+                    or data_store.sphn_imaging_procedure not in data_store.sphn_imaging_procedure_list:
                     data_store.sphn_imaging_procedure_list.append(data_store.sphn_imaging_procedure)
                     logger.debug(" "*(indent+2) + "Added the SPHN ImagingProcedure to the list in the data_store")
                 else:

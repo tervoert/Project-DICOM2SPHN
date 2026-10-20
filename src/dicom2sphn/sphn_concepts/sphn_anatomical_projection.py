@@ -7,7 +7,7 @@ sphn_anatomical_projection.py:
 from pydantic import Field, field_validator
 
 from ..sphn_schema_graph import SPHN, SPHNSchemaGraph
-from ..tools import already_in_list, are_similar_lists, generate_id, is_valid_string
+from ..tools import generate_id, is_valid_string
 from .sphn_code import SPHNCode
 from .sphn_concept import SPHNConcept
 
@@ -51,7 +51,7 @@ class SPHNAnatomicalProjection(SPHNConcept):
         if self.has_modifier_code_list is None:
             self.has_modifier_code_list = [code]
         else:
-            if not already_in_list(code, self.has_modifier_code_list):
+            if code not in self.has_modifier_code_list:
                 self.has_modifier_code_list.append(code)
 
     #
@@ -82,16 +82,18 @@ class SPHNAnatomicalProjection(SPHNConcept):
 
 
     #
-    # Edwin 2026-08-05
+    # Edwin 2026-10-19
     #
-    def is_similar(self, other) -> bool:
-        """
-        Compare this instance with another instance of the same class
-        """
-
-        return isinstance(other, type(self)) \
-            and self.has_code.is_similar(other.has_code) \
-            and are_similar_lists(self.has_modifier_code_list, other.has_modifier_code_list)
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return (
+                    self.has_code, 
+                    sorted(self.has_modifier_code_list) if self.has_modifier_code_list is not None else None
+                ) == (
+                    other.has_code, 
+                    sorted(other.has_modifier_code_list) if other.has_modifier_code_list is not None else None
+                )
     
     # -----------------------------------------------------------------------------------------------------------------
     # Private functions

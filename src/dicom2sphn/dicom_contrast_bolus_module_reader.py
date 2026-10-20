@@ -33,7 +33,7 @@ from .sphn_concepts.sphn_quantity import SPHNQuantity
 from .sphn_concepts.sphn_source_system import SPHNSourceSystem
 from .sphn_concepts.sphn_substance import SPHNSubstance
 from .sphn_concepts.sphn_unit import SPHNUnit
-from .tools import already_in_list, complete_dicom_time, is_valid_string
+from .tools import complete_dicom_time, is_valid_string
 
 #
 # DICOM defines two modules for contrast bolus information: 
@@ -106,7 +106,7 @@ def get_contrast_bolus_module_from_dicom(dataset: Dataset, context: Context, ind
         sphn_contrast_agent = process_contrast_bolus_agent_sequence(contrast_bolus_agent_sequence, context, indent+4)
 
         if sphn_contrast_agent is not None:
-            if not already_in_list(sphn_contrast_agent, sphn_contrast_agent_list):
+            if sphn_contrast_agent not in sphn_contrast_agent_list:
                 sphn_contrast_agent_list.append(sphn_contrast_agent)
                 logger.debug(" "*(indent+2) + "Added SPHN Contrast Agent")
             else:
@@ -115,7 +115,7 @@ def get_contrast_bolus_module_from_dicom(dataset: Dataset, context: Context, ind
             logger.debug(" "*(indent+2) + "Failed to create an SPHN Contrast Agent object from DICOM ContrastBolusAgentSequence (coded info).")
 
     else:
-        logger.debug(" "*(indent+0) + "DICOM ContrastBolusAgentSequence (coded info) is missing or empty.")
+        logger.debug(" "*(indent+0) + "DICOM ContrastBolusAgentSequence (coded info) was not found or empty.")
 
     #
     # 2. Check if there is free text information in the ContrastBolusAgent tag
@@ -145,7 +145,7 @@ def get_contrast_bolus_module_from_dicom(dataset: Dataset, context: Context, ind
             sphn_contrast_agent = process_contrast_bolus_agent_dict(contrast_agent_dict, context, indent=indent+2)
 
             if sphn_contrast_agent is not None:
-                if not already_in_list(sphn_contrast_agent, sphn_contrast_agent_list):
+                if sphn_contrast_agent not in sphn_contrast_agent_list:
                     sphn_contrast_agent_list.append(sphn_contrast_agent)
                     logger.debug(" "*(indent+2) + "Added SPHN Contrast Agent")
                 else:
@@ -174,7 +174,7 @@ def get_contrast_bolus_module_from_dicom(dataset: Dataset, context: Context, ind
         sphn_contrast_agent = process_contrast_bolus_ingredient(contrast_bolus_ingredient, context, indent+4)
 
         if sphn_contrast_agent is not None:
-            if not already_in_list(sphn_contrast_agent, sphn_contrast_agent_list):
+            if sphn_contrast_agent not in sphn_contrast_agent_list:
                 sphn_contrast_agent_list.append(sphn_contrast_agent)
                 logger.debug(" "*(indent+2) + "Added SPHN Contrast Agent")
             else:
@@ -267,7 +267,7 @@ def get_contrast_bolus_module_from_dicom(dataset: Dataset, context: Context, ind
             logger.debug(" "*(indent+2) + "Done  creating SPHN Contrast Agent Administration Event object.")
 
             # Add to the list if not already in it
-            if not already_in_list(sphn_contrast_agent_administration_event, sphn_contrast_agent_administration_event_list):
+            if sphn_contrast_agent_administration_event not in sphn_contrast_agent_administration_event_list:
                 sphn_contrast_agent_administration_event_list.append(sphn_contrast_agent_administration_event)
                 logger.debug(" "*(indent+2) + "Added SPHN Contrast Agent Administration Event object to the list.")
             else:
@@ -293,7 +293,7 @@ def get_contrast_bolus_module_from_dicom(dataset: Dataset, context: Context, ind
         else:
             logger.debug(" "*(indent+2) + "Done  creating SPHN Contrast Agent Administration Event object.")
             # Add to the list if not already in it
-            if not already_in_list(sphn_contrast_agent_administration_event, sphn_contrast_agent_administration_event_list):
+            if sphn_contrast_agent_administration_event not in sphn_contrast_agent_administration_event_list:
                 sphn_contrast_agent_administration_event_list.append(sphn_contrast_agent_administration_event)
                 logger.debug(" "*(indent+2) + "Added SPHN Contrast Agent Administration Event object to the list.")
             else:
@@ -331,7 +331,7 @@ def get_contrast_bolus_module_from_dicom(dataset: Dataset, context: Context, ind
         else:
             logger.debug(" "*(indent+2) + "Done  creating SPHN Contrast Agent Administration Event object.")
             # Add to the list if not already in it
-            if not already_in_list(sphn_contrast_agent_administration_event, sphn_contrast_agent_administration_event_list):
+            if sphn_contrast_agent_administration_event not in sphn_contrast_agent_administration_event_list:
                 sphn_contrast_agent_administration_event_list.append(sphn_contrast_agent_administration_event)
                 logger.debug(" "*(indent+2) + "Added SPHN Contrast Agent Administration Event object to the list.")
             else:
@@ -403,10 +403,10 @@ def process_contrast_bolus_agent_sequence(contrast_bolus_agent_sequence:Sequence
             if sphn_contrast_agent_active_ingredient is not None:
 
                 # Add to the list if it is not already in the list
-                if not already_in_list(sphn_contrast_agent_active_ingredient, sphn_contrast_agent_active_ingredient_list):
+                if sphn_contrast_agent_active_ingredient not in sphn_contrast_agent_active_ingredient_list:
                     sphn_contrast_agent_active_ingredient_list.append(sphn_contrast_agent_active_ingredient)
                 else:
-                    logger.debug(" "*(indent+4) + "SPHN Contrast Agent Active Ingredient is already in the list of SPHN Contrast Agent Active Ingredients")
+                    logger.debug(" "*(indent+4) + "SPHN Contrast Agent Active Ingredient is already in the list")
 
             else:
                 logger.debug(" "*(indent+4) + f"DICOM ContrastBolusAgentSequence item {index} could not be converted to a SPHN Contrast Agent Active Ingredient object")
@@ -602,10 +602,10 @@ def process_contrast_bolus_agent_trade_name(trade_name:str, concentration: int|N
         assert sphn_contrast_agent_active_ingredient is not None 
 
         # Add to the list if it is not already in the list
-        if not already_in_list(sphn_contrast_agent_active_ingredient, sphn_contrast_agent_active_ingredient_list):
+        if sphn_contrast_agent_active_ingredient not in sphn_contrast_agent_active_ingredient_list:
             sphn_contrast_agent_active_ingredient_list.append(sphn_contrast_agent_active_ingredient)
         else:
-            logger.debug(" "*(indent+4) + "SPHN Contrast Agent Active Ingredient is already in the list of SPHN Contrast Agent Active Ingredients")
+            logger.debug(" "*(indent+4) + "SPHN Contrast Agent Active Ingredient is already in the list")
 
     # Create the SPHN Drug Article object with the trade name and concentration (if available)
     if concentration is not None:
@@ -890,10 +890,10 @@ def process_enhanced_contrast_bolus_module_from_dicom(dataset: Dataset, context:
             if data_store.sphn_contrast_agent_administration_event_list is None:
                 data_store.sphn_contrast_agent_administration_event_list = [sphn_contrast_agent_administration_event]
             else:
-                if not already_in_list(sphn_contrast_agent_administration_event, data_store.sphn_contrast_agent_administration_event_list):
+                if sphn_contrast_agent_administration_event not in data_store.sphn_contrast_agent_administration_event_list:
                     data_store.sphn_contrast_agent_administration_event_list.append(sphn_contrast_agent_administration_event)
                 else:
-                    logger.debug(" "*(indent+4) + "SPHN Contrast Agent Administration Event object already in the data store")
+                    logger.debug(" "*(indent+4) + "SPHN Contrast Agent Administration Event object already in the list")
         else:
             logger.debug(" "*(indent+4) + "No SPHN Contrast Agent Administration Event object to store in the data store")
 
@@ -986,10 +986,10 @@ def process_contrast_bolus_agent_sequence_item(dataset:Dataset, context: Context
             ingredient = process_contrast_bolus_ingredient_code_sequence_item(item, context, indent+4)
 
             if ingredient:
-                if not already_in_list(ingredient, ingredient_list):
+                if ingredient not in ingredient_list:
                     ingredient_list.append(ingredient)
                 else:
-                    logger.debug(" "*(indent+4) + "Ingredient already in the list")
+                    logger.debug(" "*(indent+4) + "Ingredient is already in the list")
             else:
                 logger.debug(" "*(indent+4) + "Failed to process Ingredient from item")
 
@@ -1086,8 +1086,10 @@ def process_contrast_bolus_agent_sequence_item(dataset:Dataset, context: Context
     if sphn_contrast_agent_active_ingredient is not None:
         new_ingredient_list = [sphn_contrast_agent_active_ingredient]
         for ingredient in ingredient_list:  
-            if not already_in_list(ingredient, new_ingredient_list):
+            if ingredient not in new_ingredient_list:
                 new_ingredient_list.append(ingredient)
+            else:
+                logger.debug(" "*(indent+4) + "Ingredient is already in the list")
     else:
         new_ingredient_list = ingredient_list
 
@@ -1189,7 +1191,7 @@ def process_contrast_bolus_agent_sequence_item(dataset:Dataset, context: Context
             sphn_flow_profile_interval = process_contrast_administration_profile_sequence_item(item, context, indent+4)
 
             if sphn_flow_profile_interval:
-                if not already_in_list(sphn_flow_profile_interval, flow_profile_list):
+                if sphn_flow_profile_interval not in flow_profile_list:
                     flow_profile_list.append(sphn_flow_profile_interval)
 
                     # Update the earliest start and latest end times
@@ -1199,7 +1201,7 @@ def process_contrast_bolus_agent_sequence_item(dataset:Dataset, context: Context
                         contrast_bolus_end_datetime = sphn_flow_profile_interval.has_end_datetime
 
                 else:
-                    logger.debug(" "*(indent+4) + "Profile already in the list")
+                    logger.debug(" "*(indent+4) + "SPHN Flow Profile Intervalis is already in the list")
             else:
                 logger.debug(" "*(indent+4) + "Failed to process Profile from item")
 

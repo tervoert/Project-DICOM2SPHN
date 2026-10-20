@@ -69,22 +69,22 @@ class SPHNImagingMetric(SPHNConcept):
 
 
     #
-    # Edwin 2026-08-05
+    # Edwin 2026-10-19
     #
-    def is_similar(self, other) -> bool:
-        """
-        Compare this instance with another instance of the same class
-        """
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return (
+                    self.has_type_code, 
+                    self.has_unit, 
+                    self.has_description
+                ) == (
+                    other.has_type_code, 
+                    other.has_unit, 
+                    other.has_description
+                )
 
-        return isinstance(other, type(self)) \
-            and self.has_description == other.has_description \
-            and ((self.has_type_code is None and other.has_type_code is None) \
-                 or (self.has_type_code is not None and other.has_type_code is not None \
-                     and self.has_type_code.is_similar(other.has_type_code))) \
-            and ((self.has_unit is None and other.has_unit is None) \
-                 or (self.has_unit is not None and other.has_unit is not None \
-                     and self.has_unit.is_similar(other.has_unit)))
-    
+
     # -----------------------------------------------------------------------------------------------------------------
     # Private functions
     # -----------------------------------------------------------------------------------------------------------------

@@ -7,7 +7,7 @@ sphn_care_handling.py:
 from pydantic import Field, field_validator
 
 from ..sphn_schema_graph import SPHN, SPHNSchemaGraph
-from ..tools import already_in_list, are_similar_lists, generate_id, is_valid_string
+from ..tools import generate_id, is_valid_string
 from .sphn_code import SPHNCode
 from .sphn_concept import SPHNConcept
 from .sphn_source_system import SPHNSourceSystem
@@ -48,7 +48,7 @@ class SPHNCareHandling(SPHNConcept):
         # Checks
         assert isinstance(source_system, SPHNSourceSystem)
 
-        if not already_in_list(source_system, self.has_source_system_list):
+        if source_system not in self.has_source_system_list:
             self.has_source_system_list.append(source_system)
 
     #
@@ -81,16 +81,18 @@ class SPHNCareHandling(SPHNConcept):
 
 
     #
-    # Edwin 2026-07-21
+    # Edwin 2026-10-19
     #
-    def is_similar(self, other: SPHNConcept) -> bool :
-        """
-        Compare this instance with another instance of the same class
-        """
-
-        return isinstance(other, type(self)) \
-            and self.has_type_code.is_similar(other.has_type_code) \
-            and are_similar_lists(self.has_source_system_list, other.has_source_system_list)
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return (
+                    self.has_type_code, 
+                    sorted(self.has_source_system_list) if self.has_source_system_list is not None else None
+                ) == (
+                    other.has_type_code, 
+                    sorted(other.has_source_system_list) if other.has_source_system_list is not None else None
+                )
 
     # -----------------------------------------------------------------------------------------------------------------
     # Private functions

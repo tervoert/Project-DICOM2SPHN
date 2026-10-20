@@ -8,7 +8,7 @@ from datetime import datetime
 from pydantic import Field, field_validator
 
 from ..sphn_schema_graph import SPHN, SPHNSchemaGraph
-from ..tools import already_in_list, are_similar_lists, generate_id, is_valid_string
+from ..tools import generate_id, is_valid_string
 from .sphn_concept import SPHNConcept
 from .sphn_quantity import SPHNQuantity
 from .sphn_source_system import SPHNSourceSystem
@@ -53,7 +53,7 @@ class SPHNAge(SPHNConcept):
         # Checks
         assert isinstance(source_system, SPHNSourceSystem)
 
-        if not already_in_list(source_system, self.has_source_system_list):
+        if source_system not in self.has_source_system_list:
             self.has_source_system_list.append(source_system)
 
 
@@ -115,19 +115,23 @@ class SPHNAge(SPHNConcept):
 
     
     #
-    # Edwin 2026-08-05
+    # Edwin 2026-10-19
     #
-    def is_similar(self, other: SPHNConcept) -> bool:
-        """
-        Compare this instance with another instance of the same class
-        """
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return (
+                    self.has_determination_datetime, 
+                    self.has_quantity, 
+                    self.has_subject_pseudo_identifier, 
+                    sorted(self.has_source_system_list) if self.has_source_system_list is not None else None
+                ) == (
+                    other.has_determination_datetime, 
+                    other.has_quantity, 
+                    other.has_subject_pseudo_identifier, 
+                    sorted(other.has_source_system_list) if other.has_source_system_list is not None else None
+                )
 
-        return isinstance(other, type(self)) \
-            and self.has_determination_datetime == other.has_determination_datetime \
-            and self.has_quantity.is_similar(other.has_quantity) \
-            and self.has_subject_pseudo_identifier.is_similar(other.has_subject_pseudo_identifier) \
-            and are_similar_lists(self.has_source_system_list, other.has_source_system_list)
-    
     # -----------------------------------------------------------------------------------------------------------------
     # Private functions
     # -----------------------------------------------------------------------------------------------------------------
