@@ -130,7 +130,7 @@ class DWPatientProcessor:
                 assert isinstance(data_store.sphn_imaging_procedure_list, list)
 
                 # Add if not similar to a previous SPHN ImagingProcedure in the list (to avoid duplicates)
-                if context.ALWAYS_ADD_SPHN_IMAGING_PROCEDURE \
+                if context.add_only_unique_sphn_imaging_procedures == False \
                     or data_store.sphn_imaging_procedure not in data_store.sphn_imaging_procedure_list:
                     data_store.sphn_imaging_procedure_list.append(data_store.sphn_imaging_procedure)
                     logger.debug(" "*(indent+2) + "Added the SPHN ImagingProcedure to the list in the data_store")

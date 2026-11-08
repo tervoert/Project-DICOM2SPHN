@@ -5,19 +5,15 @@ dicom_instance_reader.py:
 """
 
 import itertools
-from datetime import datetime
 
 import numpy as np
 import pydicom
 from pydicom import Dataset
 from pydicom.sequence import Sequence
-from pydicom.valuerep import DA, DT, TM
 
 from .context import Context
 from .data_converter import DataConverter
-from .dicom_contrast_bolus_module_reader import (
-    get_contrast_bolus_module_from_dicom,
-)
+from .dicom_contrast_bolus_module_reader import process_dicom_contrast_information
 from .sphn_concepts.sphn_body_site import SPHNBodySite
 from .sphn_concepts.sphn_code import SPHNCode
 from .sphn_concepts.sphn_data_compression_algorithm import SPHNDataCompressionAlgorithm
@@ -34,10 +30,13 @@ from .tools import (
 
 type SPHN_ImagingFrame_type_ValueSet_Member = str
 type SPHN_ImageFrame_content_qualification_ValueSet_Member = str
+type UnitCode = tuple[str,str,str]  # (coding_scheme_designator, code_value, code_meaning)
+
 type UnitUCUMCode = str  # UCUM unit code as a string
-type PixelSizeRow = tuple[float, UnitUCUMCode]  # (value, unit_ucum_code)
-type PixelSizeColumn = tuple[float, UnitUCUMCode]  # (value, unit_ucum_code)
-type PixelSize = tuple[PixelSizeRow, PixelSizeColumn]  # ((row_value, row_unit_ucum_code), (column_value, column_unit_ucum_code))
+type PixelSizeRow = tuple[float, UnitCode]  # (value, unit_ucum_code)
+type PixelSizeColumn = tuple[float, UnitCode]  # (value, unit_ucum_code)
+type PixelSize = tuple[PixelSizeRow, PixelSizeColumn]  # ((row_value, row_unit_code), (column_value, column_unit_code))
+
 type NumOfRows = tuple[float, UnitUCUMCode]  # (value, unit_ucum_code)
 type NumOfColumns = tuple[float, UnitUCUMCode]  # (value, unit_ucum_code)
 type SliceSpacing = tuple[float, UnitUCUMCode]  # (value, unit_ucum_code)
@@ -217,8 +216,6 @@ def get_frame_metadata_from_dicom(dataset: Dataset, frame_number: int, context: 
                     data_store.sphn_imagingframe_type_valueset_member_list.append(type_item)
                     n += 1
         logger.debug(" "*(indent+0) + f"Added {n} ImageType ValueSet member(s) to the data_store.")
-    else:
-        logger.debug(" "*(indent+0) + "No SPHN ImageFrame_type ValueSet members found")
 
 
     # -------------------------------------------------------------------------------------------------------------
@@ -227,54 +224,26 @@ def get_frame_metadata_from_dicom(dataset: Dataset, frame_number: int, context: 
     # PixelSpacing
     #
 
+    # sphn_pixel_dimensions will be used later to create the SPHN ImageDimensions instance
+    sphn_pixel_dimensions = None
+
     pixel_size = get_pixel_spacing_from_dicom(dataset, context, indent=indent+2)
     
     if pixel_size is not None:
 
-        logger.debug(" "*(indent+0) + f"PixelSpacing row:    '{pixel_size[0][0]}', Unit UCUM code: '{pixel_size[0][1]}'")
-        logger.debug(" "*(indent+0) + f"PixelSpacing column: '{pixel_size[1][0]}', Unit UCUM code: '{pixel_size[1][1]}'")
+        assert isinstance(pixel_size, list)
+        assert len(pixel_size) == 2
+        assert all(isinstance(x, float) for x in pixel_size)
 
-        sphn_code_row = SPHNCode( 
-            sphn_schema = sphn_schema,
-            has_identifier = pixel_size[0][1],  # UCUM unit code for row spacing
-            has_coding_system_and_version = "UCUM"
-            )
-        sphn_code_col = SPHNCode(
-            sphn_schema = sphn_schema,
-            has_identifier = pixel_size[1][1],  # UCUM unit code for column spacing
-            has_coding_system_and_version = "UCUM"
-            )
-        sphn_unit_row = SPHNUnit(
-            sphn_schema = sphn_schema,
-            has_code = sphn_code_row
-            )
-        sphn_unit_col = SPHNUnit(
-            sphn_schema = sphn_schema,
-            has_code = sphn_code_col
-            )
-        sphn_quantity_row = SPHNQuantity(
-            sphn_schema = sphn_schema,
-            has_value = pixel_size[0][0],
-            has_unit = sphn_unit_row
-            )
-        sphn_quantity_col = SPHNQuantity(
-            sphn_schema = sphn_schema,
-            has_value = pixel_size[1][0],
-            has_unit = sphn_unit_col
-            )
-        sphn_pixel_dimensions = SPHNPixelDimensions(
-            sphn_schema = sphn_schema,
-            has_row_spacing = sphn_quantity_row,
-            has_column_spacing = sphn_quantity_col
-            )
+        logger.debug(" "*(indent+0) + f"PixelSpacing row: '{pixel_size[0]}' mm")
+        logger.debug(" "*(indent+0) + f"PixelSpacing column: '{pixel_size[1]}' mm")
+
+        sphn_pixel_dimensions = create_sphn_pixel_dimensions(pixel_size, context, indent=indent+2)
 
         # Store the SPHN PixelDimensions in the data_store
         data_store.sphn_pixel_dimensions = sphn_pixel_dimensions
 
         logger.debug(" "*(indent+0) + "SPHN PixelDimensions created and added to the data_store")
-
-    else:
-        logger.debug(" "*(indent+0) + "No PixelSpacing metadata found")
 
     # -------------------------------------------------------------------------------------------------------------
     
@@ -282,166 +251,92 @@ def get_frame_metadata_from_dicom(dataset: Dataset, frame_number: int, context: 
     # Rows
     #
 
+    # sphn_quantity_rows will be used later to create the SPHN ImageDimensions instance
+    sphn_quantity_rows = None
+
     num_of_rows = get_rows_from_dicom(dataset, context, indent=indent+2) 
 
     if num_of_rows is not None:
 
-        logger.debug(" "*(indent+0) + f"Number of rows: '{num_of_rows[0]}', Unit UCUM code: '{num_of_rows[1]}'")
+        assert isinstance(num_of_rows, int)
 
-        sphn_code_rows = SPHNCode( 
-            sphn_schema = sphn_schema,
-            has_identifier = num_of_rows[1],  # UCUM unit code for number of rows
-            has_coding_system_and_version = "UCUM"
-            )
-        sphn_unit_rows = SPHNUnit(
-            sphn_schema = sphn_schema,
-            has_code = sphn_code_rows
-            )
-        sphn_quantity_rows = SPHNQuantity(
-            sphn_schema = sphn_schema,
-            has_value = num_of_rows[0],
-            has_unit = sphn_unit_rows
-            )
+        logger.debug(" "*(indent+0) + f"Number of rows: '{num_of_rows}'")
 
-        # sphn_quantity_rows will be used later to create the SPHN ImageDimensions instance
+        sphn_quantity_rows = create_sphn_quantity_for_number_of_items(num_of_rows, context, indent=indent+2)
 
         logger.debug(" "*(indent+0) + "SPHN Quantity for number of rows created")
-
-    else:
-        sphn_quantity_rows = None
-        logger.debug(" "*(indent+0) + "Number of rows not found")
 
     # 
     # Columns
     #
 
+    # sphn_quantity_columns will be used later to create the SPHN ImageDimensions instance
+    sphn_quantity_columns = None
+
     num_of_columns = get_columns_from_dicom(dataset, context, indent=indent+2) 
 
     if num_of_columns is not None:
 
-        logger.debug(" "*(indent+0) + f"Number of columns: '{num_of_columns[0]}', Unit UCUM code: '{num_of_columns[1]}'")
+        assert isinstance(num_of_columns, int)
 
-        sphn_code_columns = SPHNCode( 
-            sphn_schema = sphn_schema,
-            has_identifier = num_of_columns[1],  # UCUM unit code for number of columns
-            has_coding_system_and_version = "UCUM"
-            )
-        sphn_unit_columns = SPHNUnit(
-            sphn_schema = sphn_schema,
-            has_code = sphn_code_columns
-            )
-        sphn_quantity_columns = SPHNQuantity(
-            sphn_schema = sphn_schema,
-            has_value = num_of_columns[0],
-            has_unit = sphn_unit_columns
-            )
+        logger.debug(" "*(indent+0) + f"Number of columns: '{num_of_columns}'")
 
-        # sphn_quantity_columns will be used later to create the SPHN ImageDimensions instance
+        sphn_quantity_columns = create_sphn_quantity_for_number_of_items(num_of_columns, context, indent=indent+2)
 
         logger.debug(" "*(indent+0) + "SPHN Quantity for number of columns created")
 
-    else:
-        sphn_quantity_columns = None
-        logger.debug(" "*(indent+0) + "Number of columns not found")
-
+    
     # 
     # SpacingBetweenSlices
     #
+
+    # sphn_quantity_slice_spacing will be used later to create the SPHN ImageDimensions instance
+    sphn_quantity_slice_spacing = None
 
     slice_spacing = get_spacing_between_slices_from_dicom(dataset, context, indent=indent+2)
 
     if slice_spacing is not None:
 
-        logger.debug(" "*(indent+0) + f"Spacing between center of slices: '{slice_spacing[0]}', Unit UCUM code: '{slice_spacing[1]}'")
+        logger.debug(" "*(indent+0) + f"Spacing between center of slices: '{slice_spacing}'")
 
-        sphn_code_slice_spacing = SPHNCode( 
-            sphn_schema = sphn_schema,
-            has_identifier = slice_spacing[1],  # UCUM unit code for spacing between slices
-            has_coding_system_and_version = "UCUM"
-            )
-        sphn_unit_slice_spacing = SPHNUnit(
-            sphn_schema = sphn_schema,
-            has_code = sphn_code_slice_spacing
-            )
-        sphn_quantity_slice_spacing = SPHNQuantity(
-            sphn_schema = sphn_schema,
-            has_value = slice_spacing[0],
-            has_unit = sphn_unit_slice_spacing
-            )
-
-        # sphn_quantity_slice_spacing will be used later to create the SPHN ImageDimensions instance
+        sphn_quantity_slice_spacing = create_sphn_quantity_for_distance_in_mm(slice_spacing, context, indent=indent+2)
 
         logger.debug(" "*(indent+0) + "SPHN Quantity for spacing between center of slices created")
-
-    else:
-        sphn_quantity_slice_spacing = None
-        logger.debug(" "*(indent+0) + "Slice spacing not found")
 
     # 
     # SliceThickness
     #
 
+    # sphn_quantity_slice_thickness will be used later to create the SPHN ImageDimensions instance
+    sphn_quantity_slice_thickness = None
+
     thickness = get_slice_thickness_from_dicom(dataset, context, indent=indent+2)
 
     if thickness is not None:
         
-        logger.debug(" "*(indent+0) + f"Slice thickness: '{thickness[0]}', Unit UCUM code: '{thickness[1]}'")
+        logger.debug(" "*(indent+0) + f"Slice thickness: '{thickness}'")
 
-        sphn_code_slice_thickness = SPHNCode( 
-            sphn_schema = sphn_schema,
-            has_identifier = thickness[1],  # UCUM unit code for slice thickness
-            has_coding_system_and_version = "UCUM"
-            )
-        sphn_unit_slice_thickness = SPHNUnit(
-            sphn_schema = sphn_schema,
-            has_code = sphn_code_slice_thickness
-            )
-        sphn_quantity_slice_thickness = SPHNQuantity(
-            sphn_schema = sphn_schema,
-            has_value = thickness[0],
-            has_unit = sphn_unit_slice_thickness
-            )
-
-        # sphn_quantity_slice_thickness will be used later to create the SPHN ImageDimensions instance
+        sphn_quantity_slice_thickness = create_sphn_quantity_for_distance_in_mm(thickness, context, indent=indent+2)
 
         logger.debug(" "*(indent+0) + "SPHN Quantity for slice thickness created")
-
-    else:
-        sphn_quantity_slice_thickness = None
-        logger.debug(" "*(indent+0) + "Slice thickness not found")
 
     # 
     # SamplesPerPixel
     #
 
+    # sphn_quantity_samples_per_pixel will be used later to create the SPHN ImageDimensions instance
+    sphn_quantity_samples_per_pixel = None
+
     samples_per_pixel = get_samples_per_pixel_from_dicom(dataset, context,indent=indent+2)
 
     if samples_per_pixel is not None:
 
-        logger.debug(" "*(indent+0) + f"Samples per pixel: '{samples_per_pixel[0]}', Unit UCUM code: '{samples_per_pixel[1]}'")
+        logger.debug(" "*(indent+0) + f"Samples per pixel: '{samples_per_pixel}'")
 
-        sphn_code_samples_per_pixel = SPHNCode( 
-            sphn_schema = sphn_schema,
-            has_identifier = samples_per_pixel[1],  # UCUM unit code for samples per pixel
-            has_coding_system_and_version = "UCUM"
-            )
-        sphn_unit_samples_per_pixel = SPHNUnit(
-            sphn_schema = sphn_schema,
-            has_code = sphn_code_samples_per_pixel
-            )
-        sphn_quantity_samples_per_pixel = SPHNQuantity(
-            sphn_schema = sphn_schema,
-            has_value = samples_per_pixel[0],
-            has_unit = sphn_unit_samples_per_pixel
-            )
-
-        # sphn_quantity_samples_per_pixel will be used later to create the SPHN ImageDimensions instance
+        sphn_quantity_samples_per_pixel = create_sphn_quantity_for_number_of_items(samples_per_pixel, context, indent=indent+2)
 
         logger.debug(" "*(indent+0) + "SPHN Quantity for samples per pixel created")
 
-    else:
-        sphn_quantity_samples_per_pixel = None
-        logger.debug(" "*(indent+0) + "Samples per pixel not found")
 
     # 
     # SPHN ImageDimensions 
@@ -452,7 +347,7 @@ def get_frame_metadata_from_dicom(dataset: Dataset, frame_number: int, context: 
         or sphn_quantity_columns is not None \
         or sphn_quantity_slice_spacing is not None \
         or sphn_quantity_slice_thickness is not None:
-        #or sphn_quantity_samples_per_pixel is not None: (not an SPHN property)
+        # ToDo: Edwin, or sphn_quantity_samples_per_pixel is not None: (not an SPHN property yet)
         
         sphn_image_dimensions = SPHNImageDimensions(
             sphn_schema=sphn_schema,
@@ -465,8 +360,8 @@ def get_frame_metadata_from_dicom(dataset: Dataset, frame_number: int, context: 
             has_number_of_samples_per_pixel=sphn_quantity_samples_per_pixel
         )
 
-        logger.debug(" "*(indent+0) + "SPHN ImageDimensions created and added to the data_store")
         data_store.sphn_image_dimensions = sphn_image_dimensions
+        logger.debug(" "*(indent+0) + "SPHN ImageDimensions created and added to the data_store")
 
     else:
         logger.debug(" "*(indent+0) + "No SPHN ImageDimensions metadata found")
@@ -477,13 +372,20 @@ def get_frame_metadata_from_dicom(dataset: Dataset, frame_number: int, context: 
     # BodyPartExamined
     # 
     
-    body_part_code = get_body_part_examined_from_dicom(dataset, context, indent=indent+2)
+    body_part_examined_term = get_body_part_examined_from_dicom(dataset, context, indent=indent+2)
 
-    if body_part_code is not None:
-        logger.debug(" "*(indent+0) + f"BodyPartExamined code:'{body_part_code}'")
-    else:
-        logger.debug(" "*(indent+0) + "BodyPartExamined not found")
+    if body_part_examined_term is not None:
+        logger.debug(" "*(indent+0) + f"BodyPartExamined term: '{body_part_examined_term}'")
 
+        sphn_body_site = create_sphn_body_site_for_body_part_examined_term(body_part_examined_term, context, indent=indent+2)
+
+        if sphn_body_site is None:
+            logger.debug(" "*(indent+0) + "SPHN BodySite could not be created for the given BodyPartExamined term")
+        else:
+            logger.debug(" "*(indent+0) + "SPHN BodySite created for the given BodyPartExamined term")
+            data_store.add_sphn_body_site_to_list(sphn_body_site, logger, indent=indent+2)
+            
+    
     #
     # Anatomic Region Sequence
     #
@@ -499,40 +401,6 @@ def get_frame_metadata_from_dicom(dataset: Dataset, frame_number: int, context: 
     # ToDo by Edwin:
     #  - Not implemented yet
     #  - Adds to the self.body_site_list
-
-    # 
-    # SPHN BodySite list
-    # 
-
-    if body_part_code is not None:
-
-        assert isinstance(body_part_code, tuple) and len(body_part_code) == 3
-        assert all(is_valid_string(item) for item in body_part_code)
-
-        body_part_coding_scheme_designator = body_part_code[0]
-        body_part_code_value = body_part_code[1]
-        body_part_code_descr = body_part_code[2]
-
-        sphn_code = SPHNCode(
-            sphn_schema=sphn_schema,
-            has_coding_system_and_version=body_part_coding_scheme_designator,
-            has_identifier=body_part_code_value,
-            has_name=body_part_code_descr
-        )
-
-        # Laterality is not implemented
-
-        sphn_body_site = SPHNBodySite(
-            sphn_schema=sphn_schema,
-            has_code=sphn_code,
-            has_laterality=None
-            )
-
-        data_store.sphn_body_site_list = [sphn_body_site]
-
-        logger.debug(" "*(indent+0) + "SPHN BodySite created and added to the data_store")
-    else:
-        logger.debug(" "*(indent+0) + "No SPHN BodySite metadata found")
 
     # -------------------------------------------------------------------------------------------------------------
 
@@ -711,88 +579,216 @@ def get_frame_metadata_from_dicom(dataset: Dataset, frame_number: int, context: 
     # -------------------------------------------------------------------------------------------------------------
 
     #
-    # Contrast/Bolus
-    #
-
-    # # Try to find the coded value in Contrast/Bolus Agent Sequence in the DICOM metadata. 
-    # # If not found, try to find the free text description.
-
-    # # Free text description
-    # contrast_bolus_agent_text = get_contrast_bolus_agent_from_dicom(dataset, context, indent=indent)
-
-    # if contrast_bolus_agent_text is not None:
-    #     if not is_valid_string(contrast_bolus_agent_text):
-    #         logger.warning(" "*(indent+0) + "Contrast Bolus Agent text is not a valid string")
-    #     else:
-    #         logger.debug(" "*(indent+0) + f"Contrast Bolus Agent text: '{contrast_bolus_agent_text}'")
-    #         data_store.add_contrast_bolus_agent_text_to_dict(contrast_bolus_agent_text)
-    # else:
-    #     logger.debug(" "*(indent+0) + "No Contrast Bolus Agent text metadata found")
-
-    # # Contrast/Bolus Agent Sequence
-    # contrast_bolus_agent_sequence = get_contrast_bolus_agent_sequence_from_dicom(dataset, context, indent=indent)
-
-    # if contrast_bolus_agent_sequence is not None:
-
-    #     assert isinstance(contrast_bolus_agent_sequence, Sequence)
-
-    #     logger.debug(" "*(indent+0) + f"Contrast Bolus Agent Sequence found with {len(contrast_bolus_agent_sequence)} item(s)")
-
-    #     for dataset_item in contrast_bolus_agent_sequence:
-
-    #         assert isinstance(dataset_item, Dataset)
-
-    #         code_value = get_code_value_from_dicom(dataset_item, context, indent=indent+2)
-    #         coding_scheme_designator = get_coding_scheme_designator_from_dicom(dataset_item, context, indent=indent+2)
-    #         coding_scheme_version = get_coding_scheme_version_from_dicom(dataset_item, context, indent=indent+2)
-    #         code_meaning = get_code_meaning_from_dicom(dataset_item, context, indent=indent+2)
-    #         code_value_long = get_long_code_value_from_dicom(dataset_item, context, indent=indent+2)
-    #         urn_code_value = get_urn_code_value_from_dicom(dataset_item, context, indent=indent+2)
-
-    #         # if code_value is not None and coding_scheme_designator is not None:
-    #         #     sphn_code = SPHNCode(
-    #         #         sphn_schema=sphn_schema,
-    #         #         has_identifier=code_value,
-    #         #         has_coding_system_and_version=coding_scheme_designator,
-    #         #         has_name=code_meaning
-    #         #     )
-
-    #         #     sphn_contrast_bolus_agent = SPHNCode(
-    #         #         sphn_schema=sphn_schema,
-    #         #         has_identifier=code_value,
-    #         #         has_coding_system_and_version=coding_scheme_designator
-    #         #     )
-    #         #     data_store.add_contrast_bolus_agent_to_dict(sphn_contrast_bolus_agent)
-    #         #     logger.debug(" "*(indent+2) + f"Contrast Bolus Agent added to the data_store: '{sphn_contrast_bolus_agent}'") 
-
-
-    # else:
-    #     logger.debug(" "*(indent+0) + "No Contrast Bolus Agent Sequence metadata found")
-
-
-    #
-    # Read the Contrast/Bolus module from the DICOM dataset and add it to the data_store
+    # Read the Contrast/Bolus information from the DICOM dataset and add it to the data_store
     #
     
-    logger.debug(" "*(indent+0) + "Start reading Contrast/Bolus module from DICOM dataset")
+    logger.debug(" "*(indent+0) + "Start processing Contrast/Bolus information from DICOM dataset")
 
-    sphn_contrast_agent_administration_event_list = get_contrast_bolus_module_from_dicom(dataset, context, indent=indent+2)
+    process_dicom_contrast_information(dataset, context, indent=indent+2)
 
-    if sphn_contrast_agent_administration_event_list is not None:
-        if data_store.sphn_contrast_agent_administration_event_list is not None:
-            events_added_counter=0
-            for event in sphn_contrast_agent_administration_event_list:
-                if event not in data_store.sphn_contrast_agent_administration_event_list:
-                    data_store.sphn_contrast_agent_administration_event_list.append(event)
-                    events_added_counter += 1
-                else:
-                    logger.debug(" "*(indent+2) + "SPHN Contrast Agent Administration Event object is already in the list")
-            logger.debug(" "*(indent+0) + f"Number of new SPHN Contrast Agent Administration Event object(s) added to the data_store: {events_added_counter}")
-        else:
-            data_store.sphn_contrast_agent_administration_event_list = sphn_contrast_agent_administration_event_list
-            logger.debug(" "*(indent+0) + f"SPHN Contrast Agent Administration Event list initialized in the data_store with {len(sphn_contrast_agent_administration_event_list)} event(s)")
+    if data_store.sphn_contrast_agent_administration_event_list is not None:
+        logger.debug(" "*(indent+0) + f"SPHN Contrast Agent Administration Event list in the data_store contains {len(data_store.sphn_contrast_agent_administration_event_list)} event(s)")
     else:
         logger.debug(" "*(indent+0) + "No SPHN Contrast Agent Administration Event metadata found")
+
+
+# -----------------------------------------------------------------------------------------------------------------
+# Create SPHN objects from DICOM data
+# -----------------------------------------------------------------------------------------------------------------
+
+#
+# Edwin 2026-10-22
+#
+def create_sphn_pixel_dimensions(dicom_pixel_spacing: list[float], context: Context, indent: int=0) -> SPHNPixelDimensions:
+    """
+    Creates SPHN Pixel Dimensions object
+    Parameters:
+        - dicom_pixel_spacing: The DICOM PixelSpacing values as a list of two floats [row_spacing, column_spacing]
+        - context: The Context object that contains the logger and other relevant information
+        - indent: The indentation level for logging messages (default is 0)
+    """
+    assert isinstance(dicom_pixel_spacing, list)
+    assert len(dicom_pixel_spacing) == 2
+    assert all(isinstance(x, float) for x in dicom_pixel_spacing)
+    assert isinstance(context, Context)
+    assert isinstance(indent,int) and indent>=0
+
+    sphn_schema = context.sphn_schema
+
+    # Set unit using UCUM annotation for row and column spacing
+    row_unit_code = ("UCUM", "mm", "millimeter")    # The DICOM unit for PixelSpacing is always "mm"
+    column_unit_code = ("UCUM", "mm", "millimeter") # The DICOM unit for PixelSpacing is always "mm"
+
+    sphn_code_row = SPHNCode(
+        sphn_schema=sphn_schema,
+        has_coding_system_and_version=row_unit_code[0],
+        has_identifier=row_unit_code[1],
+        has_name=row_unit_code[2]
+        )
+    sphn_code_col = SPHNCode(
+        sphn_schema = sphn_schema,
+        has_coding_system_and_version = column_unit_code[0],
+        has_identifier = column_unit_code[1],
+        has_name = column_unit_code[2]
+        )
+    sphn_unit_row = SPHNUnit(
+        sphn_schema = sphn_schema,
+        has_code = sphn_code_row
+        )
+    sphn_unit_col = SPHNUnit(
+        sphn_schema = sphn_schema,
+        has_code = sphn_code_col
+        )
+    sphn_quantity_row = SPHNQuantity(
+        sphn_schema = sphn_schema,
+        has_value = dicom_pixel_spacing[0],
+        has_unit = sphn_unit_row
+        )
+    sphn_quantity_col = SPHNQuantity(
+        sphn_schema = sphn_schema,
+        has_value = dicom_pixel_spacing[1],
+        has_unit = sphn_unit_col
+        )
+    sphn_pixel_dimensions = SPHNPixelDimensions(
+        sphn_schema = sphn_schema,
+        has_row_spacing = sphn_quantity_row,
+        has_column_spacing = sphn_quantity_col
+        )
+
+    return sphn_pixel_dimensions
+
+
+#
+# Edwin 2026-10-22
+#
+def create_sphn_quantity_for_number_of_items(number_of_items: int, context: Context, indent: int=0) -> SPHNQuantity:
+    """
+    Creates SPHN Quantity object for the number of items
+    Parameters:
+        - number_of_items: The number of items as an integer
+        - context: The Context object that holds the data_store, logger and other relevant information
+        - indent: The indentation level for logging (default is 0)
+    """
+    assert isinstance(number_of_items, int)
+    assert number_of_items >= 0
+    assert isinstance(context, Context)
+    assert isinstance(indent,int) and indent>=0
+
+    sphn_schema = context.sphn_schema
+
+    # Set unit using UCUM annotation
+    unit_code = ("UCUM", "cblnbcbr", "{#}") # SPHN UCUM unit code, label: "{#}", comment: "number"
+
+    sphn_code = SPHNCode( 
+        sphn_schema = sphn_schema,
+        has_coding_system_and_version = unit_code[0],
+        has_identifier = unit_code[1],
+        has_name = unit_code[2]
+        )
+    sphn_unit = SPHNUnit(
+        sphn_schema = sphn_schema,
+        has_code = sphn_code
+        )
+    sphn_quantity = SPHNQuantity(
+        sphn_schema = sphn_schema,
+        has_value = number_of_items,
+        has_unit = sphn_unit
+        )
+
+    return sphn_quantity
+
+#
+# Edwin 2026-10-22
+#
+def create_sphn_quantity_for_distance_in_mm(distance: float, context: Context, indent: int=0) -> SPHNQuantity:
+    """
+    Creates SPHN Quantity object for the distance in millimeters
+    Parameters:
+        - distance: The distance in millimeters as a float
+        - context: The Context object that holds the data_store, logger and other relevant information
+        - indent: The indentation level for logging (default is 0)
+    """
+    assert isinstance(distance, (int, float))
+    assert distance >= 0
+    assert isinstance(context, Context)
+    assert isinstance(indent,int) and indent>=0
+
+    sphn_schema = context.sphn_schema
+
+    # Set unit using UCUM annotation
+    unit_code = ("UCUM", "mm", "mm") # SPHN UCUM unit code, label: "mm", comment: "millimeters"
+
+    sphn_code = SPHNCode( 
+        sphn_schema = sphn_schema,
+        has_coding_system_and_version = unit_code[0],
+        has_identifier = unit_code[1],
+        has_name = unit_code[2]
+        )
+    sphn_unit = SPHNUnit(
+        sphn_schema = sphn_schema,
+        has_code = sphn_code
+        )
+    sphn_quantity = SPHNQuantity(
+        sphn_schema = sphn_schema,
+        has_value = distance,
+        has_unit = sphn_unit
+        )
+
+    return sphn_quantity
+
+
+#
+#  Edwin 2026-10-22
+#
+def create_sphn_body_site_for_body_part_examined_term(body_part_examined_term: str, context: Context, indent: int=0) -> SPHNBodySite|None:
+    """
+    Returns an SPHN BodySite object with the corresponding SNOMED-CT code for the given BodyPartExamined term
+    Parameters:
+        - body_part_examined_term: The term obtained from the DICOM BodyPartExamined tag
+        - context: The Context object that holds the data_store, logger and other relevant information
+        - indent: The indentation level for logging (default is 0)
+    """
+
+    assert is_valid_string(body_part_examined_term)
+    assert isinstance(context, Context)
+    assert isinstance(indent,int) and indent>=0
+
+    sphn_schema = context.sphn_schema
+    logger = context.logger
+
+    # Check if it is in the dictionary and convert to a corresponding SNOMED-CT code
+    result = DataConverter.dicom_body_part_examined_terms_dict.get(body_part_examined_term.upper(), None)
+
+    if result is None:
+        logger.warning(" "*(indent+0) + f"DICOM BodyPartExamined Term: '{body_part_examined_term}' could not be converted to a corresponding code")
+        return None
+
+    # Check if conversion is ok
+    assert isinstance(result, tuple) and len(result) == 3
+    assert all(is_valid_string(item) for item in result)
+    # ToDo: Check if it is a valid SNOMED-CT code
+
+    coding_scheme_designator = result[0]
+    code_value = result[1]
+    code_descr = result[2]
+
+    sphn_code = SPHNCode(
+        sphn_schema=sphn_schema,
+        has_coding_system_and_version=coding_scheme_designator,
+        has_identifier=code_value,
+        has_name=code_descr
+    )
+
+    # Laterality is not implemented
+
+    sphn_body_site = SPHNBodySite(
+        sphn_schema=sphn_schema,
+        has_code=sphn_code,
+        has_laterality=None
+        )
+
+    return sphn_body_site
+
 
 # -----------------------------------------------------------------------------------------------------------------
 # DICOM tag reading functions for SPHN ImagingFrame metadata
@@ -883,26 +879,27 @@ def get_image_type_list_from_dicom(dataset: Dataset, context: Context, indent: i
     return type_value_set_member_list if len(type_value_set_member_list)>0 else None
 
 
+
 #
-# Edwin 2026-07-30
+# Edwin 2026-10-22
 #
-def get_pixel_spacing_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> PixelSize|None:
+def get_pixel_spacing_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> list[float]|None:
     """
-    Returns the row and column spacing value and unit corresponding to the value of the DICOM PixelSpacing tag
+    Returns the value corresponding to the value of the DICOM PixelSpacing tag
     Parameters:
-        - dataset is the DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
+        - dataset: The DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
         - context: The Context object that holds the data_store, logger and other relevant information
         - indent: The indentation level for logging (default is 0)
     """
 
+    # Tag:                  (0028,0030)
     # Keyword:              PixelSpacing
     # Value Representation: Decimal String (DS)
-    # Type:	                Required (1)
+    # Type:	                Required (1) / Conditionally Required (1C)
     # Value Multiplicity:   2
 
     # Note:
-    #   Not available in CR, 
-    #   Maybe available in DX,
+    #   Maybe available in CR, DX
     #   Available in CT, MR, PT, enhanced CT, enhanced MR, enhanced PT
 
     # Check
@@ -912,61 +909,43 @@ def get_pixel_spacing_from_dicom(dataset: Dataset, context: Context, indent: int
 
     logger = context.logger
 
-    # Set initial value
-    row_spacing_unit_ucum_code_identifier = "mm"    # The DICOM unit for PixelSpacing is always "mm"
-    column_spacing_unit_ucum_code_identifier = "mm" # The DICOM unit for PixelSpacing is always "mm"
-
-    if "PixelSpacing" not in dataset:
-        logger.debug(" "*(indent+0) + "DICOM PixelSpacing tag was not found")  
+    value = dataset.get("PixelSpacing", None)
+    if value is None:
+        logger.debug(" "*(indent+0) + "DICOM PixelSpacing tag was not found or empty")
         return None
 
-    # Get the DataElement
-    data_element = dataset["PixelSpacing"]
-
-    # Get the value
-    value = data_element.value
-    
-    # Get the Value Multiplicity
-    value_multiplicity = data_element.VM
-
-    # Check if it is empty
-    if value_multiplicity == 0 or value is None:
-        logger.debug(" "*(indent+0) + "DICOM PixelSpacing tag was not provided")
+    if not isinstance(value, pydicom.multival.MultiValue) \
+       or len(value) != 2 \
+       or not isinstance(value[0], pydicom.valuerep.DSfloat) \
+       or not isinstance(value[1], pydicom.valuerep.DSfloat):
+        logger.warning(" "*(indent+0) + "DICOM PixelSpacing tag has invalid format")
         return None
-    
-    # It should be a multi-valued tag
-    if value_multiplicity != 2 or not isinstance(value, pydicom.multival.MultiValue) or \
-        not isinstance(value[0], pydicom.valuerep.DSfloat) or \
-        not isinstance(value[1], pydicom.valuerep.DSfloat):
-        logger.warning(" "*(indent+0) + "DICOM PixelSpacing tag has an unknown format")
-        return None
-            
-    # Try to convert DSfloat to float
+
     try:
-        row_spacing    = float(value[0])
-        column_spacing = float(value[1])
+        pixel_spacing = [float(v) for v in value]
     except (ValueError, TypeError):
         logger.warning(" "*(indent+0) + "DICOM PixelSpacing values could not be converted to float values")
         return None
+    
+    if pixel_spacing[0] < 0 or pixel_spacing[1] < 0:
+        logger.warning(" "*(indent+0) + f"DICOM PixelSpacing values: '{pixel_spacing}' are likely not valid")
+        return None
 
-    if row_spacing < 0 or column_spacing < 0:
-        logger.warning(" "*(indent+0) + f"DICOM PixelSpacing tag values: '{row_spacing}','{column_spacing}' are likely not valid values.")
-
-    return ((row_spacing, row_spacing_unit_ucum_code_identifier),(column_spacing, column_spacing_unit_ucum_code_identifier))
-
+    return pixel_spacing
 
 #
-# Edwin 2026-07-30
+# Edwin 2026-10-22
 #
-def get_rows_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> NumOfRows | None:
+def get_rows_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> int|None:
     """
-    Returns the number of rows and unit corresponding to the value of the DICOM Rows tag
+    Returns the number of rows corresponding to the value of the DICOM Rows tag
     Parameters:
-        - dataset is the DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
+        - dataset: The DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
         - context: The Context object that holds the data_store, logger and other relevant information
         - indent: The indentation level for logging (default is 0)
     """
 
+    # Tag:                  (0028,0010)
     # Keyword:              Rows
     # Value Representation: Unsigned Short (US)
     # Type:	                Required (1)
@@ -982,30 +961,13 @@ def get_rows_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> Nu
 
     logger = context.logger
 
-    # Set unit using UCUM annotation
-    unit_ucum_code = "cblnbcbr" # Meaning: "{#}"
-
-    if "Rows" not in dataset:
-        logger.debug(" "*(indent+0) + "DICOM Rows tag was not found")  
+    value = dataset.get("Rows", None)
+    if value is None:
+        logger.debug(" "*(indent+0) + "DICOM Rows tag was not found or empty")
         return None
 
-    # Get the DataElement
-    data_element = dataset["Rows"]
-
-    # Get the value
-    value = data_element.value
-    
-    # Get the Value Multiplicity
-    value_multiplicity = data_element.VM
-    
-    # Check if it is empty
-    if value_multiplicity == 0 or value is None:
-        logger.debug(" "*(indent+0) + "DICOM Rows tag value was not provided")
-        return None
-    
-    # It should be a single-valued tag, an integer
-    if value_multiplicity != 1 or not isinstance(value, int):
-        logger.warning(" "*(indent+0) + "DICOM Rows tag has an unknown format")
+    if not isinstance(value, int):
+        logger.warning(" "*(indent+0) + "DICOM Rows tag has invalid format")
         return None
 
     # Should already be int
@@ -1013,21 +975,24 @@ def get_rows_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> Nu
 
     if number_of_rows < 0:
         logger.warning(" "*(indent+0) + f"DICOM Rows tag value: '{number_of_rows}' is likely not a valid value")
+        return None
 
-    return (number_of_rows, unit_ucum_code)
+    return number_of_rows
+
 
 #
-# Edwin 2026-07-30
+# Edwin 2026-10-22
 #
-def get_columns_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> NumOfColumns|None:
+def get_columns_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> int|None:
     """
-    Returns the number of columns and unit corresponding to the value of the DICOM Columns tag
+    Returns the number of columns corresponding to the value of the DICOM Columns tag
     Parameters:
-        - dataset is the DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
+        - dataset: The DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
         - context: The Context object that holds the data_store, logger and other relevant information
         - indent: The indentation level for logging (default is 0)
     """
 
+    # Tag:                  (0028,0011)
     # Keyword:              Columns
     # Value Representation: Unsigned Short (US)
     # Type:	                Required (1)
@@ -1043,30 +1008,13 @@ def get_columns_from_dicom(dataset: Dataset, context: Context, indent: int=0) ->
 
     logger = context.logger
 
-    # Set unit using UCUM annotation
-    unit_ucum_code = "cblnbcbr" # Meaning: "{#}"
-
-    if "Columns" not in dataset:
-        logger.debug(" "*(indent+0) + "DICOM Columns tag was not found")  
+    value = dataset.get("Columns", None)
+    if value is None:
+        logger.debug(" "*(indent+0) + "DICOM Columns tag was not found or empty")
         return None
 
-    # Get the DataElement
-    data_element = dataset["Columns"]
-
-    # Get the value
-    value = data_element.value
-    
-    # Get the Value Multiplicity
-    value_multiplicity = data_element.VM
-    
-    # Check if it is empty
-    if value_multiplicity == 0 or value is None:
-        logger.debug(" "*(indent+0) + "DICOM Columns tag value was not provided")
-        return None
-    
-    # It should be a single-valued tag, an integer
-    if value_multiplicity != 1 or not isinstance(value, int):
-        logger.warning(" "*(indent+0) + "DICOM Columns tag has an unknown format")
+    if not isinstance(value, int):
+        logger.warning(" "*(indent+0) + "DICOM Columns tag has invalid format")
         return None
 
     # Should already be int
@@ -1074,21 +1022,24 @@ def get_columns_from_dicom(dataset: Dataset, context: Context, indent: int=0) ->
 
     if number_of_columns < 0:
         logger.warning(" "*(indent+0) + f"DICOM Columns tag value: '{number_of_columns}' is likely not a valid value")
+        return None
 
-    return (number_of_columns, unit_ucum_code)
+    return number_of_columns
+
 
 #
 # Edwin 2026-07-30
 #
-def get_spacing_between_slices_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> SliceSpacing|None:
+def get_spacing_between_slices_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> float|None:
     """
-    Returns the spacing value and unit corresponding to the value of the DICOM SpacingBetweenSlices tag
+    Returns the spacing corresponding to the value of the DICOM SpacingBetweenSlices tag
     Parameters:
-        - dataset is the DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
+        - dataset: The DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
         - context: The Context object that holds the data_store, logger and other relevant information
         - indent: The indentation level for logging (default is 0)
     """
 
+    # Tag:                  (0018,0088) 
     # Keyword:              SpacingBetweenSlices
     # Value Representation: Decimal String (DS)
     # Type:	                Optional (3)
@@ -1101,29 +1052,12 @@ def get_spacing_between_slices_from_dicom(dataset: Dataset, context: Context, in
 
     logger = context.logger
 
-    # Set unit using UCUM code
-    unit_ucum_code = "mm" # The DICOM unit for SpacingBetweenSlices is always "mm"
-
-    if "SpacingBetweenSlices" not in dataset:
-        logger.debug(" "*(indent+0) + "DICOM SpacingBetweenSlices tag was not found")  
-        return None
-
-    # Get the DataElement
-    data_element = dataset["SpacingBetweenSlices"]
-
-    # Get the value
-    value = data_element.value
-    
-    # Get the Value Multiplicity
-    value_multiplicity = data_element.VM
-    
-    # Check if it is empty
-    if value_multiplicity == 0 or value is None:
-        logger.debug(" "*(indent+0) + "DICOM SpacingBetweenSlices tag value was not provided")
+    value = dataset.get("SpacingBetweenSlices", None)
+    if value is None:
+        logger.debug(" "*(indent+0) + "DICOM SpacingBetweenSlices tag was not found or empty")  
         return None
     
-    # It should be a single-valued tag, a DSfloat
-    if value_multiplicity != 1 or not isinstance(value, pydicom.valuerep.DSfloat):
+    if not isinstance(value, pydicom.valuerep.DSfloat):
         logger.warning(" "*(indent+0) + "DICOM SpacingBetweenSlices tag has an unknown format")
         return None
     
@@ -1134,23 +1068,25 @@ def get_spacing_between_slices_from_dicom(dataset: Dataset, context: Context, in
         logger.warning(" "*(indent+0) + "DICOM SpacingBetweenSlices tag value could not be converted to a float value")
         return None
 
-    if spacing_between_slices < 0.00:
-        logger.warning(" "*(indent+0) + f"DICOM SpacingBetweenSlices tag value: '{spacing_between_slices}' may not be a valid value")
+    if spacing_between_slices < 0:
+        logger.debug(" "*(indent+0) + f"DICOM SpacingBetweenSlices tag value: '{spacing_between_slices}' may not be a valid value")
 
-    return (spacing_between_slices, unit_ucum_code)
+    return spacing_between_slices
+
 
 #
-# Edwin 2026-07-30
+# Edwin 2026-10-22
 #
-def get_slice_thickness_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> SliceThickness | None:
+def get_slice_thickness_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> float|None:
     """
-    Returns the slice thicknes value and unit corresponding to the value of the DICOM SliceThickness tag
+    Returns the slice thicknes corresponding to the value of the DICOM SliceThickness tag
     Parameters:
-        - dataset is the DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
+        - dataset: The DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
         - context: The Context object that holds the data_store, logger and other relevant information
         - indent: The indentation level for logging (default is 0)
     """
 
+    # Tag:                  (0018,0050) 
     # Keyword:              SliceThickness
     # Value Representation: Decimal String (DS)
     # Type:	                Required, Empty if Unknown (2)
@@ -1167,32 +1103,15 @@ def get_slice_thickness_from_dicom(dataset: Dataset, context: Context, indent: i
 
     logger = context.logger
 
-    # Set unit using UCUM code
-    unit_ucum_code = "mm"    # The DICOM unit for SliceThickness is always "mm"
-
-    if "SliceThickness" not in dataset:
-        logger.debug(" "*(indent+0) + "DICOM SliceThickness tag was not found")  
+    value = dataset.get("SliceThickness", None)
+    if value is None:
+        logger.debug(" "*(indent+0) + "DICOM SliceThickness tag was not found or empty")  
         return None
 
-    # Get the DataElement
-    data_element = dataset["SliceThickness"]
-
-    # Get the value
-    value = data_element.value
-    
-    # Get the Value Multiplicity
-    value_multiplicity = data_element.VM
-    
-    # Check if it is empty
-    if value_multiplicity == 0 or value is None:
-        logger.debug(" "*(indent+0) + "DICOM SliceThickness tag value was not provided")
-        return None
-    
-    # It should be a single-valued tag, a DSfloat
-    if value_multiplicity != 1 or not isinstance(value, pydicom.valuerep.DSfloat):
+    if not isinstance(value, pydicom.valuerep.DSfloat):
         logger.warning(" "*(indent+0) + "DICOM SliceThickness tag has an unknown format")
         return None
-
+    
     # Try to convert DSfloat to float
     try:
         slice_thickness = float(value)
@@ -1200,24 +1119,26 @@ def get_slice_thickness_from_dicom(dataset: Dataset, context: Context, indent: i
         logger.warning(" "*(indent+0) + "DICOM SliceThickness tag value could not be converted to a float value")
         return None
 
-    if slice_thickness < 0.00:
-        logger.warning(" "*(indent+0) + f"DICOM SliceThickness tag value: '{slice_thickness}' is not a valid value")
+    if slice_thickness < 0:
+        logger.warning(" "*(indent+0) + f"DICOM SliceThickness tag value: '{slice_thickness}' may not be a valid value")
         return None
 
-    return (slice_thickness, unit_ucum_code)
+    return slice_thickness
+
 
 #
-# Edwin 2026-07-31
+# Edwin 2026-10-22
 #
-def get_samples_per_pixel_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> NumOfSamples | None:
+def get_samples_per_pixel_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> int|None:
     """
-    Returns the number of samples per pixel and unit corresponding to the value of the DICOM SamplesPerPixel tag
+    Returns the number of samples per pixel corresponding to the value of the DICOM SamplesPerPixel tag
     Parameters:
-        - dataset is the DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
+        - dataset: The DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
         - context: The Context object that holds the data_store, logger and other relevant information
         - indent: The indentation level for logging (default is 0)
     """
 
+    # Tag:                  (0028,0002)
     # Keyword:              SamplesPerPixel
     # Value Representation: Unsigned Short (US)
     # Type:	                Required (1)
@@ -1233,52 +1154,38 @@ def get_samples_per_pixel_from_dicom(dataset: Dataset, context: Context, indent:
 
     logger = context.logger
 
-    # Set unit using UCUM annotation
-    unit_ucum_code = "cblnbcbr" # Meaning: "{#}"
-
-    if "SamplesPerPixel" not in dataset:
-        logger.debug(" "*(indent+0) + "DICOM SamplesPerPixel tag was not found")  
+    value = dataset.get("SamplesPerPixel", None)
+    if value is None:
+        logger.debug(" "*(indent+0) + "DICOM SamplesPerPixel tag was not found or empty")  
         return None
 
-    # Get the DataElement
-    data_element = dataset["SamplesPerPixel"]
-
-    # Get the value
-    value = data_element.value
-    
-    # Get the Value Multiplicity
-    value_multiplicity = data_element.VM
-    
-    # Check if it is empty
-    if value_multiplicity == 0 or value is None:
-        logger.debug(" "*(indent+0) + "DICOM SamplesPerPixel tag value was not provided")
-        return None
-            
-    # It should be a single-valued tag, an integer
-    if value_multiplicity != 1 or not isinstance(value, int):
+    if not isinstance(value, int):
         logger.warning(" "*(indent+0) + "DICOM SamplesPerPixel tag has an unknown format")
         return None
-
+            
     # Should already be int
     samples_per_pixel = value
 
     if samples_per_pixel < 0:
         logger.warning(" "*(indent+0) + f"DICOM SamplesPerPixel tag value: '{samples_per_pixel}' is likely not a valid value")
+        return None
 
-    return (samples_per_pixel, unit_ucum_code)
+    return samples_per_pixel
+
 
 #
-#  Edwin 2026-07-31
+#  Edwin 2026-10-22
 #
-def get_body_part_examined_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> tuple[str, str, str] | None:
+def get_body_part_examined_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> str|None:
     """
-    Returns the SNOMED-CT code corresponding to the value of the DICOM BodyPartExamined tag
+    Returns the DICOM Term corresponding to the value of the DICOM BodyPartExamined tag
     Parameters:
-        - dataset is the DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
+        - dataset: The DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
         - context: The Context object that holds the data_store, logger and other relevant information
         - indent: The indentation level for logging (default is 0)
     """
 
+    # Tag:                  (0018,0015)
     # Keyword:              BodyPartExamined
     # Value Representation: Code String (CS)
     # Type:	                Optional (3)
@@ -1291,50 +1198,28 @@ def get_body_part_examined_from_dicom(dataset: Dataset, context: Context, indent
 
     logger = context.logger
 
-    if "BodyPartExamined" not in dataset:
-        logger.debug(" "*(indent+0) + "DICOM BodyPartExamined tag was not found")  
+    value = dataset.get("BodyPartExamined", None)
+    if value is None:
+        logger.debug(" "*(indent+0) + "DICOM BodyPartExamined tag was not found or empty")  
         return None
-
-    # Get the DataElement
-    data_element = dataset["BodyPartExamined"]
-
-    # Get the value
-    value = data_element.value
     
-    # Get the Value Multiplicity
-    value_multiplicity = data_element.VM
-    
-    # Check if it is empty
-    if value_multiplicity == 0 or value is None:
-        logger.debug(" "*(indent+0) + "DICOM BodyPartExamined tag value was not provided")
-        return None
-
-    # It should be a single-valued tag, a string
-    if value_multiplicity != 1 or not isinstance(value, str):
+    # It should be a string
+    if not isinstance(value, str):
         logger.warning(" "*(indent+0) + "DICOM BodyPartExamined tag has an unknown format")
         return None
 
-    # Remove whitespace
-    body_part_examined = value.strip()
+    # Remove whitespace and convert to uppercase
+    body_part_examined_term = value.strip().upper()
 
     # Check if value is not empty
-    if len(body_part_examined) == 0:
+    if len(body_part_examined_term) == 0:
         logger.debug(" "*(indent+0) + "DICOM BodyPartExamined tag value contains only whitespace")
         return None
 
-    # Check if it is in the dictionary and convert to a corresponding SNOMED-CT code
-    result = DataConverter.dicom_body_part_examined_terms_dict.get(body_part_examined.upper(), None)
+    assert is_valid_string(body_part_examined_term)
 
-    if result is None:
-        logger.warning(" "*(indent+0) + f"DICOM BodyPartExamined tag value code string: '{body_part_examined}' could not be converted to a corresponding code")
-        return None
+    return body_part_examined_term
 
-    # Check conversion is ok
-    assert isinstance(result, tuple) and len(result) == 3
-    assert all(is_valid_string(item) for item in result)
-    # ToDo: Check if it is a valid SNOMED-CT code
-
-    return result
 
 #
 # Edwin 2026-07-31
@@ -1656,7 +1541,7 @@ def convert_to_data_compression_algorithm_list(
 
                 if result is not None:
 
-                    assert len(result) == 2
+                    assert len(result) == 3
 
                     if is_clean_string(result[0]):
 
@@ -1691,7 +1576,7 @@ def convert_to_data_compression_algorithm_list(
 
                     sphn_code_ratio = SPHNCode( 
                         sphn_schema = sphn_schema,
-                        has_identifier = "cblratiocbr",  # UCUM unit code for {ratio}
+                        has_identifier = "cblratiocbr",  # SPHN UCUM unit code, label: "{ratio}", comment: "ratio"
                         has_coding_system_and_version = "UCUM"
                         )
                     sphn_unit_ratio = SPHNUnit(
@@ -1989,7 +1874,7 @@ def get_acquisition_date_from_dicom(dataset: Dataset, context: Context, indent: 
     aq_date = dataset.get("AcquisitionDate", None)
 
     if aq_date is None:
-        logger.debug(" "*(indent+0) + "DICOM AcquisitionDate tag was not found")  
+        logger.debug(" "*(indent+0) + "DICOM AcquisitionDate tag was not found or empty")  
         return None
 
     # Convert a possible DICOM DA object to a string representation
@@ -2031,7 +1916,7 @@ def get_acquisition_time_from_dicom(dataset: Dataset, context: Context, indent: 
     aq_time = dataset.get("AcquisitionTime", None)
 
     if aq_time is None:
-        logger.debug(" "*(indent+0) + "DICOM AcquisitionTime tag was not found")  
+        logger.debug(" "*(indent+0) + "DICOM AcquisitionTime tag was not found or empty")  
         return None
 
     # Convert a possible DICOM TM object to a string representation
@@ -2078,7 +1963,7 @@ def get_acquisition_datetime_from_dicom(dataset: Dataset, context: Context, inde
     dt_obj = dataset.get("AcquisitionDateTime", None)
 
     if dt_obj is None:
-        logger.debug(" "*(indent+0) + "DICOM AcquisitionDateTime tag was not found")  
+        logger.debug(" "*(indent+0) + "DICOM AcquisitionDateTime tag was not found or empty")  
         return None
 
     # Convert a possible DICOM DT object to a string representation

@@ -28,6 +28,15 @@ class SPHNConcept(ABC, BaseModel):
     def __eq__(self, other):
         pass
 
+    # 
+    # A quick comparison based on the id for sorting purposes.
+    #
+    def __lt__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return self.id < other.id
+
+
     #
     # Generic repr listing all model fields except the schema graph and the id.
     #

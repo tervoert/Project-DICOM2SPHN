@@ -26,21 +26,32 @@ from .sphn_time_pattern import SPHNTimePattern
 #
 class SPHNContrastAgentAdministrationEvent(SPHNDrugAdministrationEvent):
 
-    has_start_datetime: datetime                                        # (1:1) xsd:dateTime
-    has_end_datetime: datetime|None=None                                # (0:1) xsd:dateTime
-    has_drug: SPHNContrastAgent                                         # (1:1) SPHN Contrast Agent
-    has_administration_route_code: SPHNCode|None=None                   # (0:1) SPHN Code
-    has_reason_to_stop_code: SPHNCode|None=None                         # (0:1) SPHN Code
-    has_duration: SPHNQuantity|None=None                                # (0:1) SPHN Quantity
-    has_time_pattern: SPHNTimePattern|None=None                         # (0:1) SPHN Time Pattern
-    has_flow_profile_interval: SPHNFlowProfileInterval|None=None        # (0:1) SPHN Flow Profile Interval
+    has_start_datetime: datetime                                            # (1:1) xsd:dateTime
+    has_end_datetime: datetime|None=None                                    # (0:1) xsd:dateTime
+    has_drug: SPHNContrastAgent                                             # (1:1) SPHN Contrast Agent
+    has_administration_route_code: SPHNCode|None=None                       # (0:1) SPHN Code
+    has_reason_to_stop_code: SPHNCode|None=None                             # (0:1) SPHN Code
+    has_duration: SPHNQuantity|None=None                                    # (0:1) SPHN Quantity
+    has_time_pattern: SPHNTimePattern|None=None                             # (0:1) SPHN Time Pattern
+    has_flow_profile_interval_list: list[SPHNFlowProfileInterval]|None=None # (0:n) SPHN Flow Profile Interval
 
-    has_subject_pseudo_identifier: SPHNSubjectPseudoIdentifier          # (1:1) SPHN Subject Pseudo Identifier
-    has_administrative_case: SPHNAdministrativeCase|None=None           # (0:1) SPHN Administrative Case
-    has_source_system_list: list[SPHNSourceSystem]                      # (1:n) SPHN SourceSystem (list)
+    has_subject_pseudo_identifier: SPHNSubjectPseudoIdentifier              # (1:1) SPHN Subject Pseudo Identifier
+    has_administrative_case: SPHNAdministrativeCase|None=None               # (0:1) SPHN Administrative Case
+    has_source_system_list: list[SPHNSourceSystem]                          # (1:n) SPHN SourceSystem (list)
     
     sphn_schema: SPHNSchemaGraph
     id: str = Field(default_factory=lambda: generate_id())
+
+
+    @field_validator('has_flow_profile_interval_list', mode='after')  
+    @classmethod
+    def validate_flow_profile_interval_list(cls, value: list[SPHNFlowProfileInterval]|None) -> list[SPHNFlowProfileInterval]|None:
+        if value is not None:
+            if not isinstance(value, list) or len(value) == 0:
+                raise ValueError("SPHN 'has_flow_profile_interval_list' list must be a non-empty list or None")
+            if not all(isinstance(item, SPHNFlowProfileInterval) for item in value):
+                raise TypeError("One or more items in the SPHN 'has_flow_profile_interval_list' are not SPHN Flow Profile Interval instances.")
+        return value
 
 
     @field_validator('has_source_system_list', mode='after')  
@@ -70,7 +81,7 @@ class SPHNContrastAgentAdministrationEvent(SPHNDrugAdministrationEvent):
             self.has_source_system_list.append(source_system)
     
     #
-    # Edwin 2026-08-013
+    # Edwin 2026-10-28
     #
     #  It is a Core Concept
     def get_json_dict(self, content: dict, source_concept_id: str|None=None) -> dict:
@@ -108,8 +119,8 @@ class SPHNContrastAgentAdministrationEvent(SPHNDrugAdministrationEvent):
         if self.has_drug is not None:
             json_dict_content[f"{SPHN.hasDrug.n3(self.sphn_schema.namespace_manager())}"] = self.has_drug.get_json_dict(content, self.id)
 
-        if self.has_flow_profile_interval is not None:
-            json_dict_content[f"{SPHN.hasFlowProfileInterval.n3(self.sphn_schema.namespace_manager())}"] = self.has_flow_profile_interval.get_json_dict(content, self.id)
+        if self.has_flow_profile_interval_list is not None and len(self.has_flow_profile_interval_list) > 0:
+            json_dict_content[f"{SPHN.hasFlowProfileInterval.n3(self.sphn_schema.namespace_manager())}"] = [flow_profile_interval.get_json_dict(content, self.id) for flow_profile_interval in self.has_flow_profile_interval_list]
 
         if self.has_administration_route_code is not None:
             json_dict_content[f"{SPHN.hasAdministrationRouteCode.n3(self.sphn_schema.namespace_manager())}"] = self.has_administration_route_code.get_json_dict(content, self.id)
@@ -159,9 +170,9 @@ class SPHNContrastAgentAdministrationEvent(SPHNDrugAdministrationEvent):
                     self.has_reason_to_stop_code, 
                     self.has_duration, 
                     self.has_time_pattern, 
-                    self.has_flow_profile_interval, 
                     self.has_subject_pseudo_identifier, 
                     self.has_administrative_case, 
+                    sorted(self.has_flow_profile_interval_list) if self.has_flow_profile_interval_list is not None else None, 
                     sorted(self.has_source_system_list) if self.has_source_system_list is not None else None
                 ) == (
                     other.has_drug, 
@@ -169,9 +180,9 @@ class SPHNContrastAgentAdministrationEvent(SPHNDrugAdministrationEvent):
                     other.has_reason_to_stop_code, 
                     other.has_duration, 
                     other.has_time_pattern, 
-                    other.has_flow_profile_interval, 
                     other.has_subject_pseudo_identifier, 
                     other.has_administrative_case, 
+                    sorted(other.has_flow_profile_interval_list) if other.has_flow_profile_interval_list is not None else None, 
                     sorted(other.has_source_system_list) if other.has_source_system_list is not None else None
                 )
 

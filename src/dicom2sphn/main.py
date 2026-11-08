@@ -188,13 +188,13 @@ def main(patient_id: str, output_file_path_specification: str, config_file: str)
             logger.info(" "*(indent+2) + f"Contrast Bolus Agent text: '{item}' with count: '{count}'.")
         logger.info("")
 
-    if len(data_store.contrast_bolus_ingredient_dict) > 0:
-        for item,count in data_store.contrast_bolus_ingredient_dict.items():
+    if len(data_store.known_contrast_bolus_ingredient_dict) > 0:
+        for item,count in data_store.known_contrast_bolus_ingredient_dict.items():
             logger.info(" "*(indent+2) + f"Contrast Bolus Ingredient term: '{item}' with count: '{count}'.")
         logger.info("")
 
-    if len(data_store.contrast_bolus_agent_sequence_codes_dict) > 0:
-        for (coding_scheme_designator, code_value, code_meaning), count in data_store.contrast_bolus_agent_sequence_codes_dict.items():
+    if len(data_store.known_contrast_bolus_agent_sequence_codes_dict) > 0:
+        for (coding_scheme_designator, code_value, code_meaning), count in data_store.known_contrast_bolus_agent_sequence_codes_dict.items():
             logger.info(" "*(indent+2) + f"Contrast Bolus Agent Sequence code: coding scheme designator: '{coding_scheme_designator}', code value: '{code_value}', code meaning: '{code_meaning}' with count: '{count}'.")
         logger.info("")
 
@@ -203,8 +203,8 @@ def main(patient_id: str, output_file_path_specification: str, config_file: str)
             logger.info(" "*(indent+2) + f"Unknown Contrast Bolus Agent Sequence code: coding scheme designator: '{coding_scheme_designator}', code value: '{code_value}', code meaning: '{code_meaning}' with count: '{count}'.")
         logger.info("")
 
-    if len(data_store.contrast_bolus_administration_route_sequence_codes_dict) > 0:
-        for (coding_scheme_designator, code_value, code_meaning), count in data_store.contrast_bolus_administration_route_sequence_codes_dict.items():
+    if len(data_store.known_contrast_bolus_administration_route_sequence_codes_dict) > 0:
+        for (coding_scheme_designator, code_value, code_meaning), count in data_store.known_contrast_bolus_administration_route_sequence_codes_dict.items():
             logger.info(" "*(indent+2) + f"Contrast Bolus Administration Route Sequence code: coding scheme designator: '{coding_scheme_designator}', code value: '{code_value}', code meaning: '{code_meaning}' with count: '{count}'.")
         logger.info("")
 
@@ -212,6 +212,22 @@ def main(patient_id: str, output_file_path_specification: str, config_file: str)
         for (coding_scheme_designator, code_value, code_meaning), count in data_store.unknown_contrast_bolus_administration_route_sequence_codes_dict.items():
             logger.info(" "*(indent+2) + f"Unknown Contrast Bolus Administration Route Sequence code: coding scheme designator: '{coding_scheme_designator}', code value: '{code_value}', code meaning: '{code_meaning}' with count: '{count}'.")
         logger.info("")
+
+    if len(data_store.contrast_bolus_routes_dict) > 0:
+        for (route, routes_found), count in data_store.contrast_bolus_routes_dict.items():
+            logger.info(" "*(indent+2) + f"Contrast Bolus Route: route: '{route}', routes found: '{routes_found}' with count: '{count}'.")
+        logger.info("")
+
+    if len(data_store.known_contrast_bolus_routes_dict) > 0:
+        for route, count in data_store.known_contrast_bolus_routes_dict.items():
+            logger.info(" "*(indent+2) + f"Known Contrast Bolus Route: route: '{route}' with count: '{count}'.")
+        logger.info("")
+
+    if len(data_store.unknown_contrast_bolus_routes_dict) > 0:
+        for route, count in data_store.unknown_contrast_bolus_routes_dict.items():
+            logger.info(" "*(indent+2) + f"Unknown Contrast Bolus Route: route: '{route}' with count: '{count}'.")
+        logger.info("")
+
 
     stop_time_t1 = time.perf_counter()
     logger.info(" "*(indent+2) + f"Total processing time:'{stop_time_t1 - start_time_t1:.2f}' seconds" +

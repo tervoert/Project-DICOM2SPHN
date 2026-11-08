@@ -11,6 +11,8 @@ from pathlib import Path
 from pathvalidate import sanitize_filepath
 from pydicom import Dataset
 
+from dicom2sphn.protocols import LoggerProtocol
+
 from .sphn_concepts.sphn_body_site import SPHNBodySite
 from .sphn_concepts.sphn_contrast_agent_administration_event import (
     SPHNContrastAgentAdministrationEvent,
@@ -47,6 +49,7 @@ class DataStore:
     sphn_schema: SPHNSchemaGraph
     valid_sop_classes: dict[str, str]
     fallback_study_datetime: datetime
+    fallback_contrast_agent_datetime: datetime
 
     # -----------------------------------------------------------------------------------------------------------------------------
     # Class variables set during the processing of the DICOM Patient - Study - Series - Instance hierarchical tree
@@ -90,19 +93,21 @@ class DataStore:
     contrast_bolus_agent_dict: dict[str, int] # Key: ContrastBolusAgent, Value: Count
 
     # Dictionary to keep track of DICOM contrast bolus ingredients
-    contrast_bolus_ingredient_dict: dict[str, int] # Key: ContrastBolusIngredient, Value: Count
+    known_contrast_bolus_ingredient_dict: dict[str, int] # Key: ContrastBolusIngredient, Value: Count
+    unknown_contrast_bolus_ingredient_dict: dict[str, int] # Key: ContrastBolusIngredient, Value: Count
 
     # Dictionary to keep track of DICOM contrast bolus agent sequence codes
-    contrast_bolus_agent_sequence_codes_dict: dict[tuple[str, str, str], int]  # Key: (coding_scheme_designator, code_value, code_descr), Value: Count
-
-    # Dictionary to keep track of unknown DICOM contrast bolus agent sequence codes
+    known_contrast_bolus_agent_sequence_codes_dict: dict[tuple[str, str, str], int]  # Key: (coding_scheme_designator, code_value, code_descr), Value: Count
     unknown_contrast_bolus_agent_sequence_codes_dict: dict[tuple[str, str, str], int]  # Key: (coding_scheme_designator, code_value, code_descr), Value: Count
 
     # Dictionary to keep track of DICOM contrast bolus administration route sequence codes
-    contrast_bolus_administration_route_sequence_codes_dict: dict[tuple[str, str, str], int]  # Key: (coding_scheme_designator, code_value, code_descr), Value: Count
-
-    # Dictionary to keep track of unknown DICOM contrast bolus administration route sequence codes
+    known_contrast_bolus_administration_route_sequence_codes_dict: dict[tuple[str, str, str], int]  # Key: (coding_scheme_designator, code_value, code_descr), Value: Count
     unknown_contrast_bolus_administration_route_sequence_codes_dict: dict[tuple[str, str, str], int]  # Key: (coding_scheme_designator, code_value, code_descr), Value: Count
+
+    # Dictionary to keep track of DICOM contrast bolus routes
+    known_contrast_bolus_routes_dict: dict[str, int] # Key: ContrastBolusRoute, Value: Count
+    unknown_contrast_bolus_routes_dict: dict[str, int] # Key: ContrastBolusRoute, Value: Count
+    contrast_bolus_routes_dict: dict[tuple[str, list[str]], int] # Key: Tuple of (ContrastBolusRoute, list of matched routes), Value: Count
 
     # 
     # Patient level
@@ -173,7 +178,9 @@ class DataStore:
     sphn_pixel_dimensions: SPHNPixelDimensions|None=None
     sphn_image_dimensions: SPHNImageDimensions|None=None
     sphn_imagingframe_content_qualification_valueset_member: str|None=None
-    sphn_body_site_list: SPHNBodySite|None=None
+
+    sphn_body_site_list_procedure: list[SPHNBodySite]|None=None
+    sphn_body_site_list_frame: list[SPHNBodySite]|None=None
     sphn_data_compression_algorithm_list: list[SPHNDataCompressionAlgorithm]|None=None
     sphn_imagingframe_type_valueset_member_list: list[str]|None=None
 
@@ -192,7 +199,8 @@ class DataStore:
                  sphn_source_system: SPHNSourceSystem, 
                  sphn_schema: SPHNSchemaGraph, 
                  valid_sop_classes: dict[str, str],
-                 fallback_study_datetime: datetime):
+                 fallback_study_datetime: datetime,
+                 fallback_contrast_agent_datetime: datetime):
         """
         Initializes the DataStore instance.
         """
@@ -204,6 +212,7 @@ class DataStore:
         assert isinstance(sphn_schema, SPHNSchemaGraph)
         assert isinstance(valid_sop_classes, dict) and all(isinstance(k, str) and isinstance(v, str) for k, v in valid_sop_classes.items())
         assert isinstance(fallback_study_datetime, datetime)
+        assert isinstance(fallback_contrast_agent_datetime, datetime)
 
         self.sphn_data_release = sphn_data_release
         self.sphn_data_provider = sphn_data_provider
@@ -212,7 +221,9 @@ class DataStore:
         self.valid_sop_classes = valid_sop_classes
 
         self.fallback_study_datetime = fallback_study_datetime
+        self.fallback_contrast_agent_datetime = fallback_contrast_agent_datetime
         self.study_start_datetime = None
+
 
         self.sphn_imaging_procedure_list = []
         self.sphn_imaging_series_list = []
@@ -221,13 +232,19 @@ class DataStore:
         self.skipped_frame_type_dict = {}
 
         self.contrast_bolus_agent_dict = {}
-        self.contrast_bolus_ingredient_dict = {}
 
-        self.contrast_bolus_agent_sequence_codes_dict = {}
+        self.known_contrast_bolus_ingredient_dict = {}
+        self.unknown_contrast_bolus_ingredient_dict = {}        
+
+        self.known_contrast_bolus_agent_sequence_codes_dict = {}
         self.unknown_contrast_bolus_agent_sequence_codes_dict = {}
 
-        self.contrast_bolus_administration_route_sequence_codes_dict = {}
+        self.known_contrast_bolus_administration_route_sequence_codes_dict = {}
         self.unknown_contrast_bolus_administration_route_sequence_codes_dict = {}
+
+        self.known_contrast_bolus_routes_dict = {}
+        self.unknown_contrast_bolus_routes_dict = {}
+        self.contrast_bolus_routes_dict = {}
 
         self.file_id = generate_id()
 
@@ -356,6 +373,8 @@ class DataStore:
         self.study_instance_uid = None
         self.number_of_study_related_series = None
         self.number_of_study_related_instances = None
+
+        self.sphn_body_site_list_procedure = None
         self.modalities_in_study_code_list = None
         self.modality_based_imaging_procedure_code_list = None
         self.sphn_imaging_series_list = []
@@ -443,9 +462,68 @@ class DataStore:
         self.sphn_pixel_dimensions = None
         self.sphn_image_dimensions = None
         self.sphn_imagingframe_content_qualification_valueset_member = None
-        self.sphn_body_site_list = None
+        self.sphn_body_site_list_frame = None
         self.sphn_imagingframe_type_valueset_member_list = None
         self.sphn_data_compression_algorithm_list = None
+
+    # -----------------------------------------------------------------------------------------------------------------
+    # Functions for adding to lists
+    # -----------------------------------------------------------------------------------------------------------------
+
+    #
+    # Edwin 2026-10-22
+    #
+    def add_sphn_contrast_agent_administration_event_to_list(self, sphn_contrast_agent_administration_event: SPHNContrastAgentAdministrationEvent, logger: LoggerProtocol, indent=0) -> None:
+
+        # Check
+        assert isinstance(sphn_contrast_agent_administration_event, SPHNContrastAgentAdministrationEvent)
+        assert logger is not None and isinstance(logger, LoggerProtocol)
+        assert isinstance(indent, int) and indent >= 0
+
+        if self.sphn_contrast_agent_administration_event_list is None:
+            self.sphn_contrast_agent_administration_event_list = [sphn_contrast_agent_administration_event]
+            logger.debug(" "*(indent+0) + "SPHN Contrast Agent Administration Event object added to the list")
+        else:
+            if sphn_contrast_agent_administration_event not in self.sphn_contrast_agent_administration_event_list:
+                self.sphn_contrast_agent_administration_event_list.append(sphn_contrast_agent_administration_event)
+                logger.debug(" "*(indent+0) + "SPHN Contrast Agent Administration Event object added to the list")
+            else:
+                logger.debug(" "*(indent+0) + "SPHN Contrast Agent Administration Event object already in the list")
+
+    #
+    # Edwin 2026-10-22
+    #
+    def add_sphn_body_site_to_list(self, sphn_body_site: SPHNBodySite, logger: LoggerProtocol, indent=0) -> None:
+        
+        # Check
+        assert isinstance(sphn_body_site, SPHNBodySite)
+        assert isinstance(logger, LoggerProtocol)
+        assert isinstance(indent, int) and indent >= 0
+
+        if self.sphn_body_site_list_procedure is None:
+            self.sphn_body_site_list_procedure = []
+        if self.sphn_body_site_list_frame is None:
+            self.sphn_body_site_list_frame = []
+
+        # Check if a similar sphn_body_site is already in the list at procedure level and if so, get that instance
+        existing_body_site_procedure = None
+        for body_site in self.sphn_body_site_list_procedure:
+            if body_site == sphn_body_site:
+                existing_body_site_procedure = body_site
+                break
+
+        # If a similar sphn_body_site already exists at the procedure level, add the existing instance to the frame level list
+        if existing_body_site_procedure is not None:
+            logger.debug(" "*(indent+0) + "SPHN BodySite object already exists at the procedure level")
+            self.sphn_body_site_list_frame.append(existing_body_site_procedure)
+            logger.debug(" "*(indent+0) + "SPHN BodySite object added to the frame list")
+        else:
+            # Add the sphn_body_site to both the procedure and frame level lists
+            logger.debug(" "*(indent+0) + "SPHN BodySite object does not exist at the procedure level")
+            self.sphn_body_site_list_procedure.append(sphn_body_site)
+            self.sphn_body_site_list_frame.append(sphn_body_site)
+        logger.debug(" "*(indent+0) + "SPHN BodySite object added to procedure and frame level lists")
+        
 
     # -----------------------------------------------------------------------------------------------------------------
     # Statistics
@@ -508,19 +586,36 @@ class DataStore:
     #
     # Edwin 2026-09-24
     #
-    def add_contrast_bolus_ingredient_to_dict(self, contrast_bolus_ingredient_term: str) -> None:
+    def add_known_contrast_bolus_ingredient_to_dict(self, contrast_bolus_ingredient_term: str) -> None:
         """
-        Adds a contrast bolus ingredient term to the dictionary for statistics.
+        Adds a known contrast bolus ingredient term to the dictionary for statistics.
         """
         
         # Checks
         assert is_valid_string(contrast_bolus_ingredient_term)
-        assert self.contrast_bolus_ingredient_dict is not None and isinstance(self.contrast_bolus_ingredient_dict, dict)
+        assert self.known_contrast_bolus_ingredient_dict is not None and isinstance(self.known_contrast_bolus_ingredient_dict, dict)
 
-        if contrast_bolus_ingredient_term in self.contrast_bolus_ingredient_dict:
-            self.contrast_bolus_ingredient_dict[contrast_bolus_ingredient_term] += 1
+        if contrast_bolus_ingredient_term in self.known_contrast_bolus_ingredient_dict:
+            self.known_contrast_bolus_ingredient_dict[contrast_bolus_ingredient_term] += 1
         else:
-            self.contrast_bolus_ingredient_dict[contrast_bolus_ingredient_term] = 1
+            self.known_contrast_bolus_ingredient_dict[contrast_bolus_ingredient_term] = 1
+
+    #
+    # Edwin 2026-09-24
+    #
+    def add_unknown_contrast_bolus_ingredient_to_dict(self, contrast_bolus_ingredient_term: str) -> None:
+        """
+        Adds an unknown contrast bolus ingredient term to the dictionary for statistics.
+        """
+        
+        # Checks
+        assert is_valid_string(contrast_bolus_ingredient_term)
+        assert self.unknown_contrast_bolus_ingredient_dict is not None and isinstance(self.unknown_contrast_bolus_ingredient_dict, dict)
+
+        if contrast_bolus_ingredient_term in self.unknown_contrast_bolus_ingredient_dict:
+            self.unknown_contrast_bolus_ingredient_dict[contrast_bolus_ingredient_term] += 1
+        else:
+            self.unknown_contrast_bolus_ingredient_dict[contrast_bolus_ingredient_term] = 1
 
 
     #
@@ -532,13 +627,13 @@ class DataStore:
         assert coding_scheme_designator is None or is_valid_string(coding_scheme_designator)
         assert code_value is None or is_valid_string(code_value)
         assert code_meaning is None or is_valid_string(code_meaning)
-        assert self.contrast_bolus_agent_sequence_codes_dict is not None and isinstance(self.contrast_bolus_agent_sequence_codes_dict, dict)
+        assert self.known_contrast_bolus_agent_sequence_codes_dict is not None and isinstance(self.known_contrast_bolus_agent_sequence_codes_dict, dict)
 
         key = (coding_scheme_designator, code_value, code_meaning)
-        if key in self.contrast_bolus_agent_sequence_codes_dict:
-            self.contrast_bolus_agent_sequence_codes_dict[key] += 1
+        if key in self.known_contrast_bolus_agent_sequence_codes_dict:
+            self.known_contrast_bolus_agent_sequence_codes_dict[key] += 1
         else:
-            self.contrast_bolus_agent_sequence_codes_dict[key] = 1
+            self.known_contrast_bolus_agent_sequence_codes_dict[key] = 1
 
     #
     # Edwin 2026-09-24
@@ -570,13 +665,13 @@ class DataStore:
         assert coding_scheme_designator is None or is_valid_string(coding_scheme_designator)
         assert code_value is None or is_valid_string(code_value)
         assert code_meaning is None or is_valid_string(code_meaning)
-        assert self.contrast_bolus_administration_route_sequence_codes_dict is not None and isinstance(self.contrast_bolus_administration_route_sequence_codes_dict, dict)
+        assert self.known_contrast_bolus_administration_route_sequence_codes_dict is not None and isinstance(self.known_contrast_bolus_administration_route_sequence_codes_dict, dict)
 
         key = (coding_scheme_designator, code_value, code_meaning)
-        if key in self.contrast_bolus_administration_route_sequence_codes_dict:
-            self.contrast_bolus_administration_route_sequence_codes_dict[key] += 1
+        if key in self.known_contrast_bolus_administration_route_sequence_codes_dict:
+            self.known_contrast_bolus_administration_route_sequence_codes_dict[key] += 1
         else:
-            self.contrast_bolus_administration_route_sequence_codes_dict[key] = 1
+            self.known_contrast_bolus_administration_route_sequence_codes_dict[key] = 1
 
     #
     # Edwin 2026-09-29
@@ -594,6 +689,52 @@ class DataStore:
             self.unknown_contrast_bolus_administration_route_sequence_codes_dict[key] += 1
         else:
             self.unknown_contrast_bolus_administration_route_sequence_codes_dict[key] = 1
+
+
+    #
+    # Edwin 2026-10-28
+    #
+    def add_contrast_bolus_route_to_dict(self, route: str, routes_found: list[str]) -> None:
+
+        # Checks
+        assert is_valid_string(route)
+        assert isinstance(routes_found, list) and all(is_valid_string(item) for item in routes_found)
+        assert self.contrast_bolus_routes_dict is not None and isinstance(self.contrast_bolus_routes_dict, dict)
+
+        key = (route, str(routes_found))
+        if key in self.contrast_bolus_routes_dict:
+            self.contrast_bolus_routes_dict[key] += 1
+        else:
+            self.contrast_bolus_routes_dict[key] = 1
+
+
+    #
+    # Edwin 2026-10-28
+    #
+    def add_unknown_contrast_bolus_route_to_dict(self, route: str) -> None:
+
+        # Checks
+        assert is_valid_string(route)
+        assert self.unknown_contrast_bolus_routes_dict is not None and isinstance(self.unknown_contrast_bolus_routes_dict, dict)
+
+        if route in self.unknown_contrast_bolus_routes_dict:
+            self.unknown_contrast_bolus_routes_dict[route] += 1
+        else:
+            self.unknown_contrast_bolus_routes_dict[route] = 1
+
+    #
+    # Edwin 2026-10-28
+    #
+    def add_known_contrast_bolus_route_to_dict(self, route: str) -> None:
+
+        # Checks
+        assert is_valid_string(route)
+        assert self.known_contrast_bolus_routes_dict is not None and isinstance(self.known_contrast_bolus_routes_dict, dict)
+
+        if route in self.known_contrast_bolus_routes_dict:
+            self.known_contrast_bolus_routes_dict[route] += 1
+        else:
+            self.known_contrast_bolus_routes_dict[route] = 1
 
 
     #

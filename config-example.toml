@@ -54,3 +54,23 @@ allowed_sop_classes = [
 # Set a DICOM StudyDate and StudyTime for DICOM Studies without a date/time:
 fallback_study_date = "1800-01-01" # YYYY-MM-DD
 fallback_study_time = "12:00:00"   # HH:MM:SS
+
+# Set a DICOM Contrast Agent Administration Date and Time for DICOM Studies without a date/time:
+fallback_contrast_agent_date = "1800-01-01" # YYYY-MM-DD
+fallback_contrast_agent_time = "12:00:00"   # HH:MM:SS
+
+[data_processing]
+# DICOM series may contain multiple image frames (2D slices) and the metadata of each frame is stored in a corresponding 
+# SPHN Imaging Frame object. Therefore, a corresponding amount of SPHN Imaging Frame objects will be created.
+# However, as the metadata is often the same for all frames within a series, this may lead to redundant information 
+# being stored across multiple SPHN Imaging Frame objects. This redundancy can be avoided by storing only 
+# unique SPHN Imaging Frame objects in each series. 
+# The same applies to SPHN Imaging Series and SPHN Imaging Procedure objects, where redundant information can be 
+# avoided by storing only unique objects. 
+# Note that the number of frames in a series and/or the number of series in a procedure and/or the number of procedures
+# a patient undergoes can then no longer be deduced by counting the stored SPHN Imaging objects.
+#
+# Set to true to add only unique SPHN Imaging Procedure, Series, and Frame objects.
+add_only_unique_sphn_imaging_procedures = false
+add_only_unique_sphn_imaging_series = false
+add_only_unique_sphn_imaging_frames = true

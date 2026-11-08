@@ -57,11 +57,12 @@ class DoseLocation(Enum):
 def extract_contrast_agents(text: str, context: Context, indent: int=0) -> list:
     """
     Extracts contrast agent information from the given text.
-        - text is the input string containing contrast agent information
-        - context is the Context object that holds the data_store, logger and other relevant information
-        - indent is the indentation level for logging
-    
-    Returns a list of dictionaries representing extracted contrast agents:
+    Parameters:
+        - text: str, the input string containing contrast agent information
+        - context: The Context object that holds the data_store, logger and other relevant information
+        - indent: The indentation level for logging (default is 0)
+    Returns:
+        A list of dictionaries representing extracted contrast agents:
         {   
             "agent": "agent name",
             "concentration": integer|None,
@@ -78,47 +79,35 @@ def extract_contrast_agents(text: str, context: Context, indent: int=0) -> list:
     assert isinstance(indent, int) and indent >= 0
 
     logger = context.logger
-    data_store = context.data_store
 
     logger.debug(" "*(indent+0) + f"Start extracting contrast agent info from text: '{text}'")
 
     start_time_t1 = time.perf_counter()    
 
     #
-    # 1. List of known contrast agent names
+    # 1. List of known contrast agent names, active ingredient names and active element(s) or functional atom(groups)
     #
 
-    contrast_agent_names_list = DataConverter.all_contrast_agent_and_ingredient_names_list
+    contrast_agent_names_2_patterns = DataConverter.contrast_agent_names_2_patterns
 
-    if not contrast_agent_names_list:
-        contrast_agent_names_list = [
-            "Dotarem", "Gadobutrol", "Magnevist", "Omnipaque", "Visipaque", 
-            "Isovue", "Clariscan", "ProHance", "Optiray", "Ultravist", "Gadavist",
-            "Cholographin", "Cholographin Meglumine", "Iomeron", "Xenetix", "Gadovist"
-        ]
+    # Checks
+    assert contrast_agent_names_2_patterns \
+        and isinstance(contrast_agent_names_2_patterns, dict) \
+        and all(isinstance(item[0], str) and isinstance(item[1], str) for item in contrast_agent_names_2_patterns.items())
 
-    assert contrast_agent_names_list \
-        and isinstance(contrast_agent_names_list, list) \
-        and all(isinstance(item, str) for item in contrast_agent_names_list)
-
-    # CRUCIAL: Sort the list by the length of the string, from long to short.
-    # This ensures that e.g. "Cholographin Meglumine" is always evaluated before "Cholographin".
-    agents_sorted = sorted(contrast_agent_names_list, key=len, reverse=True)
-    
-    # Mapping-dictionary for normalization of names
-    agent_normalization_map = {name.lower(): name for name in agents_sorted}
-
-    # Create a regex pattern for the names
-    agents_pattern = "|".join(re.escape(name) for name in agents_sorted)
+    # More checks
+    for name in contrast_agent_names_2_patterns:
+        result_1 = DataConverter.contrast_agent_trade_name_2_manufacturer_and_ingredient_name.get(name, None)
+        result_2 = DataConverter.contrast_agent_active_ingredient_name_2_snomed_code.get(name, None)
+        result_3 = DataConverter.contrast_agent_active_element_names_2_snomed_code.get(name, None)
+        if result_1 is None and result_2 is None and result_3 is None:
+            raise ValueError(f"Contrast agent '{name}' not found in any mapping dictionary.")
 
     # 
-    # 2. List of known active ingredient concentrations
+    # 2. List of known active element (groups) concentrations
     #
 
     concentrations_list = DataConverter.contrast_agent_active_ingredient_concentrations_list
-
-    if not concentrations_list:
-        concentrations_list = ["30", "240", "250", "260", "270", "300", "320", "350", "360", "370", "380", "390", "400"]
 
     assert concentrations_list \
         and isinstance(concentrations_list, list) \
@@ -143,17 +132,16 @@ def extract_contrast_agents(text: str, context: Context, indent: int=0) -> list:
     # Create a regex pattern for the units
     unit_pattern = "|".join(re.escape(key) for key in unit_standardization)
 
-    # 3.1 Create a regex pattern for doses (value + unit)
+    # Create a regex pattern for doses (value + unit)
     dose_pattern = rf"(\d+(?:[\.,]\d+)?)\s*({unit_pattern})\b"
 
     # 
     # 4. Compile the two main regex
     #
 
-    agent_regex = re.compile(
-            rf"({agents_pattern})", 
-            re.IGNORECASE
-        )
+    contrast_agent_names_and_regexs: dict[str, re.Pattern] = {
+        name: re.compile(pattern, re.IGNORECASE) for name, pattern in contrast_agent_names_2_patterns.items()
+    }
 
     conc_dose_regex = re.compile(
             rf"({conc_pattern})[-_\s]+{dose_pattern}[-_\s]*{dose_pattern}"  # concentration followed by dose and dose
@@ -168,6 +156,8 @@ def extract_contrast_agents(text: str, context: Context, indent: int=0) -> list:
     # 5. Match and extract contrast agent, concentration, and dose information in the text
     #
 
+    #text = "15 ml DotareM-300 20 mg VisiPaqUE-320 Bilivist is fake."
+
     results = []
 
     # Status flags for dose location information in text around the previous and current contrast agent
@@ -175,21 +165,34 @@ def extract_contrast_agents(text: str, context: Context, indent: int=0) -> list:
     dose_location = DoseLocation.NODOSE
 
     # 5.1 Find all contrast agents in the text
-    matches = list(agent_regex.finditer(text))
+    # matches = list(agent_regex.finditer(text))
 
+    matches: list[tuple[str, re.Match]] = []
+    for name, regex in contrast_agent_names_and_regexs.items():
+        current_matches = list(regex.finditer(text))
+        for match in current_matches:
+            matches.append((name, match))
+
+    # Sort matches by their start index
+    matches.sort(key=lambda x: x[1].start())
+
+    # Check for overlapping matches
+    for i in range(1, len(matches)):
+        prev_name, prev_match = matches[i-1]
+        curr_name, curr_match = matches[i]
+        if prev_match.end() > curr_match.start():
+            raise ValueError(f"Overlapping contrast agent matches found: '{prev_name}' at {prev_match.span()} and '{curr_name}' at {curr_match.span()}")
+        
     # Status flag indicating whether to stop processing concentration and dose information if the text is too complex
     too_complex = False
 
     # 5.2 Iterate over each matched contrast agent in the text
-    for i, match in enumerate(matches):
-        raw_agent = match.group(1)
-        normalized_agent = agent_normalization_map.get(raw_agent.lower(), raw_agent)
-
-        logger.debug(" "*(indent+2) + f"Match {i}: raw_agent: '{raw_agent}', normalized_agent: '{normalized_agent}'")
+    for i, (normalized_name, match) in enumerate(matches): 
+        logger.debug(" "*(indent+2) + f"Match {i+1}: normalized name: '{normalized_name}', span: {match.span()}")
 
         # Adding agent to the results with default None values for concentration and dose
         results.append({
-            "agent": normalized_agent,
+            "agent": normalized_name,
             "concentration": None,
             "dose": {
                 "value": None,
@@ -213,8 +216,8 @@ def extract_contrast_agents(text: str, context: Context, indent: int=0) -> list:
             start_idx, end_idx = match.span()
 
             # Determine the search window around the matched agent in the text
-            next_start = matches[i+1].start() if i + 1 < len(matches) else len(text)
-            prev_end = matches[i-1].end() if i > 0 else 0
+            next_start = matches[i+1][1].start() if i + 1 < len(matches) else len(text)
+            prev_end = matches[i-1][1].end() if i > 0 else 0
 
             # context before and after the matched agent in the text
             context_before = text[prev_end:start_idx]
@@ -573,7 +576,7 @@ def test_extraction() -> None:
     logger.debug(" "*(indent+0) + "-"*80)  # Separator between test cases
 
     for text in test_cases:
-        results = extract_contrast_agents(text, context, indent=0)
+        extract_contrast_agents(text, context, indent=0)
         logger.debug(" "*(indent+0) + "-"*80)  # Separator between test cases
 
 #
@@ -599,26 +602,3 @@ def create_logger() -> LoggerProtocol:
 
     return logger
 
-
-
-# Old extraction method using named capture groups and full pattern matching:
-    
-    # full_pattern = re.compile(
-    #     rf"(?:{dose_pattern}\s*(?:of\s*|van\s*)?(?P<agent1>{agents_pattern}))" # Dosis first
-    #     rf"|(?:(?P<agent2>{agents_pattern})\s*{dose_pattern})"                 # Agent first
-    #     rf"|(?P<agent3>{agents_pattern})",                                     # Name only
-    #     re.IGNORECASE
-    # )
-    
-    # for match in full_pattern.finditer(text):
-    #     gd = match.groupdict()
-        
-    #     # Determine which agent group matched and normalize the name
-    #     raw_agent = gd['agent1'] or gd['agent2'] or gd['agent3']
-    #     normalized_agent = normalization_map.get(raw_agent.lower(), raw_agent)
-        
-    #     # Retrieve the specific sub-groups from the match based on their position
-    #     groups = match.groups()
-    #     raw_value = groups[0] or groups[4] or None
-    #     raw_unit = groups[1] or groups[5] or None
-        

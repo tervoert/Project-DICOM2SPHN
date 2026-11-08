@@ -21,11 +21,11 @@ from .sphn_substance import SPHNSubstance
 #
 class SPHNContrastAgent(SPHNDrug):
 
-    has_article: SPHNDrugArticle|None=None                              # (0:1) SPHN Drug Article
-    has_quantity: SPHNQuantity|None=None                                # (0:1) SPHN Quantity
-    has_active_ingredient: SPHNContrastAgentActiveIngredient|None=None  # (0:1) SPHN Contrast Agent Active Ingredient
-    has_inactive_ingredient_list: list[SPHNSubstance]|None=None         # (0:n) SPHN Substance (list)
-    has_source_system_list: list[SPHNSourceSystem]                      # (1:n) SPHN SourceSystem (list)
+    has_article: SPHNDrugArticle|None=None                                          # (0:1) SPHN Drug Article
+    has_quantity: SPHNQuantity|None=None                                            # (0:1) SPHN Quantity
+    has_active_ingredient_list: list[SPHNContrastAgentActiveIngredient]|None=None   # (0:n) SPHN Contrast Agent Active Ingredient    
+    has_inactive_ingredient_list: list[SPHNSubstance]|None=None                     # (0:n) SPHN Substance (list)
+    has_source_system_list: list[SPHNSourceSystem]                                  # (1:n) SPHN SourceSystem (list)
 
     sphn_schema: SPHNSchemaGraph
     id: str = Field(default_factory=lambda: generate_id())
@@ -65,7 +65,25 @@ class SPHNContrastAgent(SPHNDrug):
 
         if source_system not in self.has_source_system_list:
             self.has_source_system_list.append(source_system)
-    
+
+
+    #
+    # Edwin 2026-10-21
+    #
+    def add_sphn_contrast_agent_active_ingredient(self, active_ingredient: SPHNContrastAgentActiveIngredient) -> None:
+        """ 
+        Adds the active_ingredient to the list
+        """
+        # Checks
+        assert isinstance(active_ingredient, SPHNContrastAgentActiveIngredient)
+
+        if self.has_active_ingredient_list is None:
+            self.has_active_ingredient_list = [active_ingredient]
+        else:
+            if active_ingredient not in self.has_active_ingredient_list:
+                self.has_active_ingredient_list.append(active_ingredient)
+
+
     #
     # Edwin 2026-08-13
     #
@@ -89,8 +107,13 @@ class SPHNContrastAgent(SPHNDrug):
         if self.has_quantity is not None:
             json_dict_content_inline[f"{SPHN.hasQuantity.n3(self.sphn_schema.namespace_manager())}"] = self.has_quantity.get_json_dict(content, self.id)
 
-        if self.has_active_ingredient is not None:
-            json_dict_content_inline[f"{SPHN.hasActiveIngredient.n3(self.sphn_schema.namespace_manager())}"] = self.has_active_ingredient.get_json_dict(content, self.id)
+        # ToDo: Edwin: for old SPHN version
+        if self.has_active_ingredient_list is not None and len(self.has_active_ingredient_list) > 0:
+            json_dict_content_inline[f"{SPHN.hasActiveIngredient.n3(self.sphn_schema.namespace_manager())}"] = self.has_active_ingredient_list[0].get_json_dict(content, self.id)
+        
+        # ToDo: Edwin: for new SPHN version
+        #if self.has_active_ingredient_list is not None and len(self.has_active_ingredient_list)>0:
+        #    json_dict_content_inline[f"{SPHN.hasActiveIngredient.n3(self.sphn_schema.namespace_manager())}"] = [active_ingredient.get_json_dict(content, self.id) for active_ingredient in self.has_active_ingredient_list]
 
         if self.has_inactive_ingredient_list is not None and len(self.has_inactive_ingredient_list)>0:
             json_dict_content_inline[f"{SPHN.hasInactiveIngredient.n3(self.sphn_schema.namespace_manager())}"] = [inactive_ingredient.get_json_dict(content, self.id) for inactive_ingredient in self.has_inactive_ingredient_list]
@@ -110,13 +133,13 @@ class SPHNContrastAgent(SPHNDrug):
         return (
                     self.has_quantity, 
                     self.has_article, 
-                    self.has_active_ingredient, 
+                    sorted(self.has_active_ingredient_list) if self.has_active_ingredient_list is not None else None,                    
                     sorted(self.has_inactive_ingredient_list) if self.has_inactive_ingredient_list is not None else None,
                     sorted(self.has_source_system_list) if self.has_source_system_list is not None else None,
                 ) == (
                     other.has_quantity, 
                     other.has_article, 
-                    other.has_active_ingredient, 
+                    sorted(other.has_active_ingredient_list) if other.has_active_ingredient_list is not None else None,
                     sorted(other.has_inactive_ingredient_list) if other.has_inactive_ingredient_list is not None else None,
                     sorted(other.has_source_system_list) if other.has_source_system_list is not None else None
                 )

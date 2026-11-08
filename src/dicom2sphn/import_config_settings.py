@@ -160,8 +160,10 @@ def import_config_settings(config_file: Path, context: Context, indent: int=0) -
     context.logger.info(" "*(indent+0) + "Trying to process the StudyDate and StudyTime settings for DICOM Studies without a date/time.")
 
     fallback_study_datetime = get_fallback_study_datetime_from_dicom_options_settings(settings, context, indent=indent+2)
+    fallback_contrast_agent_datetime = get_fallback_contrast_agent_datetime_from_dicom_options_settings(settings, context, indent=indent+2)
 
     context.logger.info(" "*(indent+2) + f"Using StudyDateTime: '{fallback_study_datetime}' for DICOM Studies without a date/time.")
+    context.logger.info(" "*(indent+2) + f"Using Contrast Agent Administration DateTime: '{fallback_contrast_agent_datetime}' for DICOM Studies without a date/time.")
 
     context.logger.info(" "*(indent+0) + "Successfully processed the StudyDate and StudyTime settings.")
 
@@ -177,7 +179,9 @@ def import_config_settings(config_file: Path, context: Context, indent: int=0) -
         sphn_source_system=sphn_source_system,
         sphn_schema=context.sphn_schema,
         valid_sop_classes=sop_classes_specified,
-        fallback_study_datetime=fallback_study_datetime)
+        fallback_study_datetime=fallback_study_datetime,
+        fallback_contrast_agent_datetime=fallback_contrast_agent_datetime
+        )
     
     context.data_store = data_store
 
@@ -206,6 +210,18 @@ def import_config_settings(config_file: Path, context: Context, indent: int=0) -
     context.dicomweb_api_user = dicomweb_api_user
 
     context.logger.info(" "*(indent+0) + "Successfully processed the DICOMweb API user settings.")
+
+    # -----------------------------------------------------------------------------------------------------------------
+    # Process the data processing settings
+    # -----------------------------------------------------------------------------------------------------------------
+
+    data_processing_settings = get_data_processing_options_from_settings(settings, context, indent=indent+2)
+    
+    context.add_only_unique_sphn_imaging_procedures = data_processing_settings.get("add_only_unique_sphn_imaging_procedures", False)
+    context.add_only_unique_sphn_imaging_series = data_processing_settings.get("add_only_unique_sphn_imaging_series", False)
+    context.add_only_unique_sphn_imaging_frames = data_processing_settings.get("add_only_unique_sphn_imaging_frames", True)
+    
+    context.logger.info(" "*(indent+0) + "Successfully processed the data processing settings.")
 
     # -----------------------------------------------------------------------------------------------------------------
 
@@ -668,6 +684,25 @@ def get_dicomweb_api_user_from_settings(settings:dict, context: Context, indent:
     return dicomweb_api_user
 
 
+def get_data_processing_options_from_settings(settings:dict, context: Context, indent: int=0) -> dict:
+    """Get the data processing options that are specified in the 'data_processing' section of the configuration settings and return them as a dictionary."""
+
+    # Checks
+    assert isinstance(settings,dict)
+    assert isinstance(context,Context)
+    assert isinstance(indent,int) and indent>=0
+
+    if "data_processing" not in settings:
+        raise ImportConfigSettingsError("No 'data_processing' settings found in the configuration settings.")
+    
+    data_processing_settings = settings["data_processing"]
+
+    if not isinstance(data_processing_settings, dict):
+        raise ImportConfigSettingsError("The 'data_processing' settings have the wrong format.")
+
+    return data_processing_settings
+
+
 #
 # Edwin 2026-07-06
 #
@@ -765,6 +800,53 @@ def get_fallback_study_datetime_from_dicom_options_settings(settings:dict, conte
         result_time = datetime.strptime(fallback_study_time,"%H:%M:%S").replace(tzinfo=UTC).time()
     except ValueError as e:
         raise ImportConfigSettingsError(f"Failed to parse 'fallback_study_time' in the 'dicom_options' settings (expected format: 'HH:MM:SS'): {e}")
+
+    # Combine date and time
+    result_datetime = datetime.combine(result_date, result_time, tzinfo=UTC)
+
+    return result_datetime
+
+#
+# Edwin 2026-08-07
+#
+def get_fallback_contrast_agent_datetime_from_dicom_options_settings(settings:dict, context: Context, indent: int=0) -> datetime:
+    """
+    Get the Fallback Contrast Agent Administration Date and Time from the 'dicom_options' 
+    in the configuration settings and return them as a combined datetime.
+    """
+
+    # Checks
+    assert isinstance(settings,dict)
+    assert isinstance(context,Context)
+    assert isinstance(indent,int) and indent>=0
+
+    if "dicom_options" not in settings:
+        raise ImportConfigSettingsError("No 'dicom_options' settings found in the configuration settings.")
+    
+    dicom_options_settings = settings["dicom_options"]
+
+    if not isinstance(dicom_options_settings, dict):
+        raise ImportConfigSettingsError("The 'dicom_options' settings have the wrong format.")
+
+    if "fallback_contrast_agent_date" not in dicom_options_settings:
+        raise ImportConfigSettingsError("No 'fallback_contrast_agent_date' found in the 'dicom_options' settings.")
+
+    if "fallback_contrast_agent_time" not in dicom_options_settings:
+        raise ImportConfigSettingsError("No 'fallback_contrast_agent_time' found in the 'dicom_options' settings.")
+
+    fallback_contrast_agent_date = dicom_options_settings["fallback_contrast_agent_date"]
+    fallback_contrast_agent_time = dicom_options_settings["fallback_contrast_agent_time"]
+
+    # Validate the date and time formats
+    try:
+        result_date = datetime.strptime(fallback_contrast_agent_date,"%Y-%m-%d").replace(tzinfo=UTC).date()
+    except ValueError as e:
+        raise ImportConfigSettingsError(f"Failed to parse 'fallback_contrast_agent_date' in the 'dicom_options' settings (expected format: 'YYYY-MM-DD'): {e}")
+    
+    try:
+        result_time = datetime.strptime(fallback_contrast_agent_time,"%H:%M:%S").replace(tzinfo=UTC).time()
+    except ValueError as e:
+        raise ImportConfigSettingsError(f"Failed to parse 'fallback_contrast_agent_time' in the 'dicom_options' settings (expected format: 'HH:MM:SS'): {e}")
 
     # Combine date and time
     result_datetime = datetime.combine(result_date, result_time, tzinfo=UTC)

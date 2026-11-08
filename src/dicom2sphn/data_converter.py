@@ -4,6 +4,8 @@ data_converter.py:
     It contains the DataConverter class, which handles data conversion.
 """
 
+import re
+from collections.abc import Mapping
 from typing import ClassVar, ReadOnly
 
 
@@ -818,337 +820,6 @@ class DataConverter:
         "ZYGOMA":           ("SNOMED", "13881006",   "| Zygoma |")
     }    
 
-    #
-    # Contrast Agents
-    # 
-
-    # Notes:
-    # DICOM prefers to code contrast agents using "medicinal product" SNOMED-CT codes (SCT = SNOMED-CT).
-    # SPHN prefers to code contrast agents using "substance" SNOMED-CT codes.
-
-    # A dictionary mapping DICOM defined contrast agent trade names to a DICOM defined list of DICOM defined coded contrast agents:
-    # Key: Contrast agent trade name.
-    # Value: Tuple with:
-    #        - the manufacturer (e.g., "Bracco")
-    #        - a list of tuples with a coding scheme designator, code value, and a human-readable description (e.g., ("SCT", "12335007", "Diatrizoate"))
-    # Link: https://dicom.nema.org/medical/dicom/current/output/chtml/part16/sect_CID_12.html Table CID 12. Imaging Contrast Agent
-    dicom_contrast_agent_trade_name_dict: ClassVar[ReadOnly[dict[str, tuple[str, list[tuple[str, str, str]]]]]] = {
-        "Angiovist":              ("Berlex",           [("SCT",     "12335007", "Diatrizoate")]),               # SNOMED: 12335007 | Product containing amidotrizoate (medicinal product) |
-        "Cardiografin":           ("Bracco",           [("SCT",     "12335007", "Diatrizoate")]),               # SNOMED: 12335007 | Product containing amidotrizoate (medicinal product) |
-        "Cystografin":            ("Bracco",           [("SCT",     "12335007", "Diatrizoate")]),               # SNOMED: 12335007 | Product containing amidotrizoate (medicinal product) |
-        "Gastrografin":           ("Bracco",           [("SCT",     "12335007", "Diatrizoate")]),               # SNOMED: 12335007 | Product containing amidotrizoate (medicinal product) |
-        "Gastrovist":             ("Berlex",           [("SCT",     "12335007", "Diatrizoate")]),               # SNOMED: 12335007 | Product containing amidotrizoate (medicinal product) |
-        "Hypaque":                ("GE",               [("SCT",     "12335007", "Diatrizoate")]),               # SNOMED: 12335007 | Product containing amidotrizoate (medicinal product) |
-        "MD":                     ("Mallinckrodt",     [("SCT",     "12335007", "Diatrizoate")]),               # SNOMED: 12335007 | Product containing amidotrizoate (medicinal product) |
-        "Reno":                   ("Bracco",           [("SCT",     "12335007", "Diatrizoate")]),               # SNOMED: 12335007 | Product containing amidotrizoate (medicinal product) |
-        "Renografin":             ("Bracco",           [("SCT",     "12335007", "Diatrizoate")]),               # SNOMED: 12335007 | Product containing amidotrizoate (medicinal product) |
-        "Renovist":               ("Bracco",           [("SCT",     "12335007", "Diatrizoate")]),               # SNOMED: 12335007 | Product containing amidotrizoate (medicinal product) |
-        "Sinografin":             ("Bracco",           [("SCT",     "12335007", "Diatrizoate"),                 # SNOMED: 12335007 | Product containing amidotrizoate (medicinal product) |
-                                                        ("SCT",     "73212002",  "Iodipamide")]),               # SNOMED: 73212002 | Product containing iodipamide (medicinal product) |
-        "Urovist":                ("Berlex",           [("SCT",     "12335007", "Diatrizoate")]),               # SNOMED: 12335007 | Product containing amidotrizoate (medicinal product) |
-
-        "Multihance":             ("Bracco",           [("SCT",    "792865009", "Gadobenate dimeglumine")]),    # SNOMED: 792865009 | Product containing gadobenic acid (medicinal product) |
-        # Other writing variations:
-        "Multi":                  ("Bracco",           [("SCT",    "792865009", "Gadobenate dimeglumine")]),    # SNOMED: 792865009 | Product containing gadobenic acid (medicinal product) |   # Alternative writing for "Multihance"
-        
-        "Gadavist":               ("",                 [("SCT",    "407976008", "Gadobutrol")]),                # SNOMED: 407976008 | Product containing gadobutrol (medicinal product) |       # EU (Gadovist) vs US (Gadavist) brand name
-
-        "Omniscan":               ("GE",               [("SCT",    "354088005", "Gadodiamide")]),               # SNOMED: 354088005 | Product containing gadodiamide (medicinal product) |
-        # Other writing variations:
-        "Omniskan":               ("GE",               [("SCT",    "354088005", "Gadodiamide")]),               # SNOMED: 354088005 | Product containing gadodiamide (medicinal product) |      # Alternative writing for "Omniscan"
-
-        "Vasovist":               ("Epix",             [("SCT",    "770982005", "Gadofosveset")]),              # SNOMED: 770982005 | Product containing gadofosveset (medicinal product) |
-        "Ablavar":                ("",                 [("SCT",    "770982005", "Gadofosveset")]),              # SNOMED: 770982005 | Product containing gadofosveset (medicinal product) |
-        "Magnevist":              ("Berlex",           [("SCT",    "109216000", "Gadopentetate dimeglumine")]), # SNOMED: 109216000 | Gadopentetate dimeglumine (substance) |
-        "Clariscan":              ("GE",               [("SCT",    "712714000", "Gadoterate meglumine")]),      # SNOMED: 712714000 | Gadoterate meglumine (substance) |
-        "Dotarem":                ("Guerbet",          [("SCT",    "712714000", "Gadoterate meglumine")]),      # SNOMED: 712714000 | Gadoterate meglumine (substance) |
-        "ProHance":               ("Bracco",           [("SCT",    "353946009", "Gadoteridol")]),               # SNOMED: 353946009 | Product containing gadoteridol (medicinal product) |
-        "Optimark":               ("Liebel-Flarsheim", [("SCT",    "409477004", "Gadoversetamide")]),           # SNOMED: 409477004 | Product containing gadoversetamide (medicinal product) |
-        "Eovist":                 ("Bayer",            [("SCT",    "440223009", "Gadoxetate disodium")]),       # SNOMED: 440223009 | Gadoxetate disodium (substance) |
-        "Renovue":                ("Bracco",           [("SCT",    "12801003",  "Iodamide meglumine")]),        # SNOMED: 12801003 | Iodamide meglumine (substance) |
-        "Cholographin":           ("Bracco",           [("SCT",    "73212002",  "Iodipamide")]),                # SNOMED: 73212002 | Product containing iodipamide (medicinal product) |
-        "Visipaque":              ("GE",               [("SCT",    "353962003", "Iodixanol")]),                 # SNOMED: 353962003 | Product containing iodixanol (medicinal product) |
-
-        "Omnipaque":              ("GE",               [("SCT",    "109218004", "Iohexol")]),                   # SNOMED: 109218004 | Product containing iohexol (medicinal product) |
-        # Other writing variations:
-        "Omnipak":                ("GE",               [("SCT",    "109218004", "Iohexol")]),                   # SNOMED: 109218004 | Product containing iohexol (medicinal product) |          # Alternative writing for "Omnipaque"
-        "Omnipaq":                ("GE",               [("SCT",    "109218004", "Iohexol")]),                   # SNOMED: 109218004 | Product containing iohexol (medicinal product) |          # Alternative writing for "Omnipaque"
-        "Omnipaqe":               ("GE",               [("SCT",    "109218004", "Iohexol")]),                   # SNOMED: 109218004 | Product containing iohexol (medicinal product) |          # Alternative writing for "Omnipaque"
-
-        "Isovue":                 ("Bracco",           [("SCT",    "109219007", "Iopamidol")]),                 # SNOMED: 109219007 | Product containing iopamidol (medicinal product) |
-        "Telepaque":              ("GE",               [("SCT",    "76155001",  "Iopanoic acid")]),             # SNOMED: 76155001 | Product containing iopanoic acid (medicinal product) |
-        "Pantopaque":             ("Alcon",            [("SCT",    "28121005",  "Iophendylate")]),              # SNOMED: 28121005 | Iophendylate (substance) |
-        "Ultravist":              ("",                 [("SCT",    "353903006", "Iopromide")]),                 # SNOMED: 353903006 | Product containing iopromide (medicinal product) |
-        "Imeron":                 ("",                 [("SCT",    "353903006", "Iopromide")]),                 # SNOMED: 353903006 | Product containing iopromide (medicinal product) |
-        "Conray":                 ("Mallinckrodt",     [("SCT",    "353912008", "Iothalamate")]),               # SNOMED: 353912008 | Product containing iothalamate (medicinal product) |
-        "Cysto-Conray":           ("Mallinckrodt",     [("SCT",    "353912008", "Iothalamate")]),               # SNOMED: 353912008 | Product containing iothalamate (medicinal product) |
-        "Vascoray":               ("Mallinckrodt",     [("SCT",    "353912008", "Iothalamate")]),               # SNOMED: 353912008 | Product containing iothalamate (medicinal product) |
-        "Optiray":                ("Mallinckrodt",     [("SCT",    "109222009", "Ioversol")]),                  # SNOMED: 109222009 | Product containing ioversol (medicinal product) |
-        "Hexbrix":                ("Mallinckrodt",     [("SCT",    "412228003", "Ioxaglate")]),                 # SNOMED: 412228003 | Ioxaglate meglumine (substance) |
-        "Imagenil":               ("",                 [("SCT",    "409484007", "Ioxilan")]),                   # SNOMED: 409484007 | Product containing ioxilan (medicinal product) |
-        "Bilivist":               ("Berlex",           [("SCT",    "87445005",  "Ipodate")]),                   # SNOMED: 87445005 | Ipodate (substance) |
-        "Oragrafin":              ("Bracco",           [("SCT",    "87445005",  "Ipodate")]),                   # SNOMED: 87445005 | Ipodate (substance) |
-        "Teslascan":              ("GE",               [("RXNORM", "236987",    "Mangafodipir trisodium")]), 
-        "Cholographin Meglumine": ("Bracco",           [("SCT",    "69783005",  "Meglumine iodipamide")]),      # SNOMED: 69783005 | Iodipamide meglumine (substance) |
-        "Amipaque":               ("GE",               [("SCT",    "90733003",  "Metrizamide")]),               # SNOMED: 90733003 | Metrizamide (substance) |
-        "Isopaque":               ("GE",               [("SCT",    "354094002", "Metrizoate")]),                # SNOMED: 354094002 | Product containing metrizoate (medicinal product) |
-        "Dionosil":               ("GSK",              [("SCT",    "111158001", "Propyliodone")]),              # SNOMED: 111158001 | Propyliodone (substance) |
-        "Salpix":                 ("Ortho",            [("SCT",    "32836007",  "Sodium acetrizoate")]),        # SNOMED: 32836007 | Sodium acetrizoate (substance) |
-        "Cholographin Sodium":    ("Bracco",           [("SCT",    "925002",    "Sodium iodipamide")]),         # SNOMED: 925002 | Sodium iodipamide (substance) |
-
-        # 
-        # Others added by Edwin:
-        #
-
-        "Gadovist":               ("Bayer",            [("SCT",    "407976008", "Gadobutrol")]),                # SNOMED: 407976008 | Product containing gadobutrol (medicinal product) |       # EU (Gadovist) vs US (Gadavist) brand name
-
-        "Readi-Cat":              ("Bracco",           [("SCT",    "25419009",  "Barium Sulfate")]),            # SNOMED: 25419009 | Product containing barium sulfate (medicinal product) |
-        # Other writing variations:
-        "ReadiCat":               ("Bracco",           [("SCT",    "25419009",  "Barium Sulfate")]),            # SNOMED: 25419009 | Product containing barium sulfate (medicinal product) |    # Alternative writing for "Readi-Cat"
-        "RDICat":                 ("Bracco",           [("SCT",    "25419009",  "Barium Sulfate")]),            # SNOMED: 25419009 | Product containing barium sulfate (medicinal product) |    # Alternative writing for "Readi-Cat"
-        "Readi Cat":              ("Bracco",           [("SCT",    "25419009",  "Barium Sulfate")]),            # SNOMED: 25419009 | Product containing barium sulfate (medicinal product) |    # Alternative writing for "Readi-Cat"
-        "RediCat":                ("Bracco",           [("SCT",    "25419009",  "Barium Sulfate")]),            # SNOMED: 25419009 | Product containing barium sulfate (medicinal product) |    # Alternative writing for "Readi-Cat"
-        "Redi-Cat":               ("Bracco",           [("SCT",    "25419009",  "Barium Sulfate")]),            # SNOMED: 25419009 | Product containing barium sulfate (medicinal product) |    # Alternative writing for "Readi-Cat"
-
-        "Readi-Cat 2":            ("Bracco",           [("SCT",    "25419009",  "Barium Sulfate")]),            # SNOMED: 25419009 | Product containing barium sulfate (medicinal product) |
-        "Readi-Cat 2 SMOOTHIE":   ("Bracco",           [("SCT",    "25419009",  "Barium Sulfate")]),            # SNOMED: 25419009 | Product containing barium sulfate (medicinal product) |
-        "Baro-Cat":               ("Mallinckrodt",     [("SCT",    "25419009",  "Barium Sulfate")]),            # SNOMED: 25419009 | Product containing barium sulfate (medicinal product) |
-        "Cheetah":                ("Mallinckrodt",     [("SCT",    "25419009",  "Barium Sulfate")]),            # SNOMED: 25419009 | Product containing barium sulfate (medicinal product) |
-
-        "E-Z-Cat":                ("Bracco",           [("SCT",    "25419009",  "Barium Sulfate")]),            # SNOMED: 25419009 | Product containing barium sulfate (medicinal product) |
-        # Other writing variations:
-        "EZ-Cat":                 ("Bracco",           [("SCT",    "25419009",  "Barium Sulfate")]),            # SNOMED: 25419009 | Product containing barium sulfate (medicinal product) |    # Alternative writing for "E-Z-Cat"
-        "EZCat":                  ("Bracco",           [("SCT",    "25419009",  "Barium Sulfate")]),            # SNOMED: 25419009 | Product containing barium sulfate (medicinal product) |    # Alternative writing for "E-Z-Cat"
-
-        "E-Z-PAQUE":              ("Bracco",           [("SCT",    "25419009",  "Barium Sulfate")]),            # SNOMED: 25419009 | Product containing barium sulfate (medicinal product) |
-        # Other writing variations:
-        "EZ-PAQUE":               ("Bracco",           [("SCT",    "25419009",  "Barium Sulfate")]),            # SNOMED: 25419009 | Product containing barium sulfate (medicinal product) |    # Alternative writing for "E-Z-PAQUE"
-        "EZPAQUE":                ("Bracco",           [("SCT",    "25419009",  "Barium Sulfate")]),            # SNOMED: 25419009 | Product containing barium sulfate (medicinal product) |    # Alternative writing for "E-Z-PAQUE"
-        "E-Z-PAK":                ("Bracco",           [("SCT",    "25419009",  "Barium Sulfate")]),            # SNOMED: 25419009 | Product containing barium sulfate (medicinal product) |    # Alternative writing for "E-Z-PAQUE"
-        "EZ-PAK":                 ("Bracco",           [("SCT",    "25419009",  "Barium Sulfate")]),            # SNOMED: 25419009 | Product containing barium sulfate (medicinal product) |    # Alternative writing for "E-Z-PAQUE"
-        "EZPAK":                  ("Bracco",           [("SCT",    "25419009",  "Barium Sulfate")]),            # SNOMED: 25419009 | Product containing barium sulfate (medicinal product) |    # Alternative writing for "E-Z-PAQUE"
-        "E-Z-PAQ":                ("Bracco",           [("SCT",    "25419009",  "Barium Sulfate")]),            # SNOMED: 25419009 | Product containing barium sulfate (medicinal product) |    # Alternative writing for "E-Z-PAQUE"
-        "EZ-PAQ":                 ("Bracco",           [("SCT",    "25419009",  "Barium Sulfate")]),            # SNOMED: 25419009 | Product containing barium sulfate (medicinal product) |    # Alternative writing for "E-Z-PAQUE"
-        "EZPAQ":                  ("Bracco",           [("SCT",    "25419009",  "Barium Sulfate")]),            # SNOMED: 25419009 | Product containing barium sulfate (medicinal product) |    # Alternative writing for "E-Z-PAQUE"
-        "E-Z-PAQE":               ("Bracco",           [("SCT",    "25419009",  "Barium Sulfate")]),            # SNOMED: 25419009 | Product containing barium sulfate (medicinal product) |    # Alternative writing for "E-Z-PAQUE"
-        "EZ-PAQE":                ("Bracco",           [("SCT",    "25419009",  "Barium Sulfate")]),            # SNOMED: 25419009 | Product containing barium sulfate (medicinal product) |    # Alternative writing for "E-Z-PAQUE"
-        "EZPAQE":                 ("Bracco",           [("SCT",    "25419009",  "Barium Sulfate")]),            # SNOMED: 25419009 | Product containing barium sulfate (medicinal product) |    # Alternative writing for "E-Z-PAQUE"
-
-        "Liquid POLIBAR PLUS":    ("Bracco",           [("SCT",    "25419009",  "Barium Sulfate")]),            # SNOMED: 25419009 | Product containing barium sulfate (medicinal product) |
-        # Other writing variations:
-        "POLIBAR PLUS":           ("Bracco",           [("SCT",    "25419009",  "Barium Sulfate")]),            # SNOMED: 25419009 | Product containing barium sulfate (medicinal product) |    # Alternative writing for "Liquid POLIBAR PLUS"
-        "Liquid POLIBAR":         ("Bracco",           [("SCT",    "25419009",  "Barium Sulfate")]),            # SNOMED: 25419009 | Product containing barium sulfate (medicinal product) |    # Alternative writing for "Liquid POLIBAR PLUS"
-        "POLIBAR":                ("Bracco",           [("SCT",    "25419009",  "Barium Sulfate")]),            # SNOMED: 25419009 | Product containing barium sulfate (medicinal product) |    # Alternative writing for "Liquid POLIBAR PLUS"
-
-        "Telebrix":               ("Guerbet",          [("SCT",    "712698009", "Ioxitalamate meglumine")]),    # SNOMED: 712698009 | Ioxitalamate meglumine (substance) |
-        "MD-60":                  ("Mallinckrodt",     [("SCT",     "12335007", "Diatrizoate")]),               # SNOMED: 12335007 | Product containing amidotrizoate (medicinal product) |
-        "MD-76":                  ("Mallinckrodt",     [("SCT",     "12335007", "Diatrizoate")]),               # SNOMED: 12335007 | Product containing amidotrizoate (medicinal product) |
-        "Reno-30":                ("Bracco",           [("SCT",     "12335007", "Diatrizoate")]),               # SNOMED: 12335007 | Product containing amidotrizoate (medicinal product) |
-        "Reno-60":                ("Bracco",           [("SCT",     "12335007", "Diatrizoate")]),               # SNOMED: 12335007 | Product containing amidotrizoate (medicinal product) |
-        "Reno-Dip":               ("Bracco",           [("SCT",     "12335007", "Diatrizoate")]),               # SNOMED: 12335007 | Product containing amidotrizoate (medicinal product) |
-
-        "MD Gastroview":          ("Bracco",           [("SCT",    "47192000",  "Diatrizoate meglumine"),       # SNOMED: 47192000 | Meglumine amidotrizoate (substance) |
-                                                        ("SCT",    "395875009", "Diatrizoate sodium")]),        # SNOMED: 395875009 | Sodium amidotrizoate (substance) |
-        # Other writing variations:
-        "Gastroview":             ("Bracco",           [("SCT",    "47192000",  "Diatrizoate meglumine"),       # SNOMED: 47192000 | Meglumine amidotrizoate (substance) |                      # Alternative writing for "MD Gastroview"
-                                                        ("SCT",    "395875009", "Diatrizoate sodium")]),        # SNOMED: 395875009 | Sodium amidotrizoate (substance) |
-
-        "Hypaque Meglumine":      ("GE",               [("SCT",    "47192000",  "Diatrizoate meglumine")]),     # SNOMED: 47192000 | Meglumine amidotrizoate (substance) |
-        "Niopam":                 ("Bracco",           [("SCT",    "109219007", "Iopamidol")]),                 # SNOMED: 109219007 | Product containing iopamidol (medicinal product) |)
-        "Iomeron":                ("Bracco",           [("SCT",    "356671000", "Iomeprol")])                   # SNOMED: 356671000 | Product containing iomeprol (medicinal product) |
-
-        # Unclear shortnames:
-        #"Opti":                  # Can be Optiray or Optimark
-        #"Omni":                  # Can be Omniscan or Omnipaque
-        #"Iso":                   # Can be Isoview or Isopaque
-    }
-
-    # A dictionary mapping DICOM defined coded contrast agents to a corresponding DICOM defined generic name.
-    # Key: Tuple with the coding scheme designator and code value (e.g., ("SCT", "47192000"))
-    # Value: Corresponding contrast agent name (e.g., "Diatrizoate meglumine")
-    dicom_contrast_agent_code_dict: ClassVar[ReadOnly[dict[tuple[str, str], str]]] = {(item[0],item[1]):item[2] for _, innerlist in dicom_contrast_agent_trade_name_dict.values() for item in innerlist}
-
-    # A dictionary mapping DICOM defined contrast agent generic names to a corresponding DICOM defined coded version.
-    # Key: Contrast agent generic name (e.g., "Diatrizoate meglumine")
-    # Value: Tuple with the coding scheme designator and code value (e.g., ("SCT", "47192000"))
-    dicom_contrast_agent_generic_name_dict: ClassVar[ReadOnly[dict[str, tuple[str, str]]]] = {item[2]:(item[0],item[1]) for _, innerlist in dicom_contrast_agent_trade_name_dict.values() for item in innerlist}
-
-    # A dictionary mapping DICOM defined contrast agent codes (mostly SNOMED-CT "medicinal product") to contrast agent active ingredient codes (SNOMED-CT "substance") for SPHN.
-    # Key: Tuple with the coding scheme designator and code value (e.g., ("SCT", "12335007"))
-    # Value: Tuple with the coding scheme designator, code value, and a human-readable description (e.g., ("SNOMED", "396020008", "| Amidotrizoate (substance) |"))
-    dicom_contrast_agent_code_to_sphn_active_ingredient_snomed_code_dict: ClassVar[ReadOnly[dict[tuple[str, str], tuple[str, str, str]]]] = {
-        ("SCT",     "12335007"): ("SNOMED", "396020008",  "| Amidotrizoate (substance) |"),                                             # "Diatrizoate",                        SNOMED: 12335007 | Product containing amidotrizoate (medicinal product) |
-        ("SCT",    "792865009"): ("SNOMED", "414308003",  "| Meglumine gadobenate (substance) |"),                                      # "Gadobenate dimeglumine",             SNOMED: 792865009 | Product containing gadobenic acid (medicinal product) |
-        ("SCT",    "407976008"): ("SNOMED", "418351005",  "| Gadobutrol (substance) |"),                                                # "Gadobutrol",                         SNOMED: 407976008 | Product containing gadobutrol (medicinal product) |
-        ("SCT",    "354088005"): ("SNOMED", "396067007",  "| Gadodiamide (substance) |"),                                               # "Gadodiamide",                        SNOMED: 354088005 | Product containing gadodiamide (medicinal product) |
-        ("SCT",    "770982005"): ("SNOMED", "420466007",  "| Gadofosveset (substance) |"),                                              # "Gadofosveset",                       SNOMED: 770982005 | Product containing gadofosveset (medicinal product) |
-        ("SCT",    "109216000"): ("SNOMED", "109216000",  "| Gadopentetate dimeglumine (substance) |"),                                 # "Gadopentetate dimeglumine",          SNOMED: 109216000 | Gadopentetate dimeglumine (substance) |
-        ("SCT",    "712714000"): ("SNOMED", "712714000",  "| Gadoterate meglumine (substance) |"),                                      # "Gadoterate meglumine",               SNOMED: 712714000 | Gadoterate meglumine (substance) |
-        ("SCT",    "353946009"): ("SNOMED", "420600009",  "| Gadoteridol (substance) |"),                                               # "Gadoteridol",                        SNOMED: 353946009 | Product containing gadoteridol (medicinal product) |
-        ("SCT",    "409477004"): ("SNOMED", "409476008",  "| Gadoversetamide (substance) |"),                                           # "Gadoversetamide",                    SNOMED: 409477004 | Product containing gadoversetamide (medicinal product) |
-        ("SCT",    "440223009"): ("SNOMED", "440223009",  "| Gadoxetate disodium (substance) |"),                                       # "Gadoxetate disodium",                SNOMED: 440223009 | Gadoxetate disodium (substance) |
-        ("SCT",    "12801003"):  ("SNOMED", "12801003",   "| Iodamide meglumine (substance) |"),                                        # "Iodamide meglumine",                 SNOMED: 12801003 | Iodamide meglumine (substance) |
-        ("SCT",    "73212002"):  ("SNOMED", "398939009",  "| Iodipamide (substance) |"),                                                # "Iodipamide",                         SNOMED: 73212002 | Product containing iodipamide (medicinal product) |
-        ("SCT",    "353962003"): ("SNOMED", "395750001",  "| Iodixanol (substance) |"),                                                 # "Iodixanol",                          SNOMED: 353962003 | Product containing iodixanol (medicinal product) |
-        ("SCT",    "109218004"): ("SNOMED", "395751002",  "| Iohexol (substance) |"),                                                   # "Iohexol",                            SNOMED: 109218004 | Product containing iohexol (medicinal product) |
-        ("SCT",    "109219007"): ("SNOMED", "395754005",  "| Iopamidol (substance) |"),                                                 # "Iopamidol",                          SNOMED: 109219007 | Product containing iopamidol (medicinal product) |
-        ("SCT",    "76155001"):  ("SNOMED", "412227008",  "| Iopanoic acid (substance) |"),                                             # "Iopanoic acid",                      SNOMED: 76155001 | Product containing iopanoic acid (medicinal product) |
-        ("SCT",    "28121005"):  ("SNOMED", "28121005",   "| Iophendylate (substance) |"),                                              # "Iophendylate",                       SNOMED: 28121005 | Iophendylate (substance) |
-        ("SCT",    "353903006"): ("SNOMED", "395756007",  "| Iopromide (substance) |"),                                                 # "Iopromide",                          SNOMED: 353903006 | Product containing iopromide (medicinal product) |
-        ("SCT",    "353912008"): ("SNOMED", "395981002",  "| Iothalamate (substance) |"),                                               # "Iothalamate",                        SNOMED: 353912008 | Product containing iothalamate (medicinal product) |
-        ("SCT",    "109222009"): ("SNOMED", "395759000",  "| Ioversol (substance) |"),                                                  # "Ioversol",                           SNOMED: 109222009 | Product containing ioversol (medicinal product) |
-        ("SCT",    "412228003"): ("SNOMED", "412228003",  "| Ioxaglate meglumine (substance) |"),                                       # "Ioxaglate",                          SNOMED: 412228003 | Ioxaglate meglumine (substance) |
-        ("SCT",    "409484007"): ("SNOMED", "409485008",  "| Ioxilan (substance) |"),                                                   # "Ioxilan",                            SNOMED: 409484007 | Product containing ioxilan (medicinal product) |
-        ("SCT",    "87445005"):  ("SNOMED", "87445005",   "| Ipodate (substance) |"),                                                   # "Ipodate",                            SNOMED: 87445005 | Ipodate (substance) |
-        ("RXNORM", "236987"):    ("SNOMED", "410872002",  "| Mangafodipir trisodium (substance) |"),                                    # "Mangafodipir trisodium",
-        ("SCT",    "69783005"):  ("SNOMED", "69783005",   "| Iodipamide meglumine (substance) |"),                                      # "Meglumine iodipamide",               SNOMED: 69783005 | Iodipamide meglumine (substance) |
-        ("SCT",    "90733003"):  ("SNOMED", "90733003",   "| Metrizamide (substance) |"),                                               # "Metrizamide",                        SNOMED: 90733003 | Metrizamide (substance) |
-        ("SCT",    "354094002"): ("SNOMED", "395792006",  "| Metrizoate (substance) |"),                                                # "Metrizoate",                         SNOMED: 354094002 | Product containing metrizoate (medicinal product) |
-        ("SCT",    "111158001"): ("SNOMED", "111158001",  "| Propyliodone (substance) |"),                                              # "Propyliodone",                       SNOMED: 111158001 | Propyliodone (substance) |
-        ("SCT",    "32836007"):  ("SNOMED", "32836007",   "| Sodium acetrizoate (substance) |"),                                        # "Sodium acetrizoate",                 SNOMED: 32836007 | Sodium acetrizoate (substance) |
-        ("SCT",    "925002"):    ("SNOMED", "925002",     "| Sodium iodipamide (substance) |"),                                         # "Sodium iodipamide",                  SNOMED: 925002 | Sodium iodipamide (substance) |
-        ("SCT",    "15158005"):  ("SNOMED", "15158005",   "| Air (substance) |"),                                                       # "Air",                                SNOMED: 15158005 | Air (substance) |
-        ("SCT",    "25419009"):  ("SNOMED", "396014007",  "| Barium sulfate (substance) |"),                                            # "Barium Sulfate",                     SNOMED: 25419009 | Product containing barium sulfate (medicinal product) |
-        ("SCT",    "90745007"):  ("SNOMED", "90745007",   "| Bunamiodyl (substance) |"),                                                # "Bunamiodyl",                         SNOMED: 90745007 | Bunamiodyl (substance) |
-        ("SCT",    "31811003"):  ("SNOMED", "31811003",   "| Carbon dioxide (substance) |"),                                            # "Carbon dioxide",                     SNOMED: 31811003 | Carbon dioxide (substance) |
-        ("SCT",    "62442005"):  ("SNOMED", "62442005",   "| Chloriodized oil (substance) |"),                                          # "Chloriodized oil",                   SNOMED: 62442005 | Chloriodized oil (substance) |
-        ("SCT",    "385420005"): ("SNOMED", "385420005",  "| Contrast media (substance) |"),                                            # "Contrast agent",                     SNOMED: 385420005 | Contrast media (substance) |
-        ("SCT",    "768763008"): ("SNOMED", "58281002",   "| Gadolinium (substance) |"),                                                # "Gadolinium",                         SNOMED: 768763008 | Product containing gadolinium and/or gadolinium compound (product) |
-        ("SCT",    "89595000"):  ("SNOMED", "89595000",   "| Iodized oil (substance) |"),                                               # "Iodized oil",                        SNOMED: 89595000 | Iodized oil (substance) |
-        ("SCT",    "86584005"):  ("SNOMED", "86584005",   "| Iodoalphionic acid (substance) |"),                                        # "Iodoalphionic acid",                 SNOMED: 86584005 | Iodoalphionic acid (substance) |
-        ("SCT",    "74554008"):  ("SNOMED", "74554008",   "| Iodophthalein (substance) |"),                                             # "Iodophthalein",                      SNOMED: 74554008 | Iodophthalein (substance) |
-        ("SCT",    "40710000"):  ("SNOMED", "40710000",   "| Iodopyracet (substance) |"),                                               # "Iodopyracet",                        SNOMED: 40710000 | Iodopyracet (substance) |
-        ("RADLEX", "RID11585"):  ("SNOMED", "1340006004", "| Ionic iodinated radiographic imaging contrast media (substance) |"),       # "Ionic iodinated contrast agent",     SNOMED: 1340006004 | Ionic iodinated radiographic imaging contrast media (substance) |
-        ("SCT",    "23053002"):  ("SNOMED", "23053002",   "| Iophenoxic acid (substance) |"),                                           # "Iophenoxic acid",                    SNOMED: 23053002 | Iophenoxic acid (substance) |
-        ("RADLEX", "RID38696"):  ("SNOMED", "1340009006", "| Non-ionic iodinated radiographic imaging contrast media (substance) |"),   # "Non-ionic iodinated contrast agent", SNOMED: 1340009006 | Non-ionic iodinated radiographic imaging contrast media (substance) |
-        ("SCT",    "43538006"):  ("SNOMED", "43538006",   "| Non radiopaque medium (substance) |"),                                     # "Non radiopaque medium",              SNOMED: 43538006 | Non radiopaque medium (substance) |
-        ("SCT",    "24099007"):  ("SNOMED", "24099007",   "| Oxygen (substance) |"),                                                    # "Oxygen",                             SNOMED: 24099007 | Oxygen (substance) |
-        ("SCT",    "419098001"): ("SNOMED", "419098001",  "| Radiographic imaging contrast media (substance) |"),                       # "Radiopaque medium",                  SNOMED: 419098001 | Radiographic imaging contrast media (substance) |
-        ("SCT",    "83423008"):  ("SNOMED", "83423008",   "| Sodium diprotrizoate (substance) |"),                                      # "Sodium diprotrizoate",               SNOMED: 83423008 | Sodium diprotrizoate (substance) |
-        ("SCT",    "38344006"):  ("SNOMED", "38344006",   "| Sodium iodomethamate (substance) |"),                                      # "Sodium iodomethamate",               SNOMED: 38344006 | Sodium iodomethamate (substance) |
-        ("SCT",    "109212003"): ("SNOMED", "109212003",  "| Tyropanoate sodium (substance) |"),                                        # "Sodium tyropanoate",                 SNOMED: 109212003 | Tyropanoate sodium (substance) |
-        ("SCT",    "11713004"):  ("SNOMED", "11713004",   "| Water (substance) |"),                                                     # "Water",                              SNOMED: 11713004 | Water (substance) |
-        # Other substances added by Edwin:
-        ("SCT",    "395875009"): ("SNOMED", "395875009",  "| Sodium amidotrizoate (substance) |"),                                      # "Diatrizoate sodium",                 SNOMED: 395875009 | Sodium amidotrizoate (substance) |
-        ("SCT",    "47192000"):  ("SNOMED", "47192000",   "| Meglumine amidotrizoate (substance) |"),                                   # "Diatrizoate meglumine"),             SNOMED: 47192000 | Meglumine amidotrizoate (substance) |
-        ("SCT",    "712698009"): ("SNOMED", "712698009",  "| Ioxitalamate meglumine (substance) |"),                                    # "Ioxitalamate meglumine",             SNOMED: 712698009 | Ioxitalamate meglumine (substance) |
-        ("SCT",    "356671000"): ("SNOMED", "395753004",  "| Iomeprol (substance) |")                                                   # "Iomeprol",                           SNOMED: 356671000 | Product containing iomeprol (medicinal product) |
-    }
-
-
-    # 
-    # Contrast Ingredients
-    #
-
-    # Note:
-    # Here DICOM prefers to code contrast agent ingredients using "substance" SNOMED-CT codes. 
-    # SPHN also prefers to code contrast agent ingredients using "substance" SNOMED-CT codes.
-
-    # A dictionary mapping DICOM defined contrast ingredient terms to a DICOM defined coded version.
-    # Key: Contrast ingredient term (e.g., "IODINE")
-    # Value: Tuple with the coding scheme designator, code value, and human-readable description (e.g., ("SCT", "44588005", "Iodine"))
-    # Link: https://dicom.nema.org/medical/dicom/current/output/chtml/part03/sect_C.7.6.4.html#table_C.7-12
-    # Link: https://dicom.nema.org/medical/dicom/current/output/chtml/part16/sect_CID_13.html Table CID 13. Imaging Contrast Agent Ingredient
-    dicom_contrast_ingredient_term_dict: ClassVar[ReadOnly[dict[str, tuple[str, str, str]]]] = {
-        "IODINE":           ("SCT", "44588005", "Iodine"),
-        "GADOLINIUM":       ("SCT", "58281002", "Gadolinium"),
-        "CARBON DIOXIDE":   ("SCT", "31811003", "Carbon Dioxide"),
-        "BARIUM":           ("SCT", "39290007", "Barium"),
-        "XENON":            ("SCT", "83598005", "Xenon"),
-        "AIR":              ("SCT", "15158005", "Air"),
-        "OXYGEN":           ("SCT", "24099007", "Oxygen"),
-        "WATER":            ("SCT", "11713004", "Water"),
-        "IRON":             ("SCT", "3829006",  "Iron")
-    }
-
-    # A dictionary mapping DICOM defined contrast ingredient names to a corresponding DICOM defined coded version. 
-    # Key: Contrast ingredient name (e.g., "Gadolinium")
-    # Value: Tuple with the coding scheme designator, code value (e.g., ("SCT", "58281002"))
-    dicom_contrast_ingredient_name_dict: ClassVar[ReadOnly[dict[str, tuple[str, str]]]] = {item[2]:(item[0],item[1]) for item in dicom_contrast_ingredient_term_dict.values()}
-
-    # A dictionary mapping DICOM defined contrast ingredient codes to the same contrast ingredient codes.
-    # Key: Tuple with the coding scheme designator and code value (e.g. ("SCT", "44588005"))
-    # Value: Tuple with the coding scheme designator, code value, and a human-readable description (e.g. ("SNOMED", "44588005", "| Iodine (substance) |"))
-    # Note: Only the coding scheme designator "SCT" is converted to "SNOMED" and the human-readable description is from the SNOMED terminology.
-    dicom_contrast_ingredient_code_to_sphn_active_ingredient_snomed_code_dict: ClassVar[ReadOnly[dict[tuple[str, str], tuple[str, str, str]]]] = {
-        ("SCT", "44588005"):    ("SNOMED", "44588005", "| Iodine (substance) |"),           # "Iodine"
-        ("SCT", "58281002"):    ("SNOMED", "58281002", "| Gadolinium (substance) |"),       # "Gadolinium"
-        ("SCT", "31811003"):    ("SNOMED", "31811003", "| Carbon dioxide (substance) |"),   # "Carbon Dioxide"
-        ("SCT", "39290007"):    ("SNOMED", "39290007", "| Barium (substance) |"),           # "Barium"
-        ("SCT", "83598005"):    ("SNOMED", "83598005", "| Xenon (substance) |"),            # "Xenon"
-        ("SCT", "15158005"):    ("SNOMED", "15158005", "| Air (substance) |"),              # "Air"    
-        ("SCT", "24099007"):    ("SNOMED", "24099007", "| Oxygen (substance) |"),           # "Oxygen"
-        ("SCT", "11713004"):    ("SNOMED", "11713004", "| Water (substance) |"),            # "Water"
-        ("SCT", "3829006"):     ("SNOMED", "3829006",  "| Iron (substance) |")              # "Iron"
-    }
-
-    # A list of common contrast agent active ingredient concentrations in % or mg/mL
-    contrast_agent_active_ingredient_concentrations_list: ClassVar[ReadOnly[list[str]]] = ["30", "60", "76", "140", "150", "160", "180", "200", "240", "250", "260", "270", "282", "292", "300", "320", "350", "360", "370", "380", "390", "400"]
-
-    # Omnipaque (Iohexol):      Available in 140, 180, 240, 300, and 350 mg I/mL. (Omnipaque 300 and 350 are standard for routine body CTs).
-    # Isovue (Iopamidol):       Formulated as 200, 250, 300, and 370 mg I/mL. (Isovue 370 is widely used for high-velocity CT angiograms).
-    # Visipaque (Iodixanol):    Available in 270 and 320 mg I/mL. This is an iso-osmolar agent frequently used in patients with compromised kidney function.
-    # Ultravist (Iopromide):    Supplied as 150, 240, 300, and 370 mg I/mL.
-    # Optiray (Ioversol):       Packaged as 160, 240, 300, and 350 mg I/mL.
-
-    # Dotarem (Gadoterate meglumine):        0.5  mmol/mL	Standard macrocyclic agent
-    # ProHance (Gadoteridol):	             0.5  mmol/mL	Standard macrocyclic agent
-    # Magnevist (Gadopentetate dimeglumine): 0.5  mmol/mL	Linear agent (mostly historical/discontinued)
-    # MultiHance (Gadobenate dimeglumine):	 0.5  mmol/mL	Weak protein-binding; higher real-world signal
-    # Gadavist / Gadovist (Gadobutrol):	     1.0  mmol/mL	Double-concentration formulation; allows for half the injection volume.
-    # Vueway / Elucirem (Gadopiclenol):	     0.5  mmol/mL	High-relaxivity agent; allows a half-dose (0.05 mmol/kg) to provide identical clarity to a full standard dose.
-    # Eovist / Primovist (Gadoxetic acid):	 0.25 mmol/mL	Half-concentration hepatobiliary-specific agent used exclusively for targeted liver mapping.
-
-    # Readi-Cat 2 (Barium Sulfate): Formulated precisely at 2.1% w/v. It is deliberately a very low concentration so that it opacifies the bowel loops during a CT scan without causing harsh white artifacts that ruin the image.
-    # E-Z-Paque (Barium Sulfate): Prepared at 96% w/v when reconstituted, used for standard upper GI radiographic tracking.
-    # Liquid Polibar: Supplied as a high-density 105% w/v suspension, typically utilized for double-contrast barium enemas.
-
-    # A list of all above mentioned contrast agent (brand) names and ingredient names:
-    all_contrast_agent_and_ingredient_names_list: ClassVar[ReadOnly[list[str]]] = \
-        list(dicom_contrast_agent_trade_name_dict.keys()) \
-        + list(dicom_contrast_agent_generic_name_dict.keys()) \
-        + list(dicom_contrast_ingredient_name_dict.keys())
-
-
-    #
-    # Administration routes
-    #
-
-    # A dictionary mapping DICOM defined coded administration routes to SNOMED codes for SPHN
-    # Key: Tuple of DICOM coding scheme designator and code value (e.g., ("SCT", "47625008"))
-    # Value: Tuple of SNOMED coding scheme designator, code value, and description (e.g., ("SNOMED", "47625008", "| Intravenous route (qualifier value) |"))
-    # Link: https://dicom.nema.org/medical/dicom/current/output/chtml/part16/sect_CID_11.html Table CID 11. Administration Route
-    # Note: Not all DICOM administration routes have a corresponding SNOMED code.
-    # Link: https://dicom.nema.org/medical/dicom/Final/cp1495_ft3_badsnomedcodes.pdf
-    # Note: Only the coding scheme designator "SCT" is converted to "SNOMED" and the human-readable description is from the SNOMED terminology.
-    administration_routes_list: ClassVar[ReadOnly[dict[tuple[str, str], tuple[str, str, str]]]] = {
-        ("SCT", "47625008"):    ("SNOMED", "47625008",   "| Intravenous route (qualifier value) |"),                # "Intravenous route",
-        ("SCT", "58100008"):    ("SNOMED", "58100008",   "| Intra-arterial route (qualifier value) |"),             # "Intra-arterial route",
-        ("SCT", "78421000"):    ("SNOMED", "78421000",   "| Intramuscular route (qualifier value) |"),              # "Intramuscular route",
-        ("SCT", "34206005"):    ("SNOMED", "34206005",   "| Subcutaneous route (qualifier value) |"),               # "Subcutaneous route",
-        ("SCT", "372464004"):   ("SNOMED", "372464004",  "| Intradermal route (qualifier value) |"),                # "Intracutaneous route", "Intradermal route",
-        ("SCT", "38239002"):    ("SNOMED", "38239002",   "| Intraperitoneal route (qualifier value) |"),            # "Intraperitoneal route",
-        ("SCT", "60213007"):    ("SNOMED", "60213007",   "| Intramedullary route (qualifier value) |"),             # "Intramedullary route",
-        ("SCT", "72607000"):    ("SNOMED", "72607000",   "| Intrathecal route (qualifier value) |"),                # "Intrathecal route",
-        ("SCT", "12130007"):    ("SNOMED", "12130007",   "| Intra-articular route (qualifier value) |"),            # "Intra-articular route",
-        ("SCT", "6064005"):     ("SNOMED", "6064005",    "| Topical route (qualifier value) |"),                    # "Topical route",
-        ("SCT", "26643006"):    ("SNOMED", "26643006",   "| Oral route (qualifier value) |"),                       # "Oral route",
-        ("SCT", "37737002"):    ("SNOMED", "37737002",   "| Intraluminal route (qualifier value) |"),               # "Intraluminal route",
-        ("SCT", "446406008"):   ("SNOMED", "446406008",  "| Inhalation technique (qualifier value) |"),             # "By inhalation",
-        ("SCT", "37161004"):    ("SNOMED", "37161004",   "| Rectal route (qualifier value) |"),                     # "Per rectum",
-        ("SCT", "16857009"):    ("SNOMED", "16857009",   "| Vaginal route (qualifier value) |"),                    # "Vaginal route",
-        ("SCT", "372463005"):   ("SNOMED", "372463005",  "| Intracoronary route (qualifier value) |"),              # "Intracoronary route",
-        ("SCT", "372460008"):   ("SNOMED", "372460008",  "| Intracardiac route (qualifier value) |"),               # "Intracardiac route",
-        ("SCT", "420287000"):   ("SNOMED", "420287000",  "| Intraventricular route - cardiac (qualifier value) |"), # "Intraventricular route - cardiac",
-        ("SCT", "46713006"):    ("SNOMED", "46713006",   "| Nasal route (qualifier value) |"),                      # "Nasal route",
-        ("SCT", "447122006"):   ("SNOMED", "447122006",  "| Intratumor route (qualifier value) |"),                 # "Intratumor route",
-        ("SCT", "1259221004"):  ("SNOMED", "1259221004", "| Intracorporus cavernosum route (qualifier value) |")    # "Intracorpus cavernosum route"
-        #("NCIt", "C38244"):    ("SNOMED", "",           ""),                                                       # "Intraepithelial route",      # There used to be a SNOMED RT code: G-D111, but it is not in SNOMED CT, concept: 89947002
-        #("NCIt", "C38306"):    ("SNOMED", "",           ""),                                                       # "Transluminal route",         # There used to be a SNOMED RT code: G-D142, but it is not in SNOMED CT, concept: 9942002
-        #("NCIt", "C38213"):    ("SNOMED", "",           ""),                                                       # "Extraluminal route",         # There used to be a SNOMED RT code: G-D146, but it is not in SNOMED CT, concept: 31638007
-        #("DCM", "127070"):     ("SNOMED", "",           ""),                                                       # "Retro-orbital route",        # A technique used to administer substances via the vascular sinus and plexus located directly 
-                                                                                                                                                    # behind the eye in small research animals like mice and rats
-    }
 
     #
     # Physical Quantities / Imaging Metric
@@ -1426,3 +1097,731 @@ class DataConverter:
 
     # UCUM Gy Gy                                                                                  Table CID 10071. Radiation Dose Unit
     # UCUM Sv Sv                                                                                  Table CID 10071. Radiation Dose Unit
+
+
+    # #######################################################################################
+    #
+    # Contrast Agents and Co.
+    #
+    # #######################################################################################
+
+    # A dictionary mapping:
+    #   - DICOM Table CID 12 "Imaging Contrast Agent" codes and 
+    #   - DICOM Table CID 13. "Imaging Contrast Agent Ingredient" codes
+    # to the corresponding SPHN contrast agent active ingredient SNOMED CT codes:
+    # Key: Tuple with:
+    #   - coding scheme designator (e.g.: "SCT")
+    #   - code value (e.g.: "90745007") 
+    #   - human-readable description (e.g.:"Bunamiodyl")
+    # Value: Tuple with:
+    #   - coding scheme designator (e.g.: "SNOMED")
+    #   - code value (e.g.: "90745007") 
+    #   - human-readable description (e.g.:"| Bunamiodyl (substance) |")
+    # Note(s): 
+    #   - The "coding scheme designator" in DICOM Table CID 12 has "SCT" for SNOMED CT codes.
+    #   - DICOM prefers the use of SNOMED CT Product concepts when available, SPHN allows only SNOMED CT Substance concepts.
+    #   - All values in this mapping should have a valid SNOMED CT code entry.
+    #   - See also: https://dicom.nema.org/medical/dicom/current/output/chtml/part16/sect_CID_12.html
+    #   - See also: https://dicom.nema.org/medical/dicom/current/output/chtml/part16/sect_cid_13.html
+    dicom_contrast_agents_coded_2_sphn_snomed_coded: ClassVar[Mapping[tuple[str, str], tuple[str, str, str]]] = {
+        # CT/X-ray (32)
+        ## Iodine-based (28)
+        ("SCT",    "90745007"): ("SNOMED",   "90745007", "| Bunamiodyl (substance) |"),                                              # Bunamiodyl
+        ("SCT",    "12335007"): ("SNOMED",  "396020008", "| Amidotrizoate (substance) |"),                                           # Diatrizoate                          # DICOM code is a product concept
+        ("SCT",    "12801003"): ("SNOMED",   "12801003", "| Iodamide meglumine (substance) |"),                                      # Iodamide meglumine
+        ("SCT",    "73212002"): ("SNOMED",  "398939009", "| Iodipamide (substance) |"),                                              # Iodipamide                           # DICOM code is a product concept
+        ("SCT",   "353962003"): ("SNOMED",  "395750001", "| Iodixanol (substance) |"),                                               # Iodixanol                            # DICOM code is a product concept
+        ("SCT",    "86584005"): ("SNOMED",   "86584005", "| Iodoalphionic acid (substance) |"),                                      # Iodoalphionic acid
+        ("SCT",    "74554008"): ("SNOMED",   "74554008", "| Iodophthalein (substance) |"),                                           # Iodophthalein
+        ("SCT",    "40710000"): ("SNOMED",   "40710000", "| Iodopyracet (substance) |"),                                             # Iodopyracet
+        ("SCT",   "109218004"): ("SNOMED",  "395751002", "| Iohexol (substance) |"),                                                 # Iohexol                              # DICOM code is a product concept
+        ("SCT",   "109219007"): ("SNOMED",  "395754005", "| Iopamidol (substance) |"),                                               # Iopamidol                            # DICOM code is a product concept
+        ("SCT",    "76155001"): ("SNOMED",  "412227008", "| Iopanoic acid (substance) |"),                                           # Iopanoic acid                        # DICOM code is a product concept
+        ("SCT",    "23053002"): ("SNOMED",   "23053002", "| Iophenoxic acid (substance) |"),                                         # Iophenoxic acid
+        ("SCT",   "353903006"): ("SNOMED",  "395756007", "| Iopromide (substance) |"),                                               # Iopromide                            # DICOM code is a product concept
+        ("SCT",   "353912008"): ("SNOMED",  "395981002", "| Iothalamate (substance) |"),                                             # Iothalamate                          # DICOM code is a product concept
+        ("SCT",   "109222009"): ("SNOMED",  "395759000", "| Ioversol (substance) |"),                                                # Ioversol                             # DICOM code is a product concept
+        ("SCT",   "412228003"): ("SNOMED",  "412228003", "| Ioxaglate meglumine (substance) |"),                                     # Ioxaglate                            # DICOM meaning says Ioxaglate but code is the meglumine salt; base is 395760005 | Ioxaglate (substance) |
+        ("SCT",   "409484007"): ("SNOMED",  "409485008", "| Ioxilan (substance) |"),                                                 # Ioxilan                              # DICOM code is a product concept
+        ("SCT",    "87445005"): ("SNOMED",   "87445005", "| Ipodate (substance) |"),                                                 # Ipodate
+        ("SCT",    "47192000"): ("SNOMED",   "47192000", "| Meglumine amidotrizoate (substance) |"),                                 # Meglumine diatrizoate
+        ("SCT",    "69783005"): ("SNOMED",   "69783005", "| Iodipamide meglumine (substance) |"),                                    # Meglumine iodipamide
+        ("SCT",    "90733003"): ("SNOMED",   "90733003", "| Metrizamide (substance) |"),                                             # Metrizamide
+        ("SCT",   "354094002"): ("SNOMED",  "395792006", "| Metrizoate (substance) |"),                                              # Metrizoate                           # DICOM code is a product concept
+        ("SCT",   "111158001"): ("SNOMED",  "111158001", "| Propyliodone (substance) |"),                                            # Propyliodone
+        ("SCT",    "32836007"): ("SNOMED",   "32836007", "| Sodium acetrizoate (substance) |"),                                      # Sodium acetrizoate
+        ("SCT",    "83423008"): ("SNOMED",   "83423008", "| Sodium diprotrizoate (substance) |"),                                    # Sodium diprotrizoate
+        ("SCT",      "925002"): ("SNOMED",     "925002", "| Sodium iodipamide (substance) |"),                                       # Sodium iodipamide
+        ("SCT",    "38344006"): ("SNOMED",   "38344006", "| Sodium iodomethamate (substance) |"),                                    # Sodium iodomethamate
+        ("SCT",   "109212003"): ("SNOMED",  "109212003", "| Tyropanoate sodium (substance) |"),                                      # Sodium tyropanoate
+        ## Oil-based (3)
+        ("SCT",    "62442005"): ("SNOMED",   "62442005", "| Chloriodized oil (substance) |"),                                        # Chloriodized oil
+        ("SCT",    "89595000"): ("SNOMED",   "89595000", "| Iodized oil (substance) |"),                                             # Iodized oil
+        ("SCT",    "28121005"): ("SNOMED",   "28121005", "| Iophendylate (substance) |"),                                            # Iophendylate
+        ## Barium-based (1)
+        ("SCT",    "25419009"): ("SNOMED",  "396014007", "| Barium sulfate (substance) |"),                                          # Barium Sulfate                       # DICOM code is a product concept
+
+        # MRI (10)
+        ## Gadolinium-based (9)
+        ("SCT",   "792865009"): ("SNOMED",  "414308003", "| Meglumine gadobenate (substance) |"),                                    # Gadobenate dimeglumine               # Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, but included in SPHN Contrast Agent Active Ingredient code
+        ("SCT",   "407976008"): ("SNOMED",  "418351005", "| Gadobutrol (substance) |"),                                              # Gadobutrol                           # DICOM code is a product concept
+        ("SCT",   "354088005"): ("SNOMED",  "396067007", "| Gadodiamide (substance) |"),                                             # Gadodiamide                          # DICOM code is a product concept
+        ("SCT",   "770982005"): ("SNOMED",  "420466007", "| Gadofosveset (substance) |"),                                            # Gadofosveset                         # DICOM code is a product concept
+        ("SCT",   "109216000"): ("SNOMED",  "109216000", "| Gadopentetate dimeglumine (substance) |"),                               # Gadopentetate dimeglumine            # Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, but included in SPHN Contrast Agent Active Ingredient code
+        ("SCT",   "712714000"): ("SNOMED",  "712714000", "| Gadoterate meglumine (substance) |"),                                    # Gadoterate meglumine
+        ("SCT",   "353946009"): ("SNOMED",  "420600009", "| Gadoteridol (substance) |"),                                             # Gadoteridol                          # DICOM code is a product concept
+        ("SCT",   "409477004"): ("SNOMED",  "409476008", "| Gadoversetamide (substance) |"),                                         # Gadoversetamide                      # DICOM code is a product concept
+        ("SCT",   "440223009"): ("SNOMED",  "440223009", "| Gadoxetate disodium (substance) |"),                                     # Gadoxetate disodium
+        ## Manganese-based (1)
+        ("RXNORM",   "236987"): ("SNOMED",  "410872002", "| Mangafodipir trisodium (substance) |"),                                  # Mangafodipir trisodium               # RxNorm to SNOMED
+
+        # Active elements and groups (5)
+        ### Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, but included in SPHN Contrast Agent Active Ingredient code
+        ("SCT",    "44588005"): ("SNOMED",   "44588005", "| Iodine (substance) |"),                                                  # Iodine                               # Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, but included in SPHN Contrast Agent Active Ingredient code   
+        ("SCT",    "39290007"): ("SNOMED",   "39290007", "| Barium (substance) |"),                                                  # Barium                               # Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, but included in SPHN Contrast Agent Active Ingredient code
+        ("SCT",   "768763008"): ("SNOMED",   "58281002", "| Gadolinium (substance) |"),                                              # Gadolinium                           # DICOM code is a product concept # Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, but included in SPHN Contrast Agent Active Ingredient code
+        ("SCT",    "58281002"): ("SNOMED",   "58281002", "| Gadolinium (substance) |"),                                              # Gadolinium                           # Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, but included in SPHN Contrast Agent Active Ingredient code
+        ("SCT",     "3829006"): ("SNOMED",    "3829006", "| Iron (substance) |"),                                                    # Iron                                 # Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, but included in SPHN Contrast Agent Active Ingredient code
+        ("SCT",    "15158005"): ("SNOMED",   "15158005", "| Air (substance) |"),                                                     # Air                                  # Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, but included in SPHN Contrast Agent Active Ingredient code
+        ("SCT",    "31811003"): ("SNOMED",   "31811003", "| Carbon dioxide (substance) |"),                                          # Carbon Dioxide                       # Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, but included in SPHN Contrast Agent Active Ingredient code
+        ("SCT",    "83598005"): ("SNOMED",   "83598005", "| Xenon (substance) |"),                                                   # Xenon                                # Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, but included in SPHN Contrast Agent Active Ingredient code
+        ("SCT",    "24099007"): ("SNOMED",   "24099007", "| Oxygen (substance) |"),                                                  # Oxygen                               # Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, but included in SPHN Contrast Agent Active Ingredient code
+        ("SCT",    "11713004"): ("SNOMED",   "11713004", "| Water (substance) |"),                                                   # Water                                # Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, but included in SPHN Contrast Agent Active Ingredient code
+        ### Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, not included in SPHN yet
+        ####("SCT",    "87869004"): ("SNOMED",   "87869004", "| Manganese (substance) |"),                                              # Manganese                            # Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, not included in SPHN yet
+
+        # General types (5)
+        ("RADLEX", "RID11585"): ("SNOMED", "1340006004", "| Ionic iodinated radiographic imaging contrast media (substance) |"),     # Ionic iodinated contrast agent       # RadLex to SNOMED
+        ("RADLEX", "RID38696"): ("SNOMED", "1340009006", "| Non-ionic iodinated radiographic imaging contrast media (substance) |"), # Non-ionic iodinated contrast agent   # RadLex to SNOMED
+        ("SCT",   "419098001"): ("SNOMED",  "419098001", "| Radiographic imaging contrast media (substance) |"),                     # Radiopaque medium
+        ("SCT",   "385420005"): ("SNOMED",  "385420005", "| Contrast media (substance) |"),                                          # Contrast agent                       # The parent concept itself
+        ### Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, but included in SPHN Contrast Agent Active Ingredient code
+        ("SCT",    "43538006"): ("SNOMED",   "43538006", "| Non radiopaque medium (substance) |"),                                   # Non radiopaque medium                # Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, but included in SPHN Contrast Agent Active Ingredient code
+    }
+
+
+    # A dictionary mapping contrast agent trade names to their manufacturer and ingredients:
+    # Key: Contrast agent trade name (e.g.: "Amipaque")
+    # Value: Tuple with:
+    #   - the manufacturer (e.g.: "GE")
+    #   - a list of active ingredient's name (e.g.: ["Metrizamide"])
+    #   - a list of inactive ingredient's name (only populated in a few cases) (e.g.: ["Galactose"])
+    # Note: 
+    #   - All trade names should have a manufacturer and at least one active ingredient.
+    #   - The active ingredient should be listed in:
+    #      - contrast_agent_active_ingredient_name_2_snomed_code or
+    #      - contrast_agent_active_element_names_2_snomed_code
+    #   - See also: https://dicom.nema.org/medical/dicom/current/output/chtml/part16/sect_CID_12.html
+    #   - See also: https://dicom.nema.org/medical/dicom/current/output/chtml/part16/sect_cid_13.html
+    contrast_agent_trade_name_2_manufacturer_and_ingredient_name: ClassVar[Mapping[str, tuple[str, list[str], list[str]]]] = {
+
+        # CT/X-ray (62)
+        ## Iodine-based (46)
+        "Amipaque":                 ("GE",                      ["Metrizamide"],                                    []),
+        "Angiovist":                ("Bayer",                   ["Diatrizoate Meglumine", "Diatrizoate Sodium"],    []),
+        "Bilivist":                 ("Bayer",                   ["Ipodate Sodium"],                                 []),
+        "Cardiografin":             ("Bracco",                  ["Diatrizoate Meglumine"],                          []),
+        "Cholographin":             ("Bracco",                  ["Iodipamide Meglumine"],                           []),
+        "Cholographin Meglumine":   ("Bracco",                  ["Iodipamide Meglumine"],                           []),
+        "Cholographin Sodium":      ("Bracco",                  ["Iodipamide Sodium"],                              []),
+        "Conray":                   ("Guerbet",                 ["Iothalamate Meglumine"],                          []),
+        "Cysto-Conray":             ("Guerbet",                 ["Iothalamate Meglumine"],                          []),
+        "Cystografin":              ("Bracco",                  ["Diatrizoate Meglumine"],                          []),
+        "Dionosil":                 ("GSK",                     ["Propyliodone"],                                   []),
+        "Gastrografin":             ("Bracco",                  ["Diatrizoate Meglumine", "Diatrizoate Sodium"],    []),
+        "Gastrovist":               ("Bayer",                   ["Diatrizoate Meglumine", "Diatrizoate Sodium"],    []),
+        "Hexabrix":                 ("Guerbet",                 ["Ioxaglate Meglumine", "Ioxaglate Sodium"],        []),
+        "Hypaque":                  ("GE",                      ["Diatrizoate Sodium"],                             []),
+        "Hypaque Meglumine":        ("GE",                      ["Diatrizoate Meglumine"],                          []),
+        "Imagenil":                 ("Guerbet",                 ["Ioxilan"],                                        []),
+        "Imagopaque":               ("GE",                      ["Iopentol"],                                       []),
+        "Imeron":                   ("Bracco",                  ["Iomeprol"],                                       []),
+        "Iomeron":                  ("Bracco",                  ["Iomeprol"],                                       []),
+        "Iopamiro":                 ("Bracco",                  ["Iopamidol"],                                      []),
+        "Isopaque":                 ("GE",                      ["Metrizoate"],                                     []),
+        "Isovist":                  ("Bayer",                   ["Iotrolan"],                                       []),
+        "Isovue":                   ("Bracco",                  ["Iopamidol"],                                      []),
+        "MD":                       ("Guerbet",                 ["Diatrizoate Meglumine", "Diatrizoate Sodium"],    []),
+        "MD Gastroview":            ("Guerbet",                 ["Diatrizoate Meglumine", "Diatrizoate Sodium"],    []),
+        "Niopam":                   ("Bracco",                  ["Iopamidol"],                                      []),
+        "Omnipaque":                ("GE",                      ["Iohexol"],                                        []),
+        "Optiray":                  ("Guerbet",                 ["Ioversol"],                                       []),
+        "Oragrafin":                ("Bracco",                  ["Ipodate Sodium", "Ipodate Calcium"],              []),
+        "Oxilan":                   ("Guerbet",                 ["Ioxilan"],                                        []),
+        "Reno":                     ("Bracco",                  ["Diatrizoate Meglumine"],                          []),
+        "Reno-Dip":                 ("Bracco",                  ["Diatrizoate Meglumine"],                          []),
+        "Renografin":               ("Bracco",                  ["Diatrizoate Meglumine", "Diatrizoate Sodium"],    []),
+        "Renovist":                 ("Bracco",                  ["Diatrizoate Meglumine", "Diatrizoate Sodium"],    []),
+        "Renovue":                  ("Bracco",                  ["Iodamide Meglumine"],                             []),
+        "Salpix":                   ("Johnson & Johnson",       ["Acetrizoate Sodium"],                             ["Povidone"]),
+        "Sinografin":               ("Bracco",                  ["Diatrizoate Meglumine", "Iodipamide Meglumine"],  []),
+        "Solutrast":                ("Bracco",                  ["Iopamidol"],                                      []),
+        "Telebrix":                 ("Guerbet",                 ["Ioxitalamate Meglumine", "Ioxitalamate Sodium"],  []),
+        "Telepaque":                ("GE",                      ["Iopanoic Acid"],                                  []),
+        "Ultravist":                ("Bayer",                   ["Iopromide"],                                      []),
+        "Urovist":                  ("Bayer",                   ["Diatrizoate Meglumine", "Diatrizoate Sodium"],    []),
+        "Vascoray":                 ("Guerbet",                 ["Iothalamate Meglumine", "Iothalamate Sodium"],    []),
+        "Visipaque":                ("GE",                      ["Iodixanol"],                                      []),
+        "Xenetix":                  ("Guerbet",                 ["Iobitridol"],                                     []),
+        ## Barium-based (12)
+        "Baro-Cat":                 ("Guerbet",                 ["Barium Sulfate"],                                 []),
+        "Cheetah":                  ("Guerbet",                 ["Barium Sulfate"],                                 []),
+        "E-Z-Cat":                  ("Bracco",                  ["Barium Sulfate"],                                 []),
+        "E-Z-HD":                   ("Bracco",                  ["Barium Sulfate"],                                 []),
+        "E-Z-PAQUE":                ("Bracco",                  ["Barium Sulfate"],                                 []),
+        "Liquid POLIBAR PLUS":      ("Bracco",                  ["Barium Sulfate"],                                 []),
+        "Readi-Cat":                ("Bracco",                  ["Barium Sulfate"],                                 []),
+        "Readi-Cat 2":              ("Bracco",                  ["Barium Sulfate"],                                 []),
+        "Readi-Cat 2 SMOOTHIE":     ("Bracco",                  ["Barium Sulfate"],                                 []),
+        "Tagitol":                  ("Bracco",                  ["Barium Sulfate"],                                 []),
+        "Varibar":                  ("Bracco",                  ["Barium Sulfate"],                                 []),
+        "VoLumen":                  ("Bracco",                  ["Barium Sulfate"],                                 []),
+        ## Oil-based (4)
+        "Ethiodol":                 ("Guerbet",                 ["Ethiodized Oil"],                                 []),
+        "Lipiodol":                 ("Guerbet",                 ["Ethiodized Oil"],                                 []),
+        "Myodil":                   ("GSK",                     ["Iophendylate"],                                   []),
+        "Pantopaque":               ("Eastman Kodak",           ["Iophendylate"],                                   []),
+
+        # MRI (20)
+        ## Gadolinium-based (15)
+        "Ablavar":                  ("Lantheus",                ["Gadofosveset Trisodium"],                         []),
+        "Clariscan":                ("GE",                      ["Gadoterate Meglumine"],                           []),
+        "Dotarem":                  ("Guerbet",                 ["Gadoterate Meglumine"],                           []),
+        "Elucirem":                 ("Guerbet",                 ["Gadopiclenol"],                                   []),
+        "Eovist":                   ("Bayer",                   ["Gadoxetate Disodium"],                            []),
+        "Gadavist":                 ("Bayer",                   ["Gadobutrol"],                                     []),
+        "Gadovist":                 ("Bayer",                   ["Gadobutrol"],                                     []),
+        "Omniscan":                 ("GE",                      ["Gadodiamide"],                                    []),
+        "Optimark":                 ("Guerbet",                 ["Gadoversetamide"],                                []),
+        "Primovist":                ("Bayer",                   ["Gadoxetate Disodium"],                            []),
+        "ProHance":                 ("Bracco",                  ["Gadoteridol"],                                    []),
+        "Vasovist":                 ("Lantheus",                ["Gadofosveset Trisodium"],                         []),
+        "Vueway":                   ("Bracco",                  ["Gadopiclenol"],                                   []),
+        ### Not subclass of SNOMED-CT Contrast media (substance)), but included in SPHN Contrast Agent Active Ingredient code
+        "Magnevist":                ("Bayer",                   ["Gadopentetate Dimeglumine"],                      []),                                 # Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, but included in SPHN Contrast Agent Active Ingredient code
+        "Multihance":               ("Bracco",                  ["Gadobenate Dimeglumine"],                         []),                                 # Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, but included in SPHN Contrast Agent Active Ingredient code
+        ## Iron-based (4)
+        "Endorem":                  ("Guerbet",                 ["Ferumoxides"],                                    []),
+        "Feridex":                  ("Covis",                   ["Ferumoxides"],                                    []),
+        "Resovist":                 ("Neo Critical Care Pharma",["Ferucarbotran"],                                  []),
+        ### Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, not included in SPHN yet
+        "Feraheme":                 ("Covis",                   ["Ferumoxytol"],                                    []),                                # Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, not included in SPHN yet
+
+        ## Manganese-based (1)
+        "Teslascan":                ("IC Targets",              ["Mangafodipir Trisodium"],                         []),
+
+        # Ultrasound (7)
+        ## Microbubble-based (7)
+        "Definity":                 ("Lantheus",                ["Perflutren"],                                     []),
+        "Lumason":                  ("Bracco",                  ["Sulfur Hexafluoride Lipid Microspheres"],         []),
+        "Luminity":                 ("Lantheus",                ["Perflutren"],                                     []),
+        "Optison":                  ("GE",                      ["Perflutren"],                                     []),
+        "SonoVue":                  ("Bracco",                  ["Sulfur Hexafluoride Lipid Microspheres"],         []),
+        ### Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, not included in SPHN yet
+        "Sonazoid":                 ("GE",                      ["Perflubutane"],                                   []),                                # Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, not included in SPHN yet
+        ### Not subclass of SNOMED-CT Contrast media (substance)), but included in SPHN Contrast Agent Active Ingredient code
+        "Levovist":                 ("Bayer",                   ["Air"],                                            ["Galactose", "Palmitic Acid"]),    # Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, but included in SPHN Contrast Agent Active Ingredient code
+    }
+
+
+    # A dictionary mapping contrast agent active ingredient names to the corresponding SNOMED CT code:
+    # Key: Contrast agent trade name (e.g.: "Acetrizoate Sodium")
+    # Value: Tuple with:
+    #   - coding scheme designator (e.g.: "SNOMED")
+    #   - code value (e.g.: "32836007") 
+    #   - human-readable description (e.g.:"| Sodium acetrizoate (substance) |"))
+    # Note(s): 
+    #   - The active ingredients from the above contrast_agent_trade_name_2_manufacturer_and_ingredient_name mapping
+    #     should have a corresponding entry in this mapping. An exception is "Air" which is in the 
+    #     contrast_agent_active_element_names_2_snomed_code mapping
+    #   - The active ingredients listed in DICOM Table CID 12 "Imaging Contrast Agent" 
+    #     should have a corresponding entry in this mapping. Exceptions are active elements which are covered in the 
+    #     contrast_agent_active_element_names_2_snomed_code mapping.
+    #   - The "coding scheme designator" in DICOM Table CID 12 has "SCT" for SNOMED CT codes.
+    #   - All active ingredients should have a valid SNOMED CT code entry.
+    #   - See also: https://dicom.nema.org/medical/dicom/current/output/chtml/part16/sect_CID_12.html    
+    #   - See also: https://dicom.nema.org/medical/dicom/current/output/chtml/part16/sect_cid_13.html
+    contrast_agent_active_ingredient_name_2_snomed_code: ClassVar[Mapping[str, tuple[str, str, str]]] = {
+        
+        # CT/X-ray
+        ## Iodine-based (29)
+        "Acetrizoate Sodium":                     ("SNOMED",   "32836007", "| Sodium acetrizoate (substance) |"),
+        "Diatrizoate":                            ("SNOMED",  "396020008", "| Amidotrizoate (substance) |"),
+        "Diatrizoate Meglumine":                  ("SNOMED",   "47192000", "| Meglumine amidotrizoate (substance) |"),
+        "Diatrizoate Sodium":                     ("SNOMED",  "395875009", "| Sodium amidotrizoate (substance) |"),
+        "Iobitridol":                             ("SNOMED",  "704384003", "| Iobitridol (substance) |"),
+        "Iodamide Meglumine":                     ("SNOMED",   "12801003", "| Iodamide meglumine (substance) |"),
+        "Iodipamide Meglumine":                   ("SNOMED",   "69783005", "| Iodipamide meglumine (substance) |"),
+        "Iodipamide Sodium":                      ("SNOMED",     "925002", "| Sodium iodipamide (substance) |"),
+        "Iodixanol":                              ("SNOMED",  "395750001", "| Iodixanol (substance) |"),
+        "Iohexol":                                ("SNOMED",  "395751002", "| Iohexol (substance) |"),
+        "Iomeprol":                               ("SNOMED",  "395753004", "| Iomeprol (substance) |"),
+        "Iopamidol":                              ("SNOMED",  "395754005", "| Iopamidol (substance) |"),
+        "Iopanoic Acid":                          ("SNOMED",  "412227008", "| Iopanoic acid (substance) |"),
+        "Iopentol":                               ("SNOMED", "1340015006", "| Iopentol (substance) |"),
+        "Iopromide":                              ("SNOMED",  "395756007", "| Iopromide (substance) |"),
+        "Iothalamate Meglumine":                  ("SNOMED",  "395757003", "| Iothalamate meglumine (substance) |"),
+        "Iothalamate Sodium":                     ("SNOMED",  "395878006", "| Sodium iothalamate (substance) |"),
+        "Iotrolan":                               ("SNOMED",  "395758008", "| Iotrolan (substance) |"),
+        "Ioversol":                               ("SNOMED",  "395759000", "| Ioversol (substance) |"),
+        "Ioxaglate Meglumine":                    ("SNOMED",  "412228003", "| Ioxaglate meglumine (substance) |"),
+        "Ioxaglate Sodium":                       ("SNOMED",  "412230001", "| Ioxaglate sodium (substance) |"),
+        "Ioxilan":                                ("SNOMED",  "409485008", "| Ioxilan (substance) |"),
+        "Ioxitalamate Meglumine":                 ("SNOMED",  "712698009", "| Ioxitalamate meglumine (substance) |"),
+        "Ioxitalamate Sodium":                    ("SNOMED",  "765359003", "| Ioxitalamate sodium (substance) |"),
+        "Ipodate Calcium":                        ("SNOMED",  "396003009", "| Calcium iopodate (substance) |"),
+        "Ipodate Sodium":                         ("SNOMED",  "395877001", "| Sodium iopodate (substance) |"),
+        "Metrizamide":                            ("SNOMED",   "90733003", "| Metrizamide (substance) |"),
+        "Metrizoate":                             ("SNOMED",  "395792006", "| Metrizoate (substance) |"),
+        "Propyliodone":                           ("SNOMED",  "111158001", "| Propyliodone (substance) |"),
+        ## Barium-based (1)
+        "Barium Sulfate":                         ("SNOMED",  "396014007", "| Barium sulfate (substance) |"),
+        ## Oil-based (2)
+        "Ethiodized Oil":                         ("SNOMED",  "109224005", "| Ethiodized oil (substance) |"),
+        "Iophendylate":                           ("SNOMED",   "28121005", "| Iophendylate (substance) |"),
+
+        # MRI
+        ## Gadolinium-based (12)
+        "Gadobenic Acid":                         ("SNOMED",  "710810006", "| Gadobenic acid (substance) |"),
+        "Gadobutrol":                             ("SNOMED",  "418351005", "| Gadobutrol (substance) |"),
+        "Gadodiamide":                            ("SNOMED",  "396067007", "| Gadodiamide (substance) |"),
+        "Gadofosveset Trisodium":                 ("SNOMED",  "425080008", "| Gadofosveset trisodium (substance) |"),
+        "Gadopentetic Acid":                      ("SNOMED",  "710811005", "| Gadopentetic acid (substance) |"),
+        "Gadopiclenol":                           ("SNOMED",  "1363068006", "| Gadopiclenol (substance) |"),
+        "Gadoterate Meglumine":                   ("SNOMED",  "712714000", "| Gadoterate meglumine (substance) |"),
+        "Gadoteridol":                            ("SNOMED",  "420600009", "| Gadoteridol (substance) |"),
+        "Gadoversetamide":                        ("SNOMED",  "409476008", "| Gadoversetamide (substance) |"),
+        "Gadoxetate Disodium":                    ("SNOMED",  "440223009", "| Gadoxetate disodium (substance) |"),
+        ### Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, but included in SPHN Contrast Agent Active Ingredient code
+        "Gadopentetate Dimeglumine":              ("SNOMED",  "109216000", "| Gadopentetate dimeglumine (substance) |"),            # Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, but included in SPHN Contrast Agent Active Ingredient code
+        "Gadobenate Dimeglumine":                 ("SNOMED",  "414308003", "| Meglumine gadobenate (substance) |"),                 # Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, but included in SPHN Contrast Agent Active Ingredient code
+        ## Iron-based (3)
+        "Ferucarbotran":                          ("SNOMED",  "421091005", "| Ferucarbotran (substance) |"),
+        "Ferumoxides":                            ("SNOMED",  "412390001", "| Ferumoxide (substance) |"),
+        ### Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, not included in SPHN yet
+        "Ferumoxytol":                            ("SNOMED",  "442951001", "| Ferumoxytol (substance) |"),                          # Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, not included in SPHN yet
+        ## Manganese-based (1)
+        "Mangafodipir Trisodium":                 ("SNOMED",  "410872002", "| Mangafodipir trisodium (substance) |"),
+        
+        # Ultrasound
+        ## Microbubble-based (3)
+        "Perflutren":                             ("SNOMED",  "409292001", "| Perflutren (substance) |"),
+        "Sulfur Hexafluoride Lipid Microspheres": ("SNOMED",  "724034007", "| Sulfur hexafluoride lipid microsphere (substance) |"),
+        ### Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, not included in SPHN yet
+        "Perflubutane":                           ("SNOMED",  "419765001", "| Perfluorobutane (substance) |"),                      # Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, not included in SPHN yet
+        
+        # Additional names from DICOM CID 12
+        "Iodipamide":                             ("SNOMED",  "398939009", "| Iodipamide (substance) |"),
+        "Iothalamate":                            ("SNOMED",  "395981002", "| Iothalamate (substance) |"),
+        "Ioxaglate":                              ("SNOMED",  "395760005", "| Ioxaglate (substance) |"),
+        "Ipodate":                                ("SNOMED",   "87445005", "| Ipodate (substance) |"),
+        "Bunamiodyl":                             ("SNOMED",   "90745007", "| Bunamiodyl (substance) |"),
+        "Chloriodized Oil":                       ("SNOMED",   "62442005", "| Chloriodized oil (substance) |"),
+        "Iodized Oil":                            ("SNOMED",   "89595000", "| Iodized oil (substance) |"),
+        "Iodoalphionic Acid":                     ("SNOMED",   "86584005", "| Iodoalphionic acid (substance) |"),
+        "Iodophthalein":                          ("SNOMED",   "74554008", "| Iodophthalein (substance) |"),
+        "Iodopyracet":                            ("SNOMED",   "40710000", "| Iodopyracet (substance) |"),
+        "Iophenoxic Acid":                        ("SNOMED",   "23053002", "| Iophenoxic acid (substance) |"),
+        "Sodium Diprotrizoate":                   ("SNOMED",   "83423008", "| Sodium diprotrizoate (substance) |"),
+        "Sodium Iodomethamate":                   ("SNOMED",   "38344006", "| Sodium iodomethamate (substance) |"),
+        "Sodium Tyropanoate":                     ("SNOMED",  "109212003", "| Tyropanoate sodium (substance) |"),
+        ## General types (5+1)
+        "Ionic Iodinated Contrast Agent":         ("SNOMED", "1340006004", "| Ionic iodinated radiographic imaging contrast media (substance) |"),
+        "Non-ionic Iodinated Contrast Agent":     ("SNOMED", "1340009006", "| Non-ionic iodinated radiographic imaging contrast media (substance) |"),
+        "Radiopaque Medium":                      ("SNOMED",  "419098001", "| Radiographic imaging contrast media (substance) |"),
+        "Contrast Agent":                         ("SNOMED",  "385420005", "| Contrast media (substance) |"),                       # The parent concept itself
+        ### Additional by Edwin
+        "Iodinated Contrast Agent":               ("SNOMED",  "426722004", "| Iodinated contrast media (substance) |"),
+        ### Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, but included in SPHN Contrast Agent Active Ingredient code
+        "Non Radiopaque Medium":                  ("SNOMED",   "43538006", "| Non radiopaque medium (substance) |"),                # Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, but included in SPHN Contrast Agent Active Ingredient code
+    }
+
+    # A dictionary mapping contrast agent active element (group) names to the corresponding SNOMED CT code:
+    # Key: Contrast agent active element (group) name (e.g.: "Iodine")
+    # Value: Tuple with:
+    #   - coding scheme designator (e.g.: "SNOMED")
+    #   - code value (e.g.: "44588005") 
+    #   - human-readable description (e.g.:"| Iodine (substance) |"))
+    # Note(s): 
+    #   - The keys in this mapping should be title-cased versions of the active element names.
+    #   - The active ingredients from the above contrast_agent_trade_name_2_manufacturer_and_ingredient_name mapping
+    #     can have a corresponding entry in this mapping. For example "Air".
+    #   - The active elements listed in DICOM Table CID 12 "Imaging Contrast Agent" 
+    #     should have a corresponding entry in this mapping. For example "Air", "Water", "Oxygen".
+    #   - The "coding scheme designator" in DICOM Table CID 12 has "SCT" for SNOMED CT codes.
+    #   - All active ingredients should have a valid SNOMED CT code entry.
+    #   - Manganese is included as an active element, but it is not a subclass of SNOMED-CT contrast agent and not listed in SPHN.
+    #   - See also: https://dicom.nema.org/medical/dicom/current/output/chtml/part16/sect_CID_12.html
+    #   - See also: https://dicom.nema.org/medical/dicom/current/output/chtml/part16/sect_cid_13.html
+    contrast_agent_active_element_names_2_snomed_code: ClassVar[Mapping[str, tuple[str, str, str]]] = {
+        ### Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, but included in SPHN Contrast Agent Active Ingredient code
+        "Iodine":           ("SNOMED", "44588005", "| Iodine (substance) |"),           # Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, but included in SPHN Contrast Agent Active Ingredient code
+        "Barium":           ("SNOMED", "39290007", "| Barium (substance) |"),           # Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, but included in SPHN Contrast Agent Active Ingredient code
+        "Gadolinium":       ("SNOMED", "58281002", "| Gadolinium (substance) |"),       # Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, but included in SPHN Contrast Agent Active Ingredient code
+        "Iron":             ("SNOMED",  "3829006", "| Iron (substance) |"),             # Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, but included in SPHN Contrast Agent Active Ingredient code
+        "Air":              ("SNOMED", "15158005", "| Air (substance) |"),              # Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, but included in SPHN Contrast Agent Active Ingredient code
+        "Carbon Dioxide":   ("SNOMED", "31811003", "| Carbon dioxide (substance) |"),   # Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, but included in SPHN Contrast Agent Active Ingredient code
+        "Xenon":            ("SNOMED", "83598005", "| Xenon (substance) |"),            # Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, but included in SPHN Contrast Agent Active Ingredient code
+        "Oxygen":           ("SNOMED", "24099007", "| Oxygen (substance) |"),           # Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, but included in SPHN Contrast Agent Active Ingredient code
+        "Water":            ("SNOMED", "11713004", "| Water (substance) |"),            # Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, but included in SPHN Contrast Agent Active Ingredient code
+        ### Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, not included in SPHN yet
+        ####"Manganese":       ("SNOMED", "87869004", "| Manganese (substance) |"),        # Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, not included in SPHN yet
+    }
+
+
+    # Dictionary mapping:
+    #   - contrast agent trade names, 
+    #   - active ingredient names,
+    #   - active element (group) names,
+    # to regex patterns
+    # Key: Contrast agent trade names or active ingredient names or active element (group) names (e.g.: "Amipaque")
+    # Value: Regex pattern to match the name in the DICOM string (e.g.: r"\b(ami(paque|pak|paqe|paq))")
+    # Note(s):
+    #  - Crucial: The regex patterns should match the full contrast agent name and avoid partial matches within others.
+    #   - See also: https://dicom.nema.org/medical/dicom/current/output/chtml/part16/sect_cid_12.html
+    #   - See also: https://dicom.nema.org/medical/dicom/current/output/chtml/part16/sect_cid_13.html
+    contrast_agent_names_2_patterns: ClassVar[Mapping[str, str]] = {
+        
+        # ##################################################
+        # Trade Names
+        # ##################################################
+    
+        # CT/X-ray (62)
+        ## Iodine-based (46)
+        "Amipaque":                 r"\b(ami(?:paque|pak|paqe|paq))",
+        "Angiovist":                r"\b(angiovist)",
+        "Bilivist":                 r"\b(bilivist)",
+        "Cardiografin":             r"\b(cardiografin)",
+        "Cholographin":             r"\b(cholographin)(?![-\s]?(?:meglumine|sodium))",
+        "Cholographin Meglumine":   r"\b(cholographin[-\s]?meglumine)",
+        "Cholographin Sodium":      r"\b(cholographin[-\s]?sodium)",
+        "Conray":                   r"\b(?<!cysto-)(?<!cysto )(?<!cysto)(conray)",
+        "Cysto-Conray":             r"\b(cysto[-\s]?conray)",
+        "Cystografin":              r"\b(cystografin)",
+        "Dionosil":                 r"\b(dionosil)",
+        "Gastrografin":             r"\b(gastrografin)",
+        "Gastrovist":               r"\b(gastrovist)",
+        "Hexabrix":                 r"\b(hexabrix)",
+        "Hypaque":                  r"\b(hy(?:paque|pak|paqe|paq))(?![a-z]*[-\s]?meglumine)",        
+        "Hypaque Meglumine":        r"\b(hy(?:paque|pak|paqe|paq)[-\s]?meglumine)",
+        "Imagenil":                 r"\b(imagenil)",
+        "Imagopaque":               r"\b(imago(?:paque|pak|paqe|paq))",
+        "Imeron":                   r"\b(imeron)",
+        "Iomeron":                  r"\b(iomeron)",
+        "Iopamiro":                 r"\b(iopamiro)",
+        "Isopaque":                 r"\b(iso(?:paque|pak|paqe|paq))",
+        "Isovist":                  r"\b(isovist)",
+        "Isovue":                   r"\b(isovue)",
+        "MD":                       r"\b(md)(?![-\s]?(?:gastroview))", # r"\b(md)(?=[-\s]?(?:50|60|76)r?\b)" 
+        "MD Gastroview":            r"\b((?:md[-\s]?)?gastroview)",
+        "Niopam":                   r"\b(niopam)",
+        "Omnipaque":                r"\b(omni(?:paque|pak|paqe|paq))",
+        "Optiray":                  r"\b(optiray)",
+        "Oragrafin":                r"\b(oragrafin)",
+        "Oxilan":                   r"\b(oxilan)",
+        "Reno":                     r"\b(reno)(?![-\s]?(?:dip|grafin|vist|vue))",
+        "Reno-Dip":                 r"\b(reno[-\s]?dip)",
+        "Renografin":               r"\b(renografin)",
+        "Renovist":                 r"\b(renovist)",
+        "Renovue":                  r"\b(renovue)",
+        "Salpix":                   r"\b(salpix)",
+        "Sinografin":               r"\b(sinografin)",
+        "Solutrast":                r"\b(solutrast)",
+        "Telebrix":                 r"\b(telebrix)",
+        "Telepaque":                r"\b(tele(?:paque|pak|paqe|paq))",
+        "Ultravist":                r"\b(ultravist)",
+        "Urovist":                  r"\b(urovist)",
+        "Vascoray":                 r"\b(vascoray)",
+        "Visipaque":                r"\b(visi(?:paque|pak|paqe|paq))",
+        "Xenetix":                  r"\b(xenetix)",
+        ## Barium-based (12)
+        "Baro-Cat":                 r"\b(baro[-\s]?cat)",
+        "Cheetah":                  r"\b(cheetah)",
+        "E-Z-Cat":                  r"\b(e[-\s]?z[-\s]?cat)",
+        "E-Z-HD":                   r"\b(e[-\s]?z[-\s]?hd)",
+        "E-Z-PAQUE":                r"\b(e[-\s]?z[-\s]?(?:paque|pak|paqe|paq))",
+        "Liquid POLIBAR PLUS":      r"\b(liquid[-\s]?polibar[-\s]?plus)",
+        "Readi-Cat":                r"\b((?:readi|rdi|redi)[-\s]?cat)(?![-\s]?2)",
+        "Readi-Cat 2":              r"\b((?:readi|rdi|redi)[-\s]?cat[-\s]?2)(?![-\s]?smoothie)",
+        "Readi-Cat 2 SMOOTHIE":     r"\b((?:readi|rdi|redi)[-\s]?cat[-\s]?2[-\s]?smoothie)",
+        "Tagitol":                  r"\b(tagitol)",
+        "Varibar":                  r"\b(varibar)",
+        "VoLumen":                  r"\b(volumen)",
+        ## Oil-based (4)
+        "Ethiodol":                 r"\b(ethiodol)",
+        "Lipiodol":                 r"\b(lipiodol)",
+        "Myodil":                   r"\b(myodil)",
+        "Pantopaque":               r"\b(panto(?:paque|pak|paqe|paq))",
+
+        # MRI (20)
+        ## Gadolinium-based (15)
+        "Ablavar":                  r"\b(ablavar)",
+        "Clariscan":                r"\b(clariscan|clariskan)",
+        "Dotarem":                  r"\b(dotarem)",
+        "Elucirem":                 r"\b(elucirem)",
+        "Eovist":                   r"\b(eovist)",
+        "Gadavist":                 r"\b(gadavist)",
+        "Gadovist":                 r"\b(gadovist)",
+        "Magnevist":                r"\b(magnevist)",
+        "Multihance":               r"\b(multi[-\s]?hance|multi\b(?!-)(?!\s+(?:phase|detector|slice|row|parametric|planar|focal|modal|sequence|echo)))",
+        "Omniscan":                 r"\b(omniscan|omniskan)",
+        "Optimark":                 r"\b(optimark)",
+        "Primovist":                r"\b(primovist)",
+        "ProHance":                 r"\b(prohance)",
+        "Vasovist":                 r"\b(vasovist)",
+        "Vueway":                   r"\b(vueway)",
+        ## Iron-based (4)
+        "Endorem":                  r"\b(endorem)",
+        "Feraheme":                 r"\b(feraheme)",
+        "Feridex":                  r"\b(feridex)",
+        "Resovist":                 r"\b(resovist)",
+        ## Manganese-based (1)
+        "Teslascan":                r"\b(teslascan|teslaskan)",
+
+        # Ultrasound (7)
+        ## Microbubble-based (7)
+        "Definity":                 r"\b(definity)",
+        "Levovist":                 r"\b(levovist)",
+        "Lumason":                  r"\b(lumason)",
+        "Luminity":                 r"\b(luminity)",
+        "Optison":                  r"\b(optison)",
+        "Sonazoid":                 r"\b(sonazoid)",
+        "SonoVue":                  r"\b(sonovue)",
+
+        # ##################################################
+        # Contrast Agent Active Ingredients
+        # ##################################################
+        
+        # CT/X-ray
+        ## Iodine-based (29)
+        "Acetrizoate Sodium":                     r"\b(acetrizoate[-\s]?sodium|sodium[-\s]?acetrizoate)\b",
+        "Diatrizoate":                            r"\b(?<!meglumine[-\s])(?<!meglumine)(?<!sodium[-\s])(?<!sodium)((?:diatrizo|amidotrizo)(?:ate|ic[-\s]?acid))\b(?![-\s]?(?:meglumine|sodium))",
+        "Diatrizoate Meglumine":                  r"\b((?:diatrizoate|amidotrizoate)[-\s]?meglumine|meglumine[-\s]?(?:diatrizoate|amidotrizoate))\b",
+        "Diatrizoate Sodium":                     r"\b((?:diatrizoate|amidotrizoate)[-\s]?sodium|sodium[-\s]?(?:diatrizoate|amidotrizoate))\b",
+        "Iobitridol":                             r"\b(iobitridol)\b",
+        "Iodamide Meglumine":                     r"\b(iodamide[-\s]?meglumine|meglumine[-\s]?iodamide)\b",
+        "Iodipamide Meglumine":                   r"\b((?:iodipamide|adipiodone)[-\s]?meglumine|meglumine[-\s]?(?:iodipamide|adipiodone))\b",
+        "Iodipamide Sodium":                      r"\b((?:iodipamide|adipiodone)[-\s]?sodium|sodium[-\s]?(?:iodipamide|adipiodone))\b",
+        "Iodixanol":                              r"\b(iodixanol)\b",
+        "Iohexol":                                r"\b(iohexol)\b",
+        "Iomeprol":                               r"\b(iomeprol)\b",
+        "Iopamidol":                              r"\b(iopamidol)\b",
+        "Iopanoic Acid":                          r"\b(iopanoic[-\s]?acid)\b",
+        "Iopentol":                               r"\b(iopentol)\b",
+        "Iopromide":                              r"\b(iopromide)\b",
+        "Iothalamate Meglumine":                  r"\b((?:iothalamate|iotalamate)[-\s]?meglumine|meglumine[-\s]?(?:iothalamate|iotalamate))\b",
+        "Iothalamate Sodium":                     r"\b((?:iothalamate|iotalamate)[-\s]?sodium|sodium[-\s]?(?:iothalamate|iotalamate))\b",
+        "Iotrolan":                               r"\b(iotrolan)\b",
+        "Ioversol":                               r"\b(ioversol)\b",
+        "Ioxaglate Meglumine":                    r"\b(ioxaglate[-\s]?meglumine|meglumine[-\s]?ioxaglate)\b",
+        "Ioxaglate Sodium":                       r"\b(ioxaglate[-\s]?sodium|sodium[-\s]?ioxaglate)\b",
+        "Ioxilan":                                r"\b(ioxilan)\b",
+        "Ioxitalamate Meglumine":                 r"\b((?:ioxitalamate|ioxithalamate)[-\s]?meglumine|meglumine[-\s]?(?:ioxitalamate|ioxithalamate))\b",
+        "Ioxitalamate Sodium":                    r"\b((?:ioxitalamate|ioxithalamate)[-\s]?sodium|sodium[-\s]?(?:ioxitalamate|ioxithalamate))\b",
+        "Ipodate Calcium":                        r"\b((?:ipodate|iopodate)[-\s]?calcium|calcium[-\s]?(?:ipodate|iopodate))\b",
+        "Ipodate Sodium":                         r"\b((?:ipodate|iopodate)[-\s]?sodium|sodium[-\s]?(?:ipodate|iopodate))\b",
+        "Metrizamide":                            r"\b(metrizamide)\b",
+        "Metrizoate":                             r"\b(metrizoate(?:[-\s]?(?:sodium|meglumine|calcium|magnesium))?|metrizoic[-\s]?acid)\b",
+        "Propyliodone":                           r"\b(propyliodone)\b",
+        ## Barium-based (1)
+        "Barium Sulfate":                         r"\b(barium[-\s]?(?:sulfate|sulphate))\b",
+        ## Oil-based (2)
+        "Ethiodized Oil":                         r"\b(ethiodi[sz]ed[-\s]?oil|ethiodi[sz]ed[-\s]?poppyseed[-\s]?oil)\b",
+        "Iophendylate":                           r"\b(iophendylate)\b",
+        
+        # MRI (16)
+        ## Gadolinium-based (12)
+        "Gadobenic Acid":                         r"\b(?<!meglumine[-\s])(?<!meglumine)(gadobenic[-\s]?acid|gadobenate)\b(?![-\s]?(?:di)?meglumine)",
+        "Gadobutrol":                             r"\b(gadobutrol)\b",
+        "Gadodiamide":                            r"\b(gadodiamide)\b",
+        "Gadofosveset Trisodium":                 r"\b(gadofosveset(?:[-\s]?trisodium)?)\b",
+        "Gadopentetic Acid":                      r"\b(?<!meglumine[-\s])(?<!meglumine)(gadopentetic[-\s]?acid|gadopentetate)\b(?![-\s]?(?:di)?meglumine)",
+        "Gadopiclenol":                           r"\b(gadopiclenol)\b",
+        "Gadoterate Meglumine":                   r"\b((?:gadoterate[-\s]?meglumine|meglumine[-\s]?gadoterate)|gadoteric[-\s]?acid)\b",
+        "Gadoteridol":                            r"\b(gadoteridol)\b",
+        "Gadoversetamide":                        r"\b(gadoversetamide)\b",
+        "Gadoxetate Disodium":                    r"\b((?:gadoxetate[-\s]?disodium|disodium[-\s]?gadoxetate)|gadoxetic[-\s]?acid)\b",
+        ### Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, but included in SPHN Contrast Agent Active Ingredient code
+        "Gadopentetate Dimeglumine":              r"\b(gadopentetate[-\s]?(?:di)?meglumine|(?:di)?meglumine[-\s]?gadopentetate)\b",     # Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, but included in SPHN Contrast Agent Active Ingredient code
+        "Gadobenate Dimeglumine":                 r"\b(gadobenate[-\s]?(?:di)?meglumine|(?:di)?meglumine[-\s]?gadobenate)\b",           # Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, but included in SPHN Contrast Agent Active Ingredient code
+        ## Iron-based (3)
+        "Ferucarbotran":                          r"\b(ferucarbotran)\b",
+        "Ferumoxides":                            r"\b(ferumoxides?)\b",
+        ### Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, not included in SPHN yet
+        "Ferumoxytol":                            r"\b(ferumoxytol)\b",                                                                 # Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, not included in SPHN yet
+        ## Manganese-based (1)
+        "Mangafodipir Trisodium":                 r"\b(mangafodipir(?:[-\s]?trisodium)?)\b",
+        
+        # Ultrasound (3)
+        ## Microbubble-based (3)
+        #### already included: "Air":             r"\b(air)\b",
+        "Perflubutane":                           r"\b(perflubutane|perfluoro[-\s]?butane|decafluorobutane)\b",
+        "Perflutren":                             r"\b(perflutren|octafluoropropane|perfluoro[-\s]?propane)\b",
+        "Sulfur Hexafluoride Lipid Microspheres": r"\b((?:sulfur|sulphur)[-\s]?hexafluoride(?:[-\s]?lipid(?:[-\s]?type[-\s]?a)?[-\s]?microspheres?)?)\b",
+
+        # ##################################################
+        # Additional DICOM Table CID 12 based contrast agents:
+        # ##################################################
+
+        # CT/X-ray
+        ## Iodine-based (12)
+        "Bunamiodyl":                             r"\b(bunamiodyl)\b",
+        "Iodipamide":                             r"\b(?<!meglumine[-\s])(?<!meglumine)(?<!sodium[-\s])(?<!sodium)(?<!calcium[-\s])(?<!calcium)(iodipamide|adipiodone)\b(?![-\s]?(?:meglumine|sodium|calcium))",
+        "Iodoalphionic Acid":                     r"\b(iodoalphionic[-\s]?acid)\b",
+        "Iodophthalein":                          r"\b(iodophthalein)\b",
+        "Iodopyracet":                            r"\b(iodopyracet)\b",
+        "Iophenoxic Acid":                        r"\b(iophenoxic[-\s]?acid)\b",
+        "Iothalamate":                            r"\b(?<!meglumine[-\s])(?<!meglumine)(?<!sodium[-\s])(?<!sodium)(?<!calcium[-\s])(?<!calcium)(iothalamate|iotalamate|iothalamic[-\s]?acid|iotalamic[-\s]?acid)\b(?![-\s]?(?:meglumine|sodium|calcium))",
+        "Ioxaglate":                              r"\b(?<!meglumine[-\s])(?<!meglumine)(?<!sodium[-\s])(?<!sodium)(?<!calcium[-\s])(?<!calcium)(ioxaglate|ioxaglic[-\s]?acid)\b(?![-\s]?(?:meglumine|sodium|calcium))",
+        "Ipodate":                                r"\b(?<!meglumine[-\s])(?<!meglumine)(?<!sodium[-\s])(?<!sodium)(?<!calcium[-\s])(?<!calcium)(ipodate|iopodate|ipodic[-\s]?acid|iopodic[-\s]?acid)\b(?![-\s]?(?:meglumine|sodium|calcium))",
+        "Sodium Diprotrizoate":                   r"\b(sodium[-\s]?diprotrizoate|diprotrizoate[-\s]?sodium)\b",
+        "Sodium Iodomethamate":                   r"\b(sodium[-\s]?iodomethamate|iodomethamate[-\s]?sodium)\b",
+        "Sodium Tyropanoate":                     r"\b(sodium[-\s]?tyropanoate|tyropanoate[-\s]?sodium)\b",
+        ## Oil-based (2)
+        "Chloriodized Oil":                       r"\b(chloriodi[sz]ed[-\s]?oil)\b",
+        "Iodized Oil":                            r"\b(iodi[sz]ed[-\s]?oil)\b",
+
+        ## General types (5+1)
+        "Ionic Iodinated Contrast Agent":         r"\b(?<!non[-\s])(?<!non)(ionic[-\s]?iodinated[-\s]?contrast[-\s]?(?:agent|medium|media))\b",
+        "Non-ionic Iodinated Contrast Agent":     r"\b(non[-\s]?ionic[-\s]?iodinated[-\s]?contrast[-\s]?(?:agent|medium|media))\b",
+        "Radiopaque Medium":                      r"\b(?<!non[-\s])(?<!non)(radiopaque[-\s]?(?:medium|media))\b",
+        "Contrast Agent":                         r"\b(?<!iodinated[-\s])(contrast[-\s]?(?:agent|medium|media))\b",                     # The parent concept itself
+        ### Additional by Edwin
+        "Iodinated Contrast Agent":               r"\b(?<!ionic[-\s])(?<!ionic)(iodinated[-\s]?contrast(?:[-\s]?(?:agent|medium|media))?)\b",
+        ### Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, but included in SPHN Contrast Agent Active Ingredient code
+        "Non Radiopaque Medium":                  r"\b(non[-\s]?radiopaque[-\s]?(?:medium|media))\b",                                   # Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, but included in SPHN Contrast Agent Active Ingredient code
+
+        # ##################################################
+        # Active element(s) or functional atom(groups)
+        # ##################################################
+        
+        ## Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, but included in SPHN Contrast Agent Active Ingredient code
+        "Iodine":                   r"\b(iodine|i)(?![.\s]?[vme]\b)(?=\b|\d)",                                              # Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, but included in SPHN Contrast Agent Active Ingredient code
+        "Barium":                   r"\b(barium|ba)(?![-\s]?(?:sulfate|sulphate)|so4)(?=\b|\d|cl\d?\b)",                    # Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, but included in SPHN Contrast Agent Active Ingredient code
+        "Gadolinium":               r"\b(gadolinium|gd)(?=\b|\d|cl\d?\b)",                                                  # Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, but included in SPHN Contrast Agent Active Ingredient code
+        "Iron":                     r"\b(iron|fe)(?=\b|\d|cl\d?\b)",                                                        # Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, but included in SPHN Contrast Agent Active Ingredient code
+        "Air":                      r"\b(air)\b",                                                                           # Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, but included in SPHN Contrast Agent Active Ingredient code
+        "Carbon Dioxide":           r"\b(carbon[-\s]?dioxide|co2)\b",                                                       # Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, but included in SPHN Contrast Agent Active Ingredient code
+        "Xenon":                    r"\b(xenon|xe)(?=\b|\d)",                                                               # Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, but included in SPHN Contrast Agent Active Ingredient code
+        "Oxygen":                   r"\b(oxygen|o2)\b",                                                                     # Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, but included in SPHN Contrast Agent Active Ingredient code
+        "Water":                    r"\b(water|h2o)\b",                                                                     # Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, but included in SPHN Contrast Agent Active Ingredient code
+        ## Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, not included in SPHN yet
+        #### "Manganese":           r"\b(manganese|mn)(?=\b|\d|cl\d?\b)",                                                   # Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, not included in SPHN yet
+    }
+
+
+    # A list of common contrast agent active ingredient concentrations in % or mg/mL
+    contrast_agent_active_ingredient_concentrations_list: ClassVar[ReadOnly[list[str]]] = ["30", "60", "76", "140", "150", "160", "180", "200", "240", "250", "260", "270", "282", "292", "300", "320", "350", "360", "370", "380", "390", "400"]
+
+    # Omnipaque (Iohexol):      Available in 140, 180, 240, 300, and 350 mg I/mL. (Omnipaque 300 and 350 are standard for routine body CTs).
+    # Isovue (Iopamidol):       Formulated as 200, 250, 300, and 370 mg I/mL. (Isovue 370 is widely used for high-velocity CT angiograms).
+    # Visipaque (Iodixanol):    Available in 270 and 320 mg I/mL. This is an iso-osmolar agent frequently used in patients with compromised kidney function.
+    # Ultravist (Iopromide):    Supplied as 150, 240, 300, and 370 mg I/mL.
+    # Optiray (Ioversol):       Packaged as 160, 240, 300, and 350 mg I/mL.
+
+    # Dotarem (Gadoterate meglumine):        0.5  mmol/mL	Standard macrocyclic agent
+    # ProHance (Gadoteridol):	             0.5  mmol/mL	Standard macrocyclic agent
+    # Magnevist (Gadopentetate dimeglumine): 0.5  mmol/mL	Linear agent (mostly historical/discontinued)
+    # MultiHance (Gadobenate dimeglumine):	 0.5  mmol/mL	Weak protein-binding; higher real-world signal
+    # Gadavist / Gadovist (Gadobutrol):	     1.0  mmol/mL	Double-concentration formulation; allows for half the injection volume.
+    # Vueway / Elucirem (Gadopiclenol):	     0.5  mmol/mL	High-relaxivity agent; allows a half-dose (0.05 mmol/kg) to provide identical clarity to a full standard dose.
+    # Eovist / Primovist (Gadoxetic acid):	 0.25 mmol/mL	Half-concentration hepatobiliary-specific agent used exclusively for targeted liver mapping.
+
+    # Readi-Cat 2 (Barium Sulfate): Formulated precisely at 2.1% w/v. It is deliberately a very low concentration so that it opacifies the bowel loops during a CT scan without causing harsh white artifacts that ruin the image.
+    # E-Z-Paque (Barium Sulfate): Prepared at 96% w/v when reconstituted, used for standard upper GI radiographic tracking.
+    # Liquid Polibar: Supplied as a high-density 105% w/v suspension, typically utilized for double-contrast barium enemas.
+
+    #
+    # Administration routes
+    #
+
+    # A dictionary mapping DICOM defined coded administration routes to SNOMED codes for SPHN
+    # Key: Tuple of DICOM coding scheme designator and code value (e.g., ("SCT", "47625008"))
+    # Value: Tuple of SNOMED coding scheme designator, code value, and description (e.g., ("SNOMED", "47625008", "| Intravenous route (qualifier value) |"))
+    # Link: https://dicom.nema.org/medical/dicom/current/output/chtml/part16/sect_CID_11.html Table CID 11. Administration Route
+    # Note: Not all DICOM administration routes have a corresponding SNOMED code.
+    # Link: https://dicom.nema.org/medical/dicom/Final/cp1495_ft3_badsnomedcodes.pdf
+    # Note: Only the coding scheme designator "SCT" is converted to "SNOMED" and the human-readable description is from the SNOMED terminology.
+    administration_routes_list: ClassVar[ReadOnly[dict[tuple[str, str], tuple[str, str, str]]]] = {
+        ("SCT", "26643006"):    ("SNOMED", "26643006",   "| Oral route (qualifier value) |"),                       # "Oral route",
+        ("SCT", "47625008"):    ("SNOMED", "47625008",   "| Intravenous route (qualifier value) |"),                # "Intravenous route",
+        ("SCT", "58100008"):    ("SNOMED", "58100008",   "| Intra-arterial route (qualifier value) |"),             # "Intra-arterial route",
+        ("SCT", "72607000"):    ("SNOMED", "72607000",   "| Intrathecal route (qualifier value) |"),                # "Intrathecal route",
+        ("SCT", "12130007"):    ("SNOMED", "12130007",   "| Intra-articular route (qualifier value) |"),            # "Intra-articular route",
+        ("SCT", "446406008"):   ("SNOMED", "447694001",  "| Respiratory tract route (qualifier value) |"),          # "By inhalation",
+        # Other routes
+        ("SCT", "78421000"):    ("SNOMED", "78421000",   "| Intramuscular route (qualifier value) |"),              # "Intramuscular route",
+        ("SCT", "34206005"):    ("SNOMED", "34206005",   "| Subcutaneous route (qualifier value) |"),               # "Subcutaneous route",
+        ("SCT", "372464004"):   ("SNOMED", "372464004",  "| Intradermal route (qualifier value) |"),                # "Intracutaneous route", "Intradermal route",
+        ("SCT", "38239002"):    ("SNOMED", "38239002",   "| Intraperitoneal route (qualifier value) |"),            # "Intraperitoneal route",
+        ("SCT", "60213007"):    ("SNOMED", "60213007",   "| Intramedullary route (qualifier value) |"),             # "Intramedullary route",
+        ("SCT", "6064005"):     ("SNOMED", "6064005",    "| Topical route (qualifier value) |"),                    # "Topical route",
+        ("SCT", "37737002"):    ("SNOMED", "37737002",   "| Intraluminal route (qualifier value) |"),               # "Intraluminal route",
+        ("SCT", "37161004"):    ("SNOMED", "37161004",   "| Rectal route (qualifier value) |"),                     # "Per rectum",
+        ("SCT", "16857009"):    ("SNOMED", "16857009",   "| Vaginal route (qualifier value) |"),                    # "Vaginal route",
+        ("SCT", "372463005"):   ("SNOMED", "372463005",  "| Intracoronary route (qualifier value) |"),              # "Intracoronary route",
+        ("SCT", "372460008"):   ("SNOMED", "372460008",  "| Intracardiac route (qualifier value) |"),               # "Intracardiac route",
+        ("SCT", "420287000"):   ("SNOMED", "420287000",  "| Intraventricular route - cardiac (qualifier value) |"), # "Intraventricular route - cardiac",
+        ("SCT", "46713006"):    ("SNOMED", "46713006",   "| Nasal route (qualifier value) |"),                      # "Nasal route",
+        ("SCT", "447122006"):   ("SNOMED", "447122006",  "| Intratumor route (qualifier value) |"),                 # "Intratumor route",
+        ("SCT", "1259221004"):  ("SNOMED", "1259221004", "| Intracorporus cavernosum route (qualifier value) |")    # "Intracorpus cavernosum route"
+        #("NCIt", "C38244"):    ("SNOMED", "",           ""),                                                       # "Intraepithelial route",      # There used to be a SNOMED RT code: G-D111, but it is not in SNOMED CT, concept: 89947002
+        #("NCIt", "C38306"):    ("SNOMED", "",           ""),                                                       # "Transluminal route",         # There used to be a SNOMED RT code: G-D142, but it is not in SNOMED CT, concept: 9942002
+        #("NCIt", "C38213"):    ("SNOMED", "",           ""),                                                       # "Extraluminal route",         # There used to be a SNOMED RT code: G-D146, but it is not in SNOMED CT, concept: 31638007
+        #("DCM", "127070"):     ("SNOMED", "",           ""),                                                       # "Retro-orbital route",        # A technique used to administer substances via the vascular sinus and plexus located directly 
+                                                                                                                                                    # behind the eye in small research animals like mice and rats
+        # Other routes by Edwin:
+        #                       ("SNOMED", "372471009",  "| Intravesical route (qualifier value) |"),
+        #                       ("SNOMED", "420254004",  "| Body cavity route (qualifier value) |"),
+    }
+
+    # Dictionary with regex patterns of administration routes and their medical terms and/or abbreviations
+    # Key: Administration route name
+    # Value: Regex pattern to match the route in the DICOM string
+    route_patterns: ClassVar[ReadOnly[dict[str, re.Pattern]]] = {
+        "Oral":             r"\b(oral|peroral|po|per\s*os)\b", 
+        "Intravenous":      r"\b(iv|intravenous|intra-venous|intra\s*venous)\b", 
+        "Intra-arterial":   r"\b(ia|intra-arterial|intraarterial|intra\s*arterial)\b", 
+        "Intrathecal":      r"\b(intrathecal|intraspinal)\b", 
+        "Intra-articular":  r"\b(intra-articular|intraarticular|intra\s*articular|intra-joint|intra\s*joint)\b", 
+        "Inhalation":       r"\b(inhalation|inhaled|endotracheal)\b",
+        "Intravesical":     r"\b(intravesical|bladder)\b",
+        "Intracavitary":    r"\b(intracavitary|intrauterine|fistula)\b",
+        "Rectal":           r"\b(pr|rectal|per\s*rectum)\b"
+    }
+
+    # Mapping of above listed administration route names to their corresponding SNOMED codes for SPHN
+    sphn_route_codes: ClassVar[ReadOnly[dict[str, tuple[str, str, str]]]] = {
+        "Oral":             ("SNOMED", "26643006",  "| Oral route (qualifier value) |"),
+        "Intravenous":      ("SNOMED", "47625008",  "| Intravenous route (qualifier value) |"),
+        "Intra-arterial":   ("SNOMED", "58100008",  "| Intra-arterial route (qualifier value) |"),
+        "Intrathecal":      ("SNOMED", "72607000",  "| Intrathecal route (qualifier value) |"),
+        "Intra-articular":  ("SNOMED", "12130007",  "| Intra-articular route (qualifier value) |"),
+        "Inhalation":       ("SNOMED", "447694001", "| Respiratory tract route (qualifier value) |"),
+        "Intravesical":     ("SNOMED", "372471009", "| Intravesical route (qualifier value) |"),
+        "Intracavitary":    ("SNOMED", "420254004", "| Body cavity route (qualifier value) |"),
+        "Rectal":           ("SNOMED", "37161004",  "| Rectal route (qualifier value) |")
+    }
+
+
+    """
+
+    We could add "SNOMED-CT: 87869004 | Manganese (substance) |" to the SPHN Contrast Agent Active Ingredient code list as it is relevant for manganese-based MRI contrast agents like Teslascan.
+
+    Trade name: Teslascan 
+    Manufacturer: IC Targets
+    Active ingredient: Mangafodipir Trisodium
+    SNOMED 410872002 | Mangafodipir trisodium (substance) | 
+    A subclass of SNOMED-CT 385420005 | Contrast media (substance) |
+
+    It is Manganese-based, but Manganese is not included in SPHN Contrast Agent Active Ingredient code list, unlike other elements e.g. Iodine, Gadolinium
+
+    See also the following references for more information on manganese-based MRI contrast agents:
+    https://pmc.ncbi.nlm.nih.gov/articles/PMC12384406/
+    https://www.itnonline.com/content/ge-healthcare-first-patient-dosed-trial-manganese-based-mri-contrast-agent
+
+    """
+
+
+
+

@@ -289,7 +289,7 @@ class DWStudyProcessor:
                     assert isinstance(data_store.sphn_imaging_procedure.has_imaging_series_list, list)
 
                     # Add if not similar to a previous SPHN ImagingSeries in the list (to avoid duplicates)
-                    if context.ALWAYS_ADD_SPHN_IMAGING_SERIES \
+                    if context.add_only_unique_sphn_imaging_series == False \
                         or data_store.sphn_imaging_series not in data_store.sphn_imaging_procedure.has_imaging_series_list:
                         data_store.sphn_imaging_procedure.has_imaging_series_list.append(data_store.sphn_imaging_series)
                         logger.debug(" "*(indent+2) + "Added the SPHN ImagingSeries to the SPHN ImagingProcedure in the data_store")
