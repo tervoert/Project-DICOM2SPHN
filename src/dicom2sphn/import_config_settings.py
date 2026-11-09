@@ -215,11 +215,37 @@ def import_config_settings(config_file: Path, context: Context, indent: int=0) -
     # Process the data processing settings
     # -----------------------------------------------------------------------------------------------------------------
 
+    bool_map = {"true": True, "false": False}
+
     data_processing_settings = get_data_processing_options_from_settings(settings, context, indent=indent+2)
+
+    result_1 = data_processing_settings.get("add_only_unique_sphn_imaging_procedures", None)
+    result_2 = data_processing_settings.get("add_only_unique_sphn_imaging_series", None)
+    result_3 = data_processing_settings.get("add_only_unique_sphn_imaging_frames", None)
+
+    result_1_bool = result_1 if isinstance(result_1, bool) else None
+    result_2_bool = result_2 if isinstance(result_2, bool) else None
+    result_3_bool = result_3 if isinstance(result_3, bool) else None
+
+    result_1_bool = bool_map.get(result_1.strip().lower(), None) if isinstance(result_1, str) else result_1_bool
+    result_2_bool = bool_map.get(result_2.strip().lower(), None) if isinstance(result_2, str) else result_2_bool
+    result_3_bool = bool_map.get(result_3.strip().lower(), None) if isinstance(result_3, str) else result_3_bool
+
+    # The *_bool results are None if the setting is missing, has a wrong type, or is a string other than 'true'/'false'
+    if result_1_bool is None:
+        raise ImportConfigSettingsError(f"The setting 'add_only_unique_sphn_imaging_procedures' must be a boolean or string ('True'/'False'), got: '{result_1}'.")
+    if result_2_bool is None:
+        raise ImportConfigSettingsError(f"The setting 'add_only_unique_sphn_imaging_series' must be a boolean or string ('True'/'False'), got: '{result_2}'.")
+    if result_3_bool is None:
+        raise ImportConfigSettingsError(f"The setting 'add_only_unique_sphn_imaging_frames' must be a boolean or string ('True'/'False'), got: '{result_3}'.")
+
+    assert isinstance(result_1_bool, bool)
+    assert isinstance(result_2_bool, bool)
+    assert isinstance(result_3_bool, bool)
     
-    context.add_only_unique_sphn_imaging_procedures = data_processing_settings.get("add_only_unique_sphn_imaging_procedures", False)
-    context.add_only_unique_sphn_imaging_series = data_processing_settings.get("add_only_unique_sphn_imaging_series", False)
-    context.add_only_unique_sphn_imaging_frames = data_processing_settings.get("add_only_unique_sphn_imaging_frames", True)
+    context.add_only_unique_sphn_imaging_procedures = result_1_bool
+    context.add_only_unique_sphn_imaging_series = result_2_bool
+    context.add_only_unique_sphn_imaging_frames = result_3_bool
     
     context.logger.info(" "*(indent+0) + "Successfully processed the data processing settings.")
 
@@ -790,6 +816,12 @@ def get_fallback_study_datetime_from_dicom_options_settings(settings:dict, conte
     fallback_study_date = dicom_options_settings["fallback_study_date"]
     fallback_study_time = dicom_options_settings["fallback_study_time"]
 
+    if not isinstance(fallback_study_date, str):
+        raise ImportConfigSettingsError("The 'fallback_study_date' must be a string in the 'dicom_options' settings.")
+
+    if not isinstance(fallback_study_time, str):
+        raise ImportConfigSettingsError("The 'fallback_study_time' must be a string in the 'dicom_options' settings.")
+
     # Validate the date and time formats
     try:
         result_date = datetime.strptime(fallback_study_date,"%Y-%m-%d").replace(tzinfo=UTC).date()
@@ -836,6 +868,12 @@ def get_fallback_contrast_agent_datetime_from_dicom_options_settings(settings:di
 
     fallback_contrast_agent_date = dicom_options_settings["fallback_contrast_agent_date"]
     fallback_contrast_agent_time = dicom_options_settings["fallback_contrast_agent_time"]
+
+    if not isinstance(fallback_contrast_agent_date, str):
+        raise ImportConfigSettingsError("The 'fallback_contrast_agent_date' must be a string in the 'dicom_options' settings.")
+
+    if not isinstance(fallback_contrast_agent_time, str):
+        raise ImportConfigSettingsError("The 'fallback_contrast_agent_time' must be a string in the 'dicom_options' settings.")
 
     # Validate the date and time formats
     try:

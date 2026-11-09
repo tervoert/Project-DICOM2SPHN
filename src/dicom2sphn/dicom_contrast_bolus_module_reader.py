@@ -80,7 +80,8 @@ def process_dicom_contrast_information(dataset: Dataset, context: Context, inden
     has_legacy_contrast_bolus_module = hasattr(dataset, "ContrastBolusAgent")
 
     contrast_bolus_agent_sequence = dataset.get("ContrastBolusAgentSequence", None)
-    has_enhanced_contrast_bolus_module = contrast_bolus_agent_sequence is not None and contrast_bolus_agent_sequence.hasattr("ContrastBolusAgentNumber")
+    assert contrast_bolus_agent_sequence is None or isinstance(contrast_bolus_agent_sequence, Sequence)
+    has_enhanced_contrast_bolus_module = contrast_bolus_agent_sequence is not None and all(hasattr(item, "ContrastBolusAgentNumber") for item in contrast_bolus_agent_sequence)
 
     if not has_legacy_contrast_bolus_module and not has_enhanced_contrast_bolus_module:
         logger.debug(" "*(indent+0) + "No DICOM (legacy or enhanced) Contrast/Bolus module found in the dataset.")
@@ -740,7 +741,7 @@ def process_legacy_contrast_bolus_agent_sequence_item(dataset: Dataset, context:
     logger.debug(" "*(indent+0) + "Starting to create an SPHN Contrast Agent object")
 
     sphn_contrast_agent = create_sphn_contrast_agent(
-        active_ingredient=[sphn_contrast_agent_active_ingredient],
+        active_ingredient_list=[sphn_contrast_agent_active_ingredient],
         article=None,
         context=context,
         indent=indent+2
@@ -1565,7 +1566,6 @@ def process_enhanced_contrast_bolus_agent_sequence_item(dataset:Dataset, context
     assert isinstance(indent, int) and indent >= 0
 
     logger = context.logger
-    data_store = context.data_store
     sphn_schema = context.sphn_schema
 
     sphn_contrast_agent_active_ingredient: SPHNContrastAgentActiveIngredient|None = None
@@ -2021,7 +2021,7 @@ def process_contrast_bolus_administration_route_sequence_item(dataset:Dataset, c
 
     if coding_scheme_designator is None or code_value is None:
         logger.debug(" "*(indent+0) + "DICOM ContrastBolusAdministrationRouteSequence item has no coding scheme designator or code value")
-        data_store.add_unknown_contrast_bolus_administration_route_sequence_code_to_dict(context, coding_scheme_designator, code_value, code_descr, indent=indent)
+        data_store.add_unknown_contrast_bolus_administration_route_sequence_code_to_dict(coding_scheme_designator, code_value, code_descr)
         return None
 
     logger.debug(" "*(indent+4) + f"DICOM ContrastBolusAdministrationRouteSequence item has coding scheme designator '{coding_scheme_designator}' and code value '{code_value}' with description '{code_descr}'")
@@ -2032,7 +2032,7 @@ def process_contrast_bolus_administration_route_sequence_item(dataset:Dataset, c
     # Check if the route is known
     if result is None:
         logger.debug(" "*(indent+0) + "DICOM ContrastBolusAdministrationRouteSequence item could not be mapped to a known SPHN Administrative Route code")
-        data_store.add_unknown_contrast_bolus_administration_route_sequence_code_to_dict(context, coding_scheme_designator, code_value, code_descr, indent=indent)
+        data_store.add_unknown_contrast_bolus_administration_route_sequence_code_to_dict(coding_scheme_designator, code_value, code_descr)
         return None
     
     # Add the administration route to the data store dictionary for statistical purposes
@@ -3264,7 +3264,7 @@ def get_contrast_bolus_datetime(
         study_datetime: datetime|None,
         context: Context, 
         indent: int=0
-    ) -> datetime:
+    ) -> datetime|None:
     """
     Returns the estimated datetime of the contrast/bolus, adjusted for potential midnight boundary crossings.
     Parameters:
@@ -3276,7 +3276,7 @@ def get_contrast_bolus_datetime(
         indent (int): The indentation level for logging.
     
     Returns:
-        datetime: The estimated datetime of the contrast/bolus, adjusted for potential midnight boundary crossings.
+        datetime|None: The estimated datetime of the contrast/bolus, adjusted for potential midnight boundary crossings. Returns None if insufficient information is provided.
 
     Note: At least one of acquisition_datetime, series_datetime, or study_datetime must be provided.
     """
@@ -3287,9 +3287,12 @@ def get_contrast_bolus_datetime(
     assert isinstance(context, Context)
     assert isinstance(indent, int) and indent >= 0
 
+    logger = context.logger
+
     # 1. Validate input parameters and ensure at least one datetime is provided
     if acquisition_datetime is None and series_datetime is None and study_datetime is None:
-        raise ValueError("At least one of acquisition_datetime, series_datetime, or study_datetime must be provided.")
+        logger.warning(" "*(indent+0) + "At least one of acquisition_datetime, series_datetime, or study_datetime must be provided.")
+        return None
     
     # 2. Safely retrieve required tags with logical fallbacks
     acq_date = acquisition_datetime.strftime("%Y%m%d") if acquisition_datetime else series_datetime.strftime("%Y%m%d") if series_datetime else study_datetime.strftime("%Y%m%d")
@@ -3297,7 +3300,8 @@ def get_contrast_bolus_datetime(
     contrast_time = contrast_bolus_time.strftime("%H%M%S")
     
     if not all([acq_date, acq_time, contrast_time]):
-        raise ValueError("Required date/time values are missing.")
+        logger.warning(" "*(indent+0) + "Required date/time values are missing.")
+        return None
     
     # 3. Strip fractional seconds/microseconds to ensure uniform string parsing
     acq_time_clean = acq_time.split('.')[0]

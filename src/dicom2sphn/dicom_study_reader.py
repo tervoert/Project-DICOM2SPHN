@@ -632,6 +632,8 @@ def get_patient_age_from_dicom(dataset: Dataset, context: Context, indent: int=0
         patient_age_ucum_unit = "a"
     elif patient_age_str[3] == "M":
         patient_age_ucum_unit = "mo"
+    elif patient_age_str[3] == "W":
+        patient_age_ucum_unit = "wk"
     elif patient_age_str[3] == "D":
         patient_age_ucum_unit = "d"
     else:

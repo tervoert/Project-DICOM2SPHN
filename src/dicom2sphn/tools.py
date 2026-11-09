@@ -62,8 +62,8 @@ def combine_dicom_date_and_time(dicom_date: str, dicom_time: str, logger: loggin
     assert isinstance(dicom_date, str)
     assert isinstance(dicom_time, str)
 
-    if not dicom_date or not dicom_time:
-        logger.debug(" "*(indent+0) + "DICOM date or time string is empty.")
+    if not dicom_date:
+        logger.debug(" "*(indent+0) + "DICOM date string is empty.")
         return None
 
     dicom_date_modified = complete_dicom_date(dicom_date, logger, indent=indent)

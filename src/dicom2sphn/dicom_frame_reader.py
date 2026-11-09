@@ -1069,7 +1069,15 @@ def get_spacing_between_slices_from_dicom(dataset: Dataset, context: Context, in
         return None
 
     if spacing_between_slices < 0:
-        logger.debug(" "*(indent+0) + f"DICOM SpacingBetweenSlices tag value: '{spacing_between_slices}' may not be a valid value")
+        # A negative value is allowed in some IODs (e.g. the NM Reconstruction Module, PS3.3 C.8.4.15),
+        # where the sign gives the stacking direction relative to the first slice. SPHN stores the spacing
+        # as a distance, so only the magnitude is kept.
+        logger.debug(" "*(indent+0) + f"DICOM SpacingBetweenSlices tag value '{spacing_between_slices}' is negative (stacking direction); using its absolute value")
+        spacing_between_slices = abs(spacing_between_slices)
+
+    if spacing_between_slices == 0:
+        logger.warning(" "*(indent+0) + "DICOM SpacingBetweenSlices tag value is 0 and therefore ignored")
+        return None
 
     return spacing_between_slices
 

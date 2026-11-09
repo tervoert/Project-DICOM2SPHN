@@ -28,8 +28,14 @@ from .tools import is_valid_string
 #
 # Edwin 2026-07-14
 #
-def main(patient_id: str, output_file_path_specification: str, config_file: str) -> None:
-    """Run the main program."""
+def main(patient_id: str, output_file_path_specification: str, config_file: str) -> int:
+    """Run the main program.
+
+    Returns the process exit code:
+        0 = success, JSON exported
+        1 = error (invalid input parameters or configuration)
+        2 = no error, but nothing exported (no subject pseudo identifier and/or no imaging procedures)
+    """
 
     # -----------------------------------------------------------------------------------------------------------------
     # Initializing 
@@ -53,23 +59,23 @@ def main(patient_id: str, output_file_path_specification: str, config_file: str)
     # Check if patient ID is a valid string
     if not is_valid_string(patient_id):
         logger.error(" "*(indent+4) + f"Patient ID '{patient_id}' is not a valid string.")
-        return  
+        return 1 # Return 1 to indicate an error
 
     # Check if "{patient_id}" is in the output_file_path_specification
     if "{patient_id}" not in Path(output_file_path_specification).name:
         logger.error(" "*(indent+4) +"The JSON output filename must contain the '{patient_id}' indicator for the DICOM Patient ID.")
-        return
+        return 1 # Return 1 to indicate an error
 
     # Check if "{file_id}" is in the output_file_path_specification
     if "{file_id}" not in Path(output_file_path_specification).name:
         logger.error(" "*(indent+4) +"The JSON output filename must contain the '{file_id}' indicator for the file ID.")
-        return
+        return 1 # Return 1 to indicate an error
 
     # Check if the configuration file exists
     config_file_path = Path(config_file)
     if not config_file_path.is_file():
         logger.error(" "*(indent+4) + f"Configuration file '{config_file_path}' does not exist or is not a file.")
-        return
+        return 1 # Return 1 to indicate an error
 
     # -----------------------------------------------------------------------------------------------------------------
     # Import settings from the configuration file
@@ -88,12 +94,12 @@ def main(patient_id: str, output_file_path_specification: str, config_file: str)
         data_store = context.data_store
     except ImportConfigSettingsError as e:
         logger.error(" "*(indent+4) + f"Error importing configuration settings: '{e}'.")
-        return
+        return 1 # Return 1 to indicate an error
 
     # Check if a DICOMweb API user is defined
     if context.dicomweb_api_user is None:
         logger.error(" "*(indent+4) + "No DICOMweb API user settings found.")
-        return
+        return 1 # Return 1 to indicate an error
 
     # -----------------------------------------------------------------------------------------------------------------
     # Create the DICOMweb API client
@@ -132,6 +138,8 @@ def main(patient_id: str, output_file_path_specification: str, config_file: str)
                 f" ({timedelta(seconds=(stop_time_t2 - start_time_t2))!s})") 
     logger.info("")
 
+    exit_code = 0
+
     # Generate and write JSON only if there is a subject pseudo identifier and at least one imaging procedure
     if data_store.sphn_subject_pseudo_identifier is not None and len(data_store.sphn_imaging_procedure_list) > 0:
 
@@ -154,8 +162,9 @@ def main(patient_id: str, output_file_path_specification: str, config_file: str)
         logger.info("")
 
     else:
-        logger.info(" "*(indent+2) + "Skipping JSON generation and writing because there is no subject pseudo identifier and/or no imaging procedures.")
+        logger.warning(" "*(indent+2) + "Skipping JSON generation and writing because there is no subject pseudo identifier and/or no imaging procedures.")
         logger.info("")
+        exit_code = 2 # Return 2 to indicate that nothing was exported
 
     logger.info(" "*(indent+2) + f"Number of DICOM Studies processed:       '{data_store.total_number_of_dicom_studies_processed}'")
     logger.info(" "*(indent+2) + f"Number of DICOM Series processed:        '{data_store.total_number_of_dicom_series_processed}'")
@@ -235,7 +244,7 @@ def main(patient_id: str, output_file_path_specification: str, config_file: str)
 
     logger.info(" "*(indent+0) + "Done...")
 
-    return
+    return exit_code # 0 = JSON exported successfully, 2 = nothing to export
 
 #
 # Edwin 2026-07-14

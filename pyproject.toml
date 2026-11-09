@@ -40,10 +40,14 @@ dependencies = [
   "pydicom",
   "pynetdicom",
   "dicomweb-client",
-  "pytest",
   "numpy",
   "rdflib",
   "pydantic"
+]
+
+[dependency-groups]
+dev = [
+  "pytest"
 ]
 
 [project.scripts]

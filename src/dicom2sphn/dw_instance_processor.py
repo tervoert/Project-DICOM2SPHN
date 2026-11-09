@@ -184,9 +184,9 @@ class DWInstanceProcessor:
         # Check if there is any metadata defined (There should always be metadata)
         if len(instance_metadata_json) == 0:
             logger.warning(" "*(indent+2) + "No DICOM header (metadata) defined" +
-                           f" in sop instance number : '{data_store.sop_instance_number}'" +
-                           f" in series number : '{data_store.series_instance_number}'" +
-                           f" in study number : '{data_store.study_instance_number}'"
+                           f" in sop instance number : '{data_store.current_instance_number}'" +
+                           f" in series number : '{data_store.current_series_number}'" +
+                           f" in study number : '{data_store.current_study_number}'"
             )
             data_store.increment_dicom_instances_skipped_counter()
             return

@@ -165,6 +165,8 @@ class SPHNContrastAgentAdministrationEvent(SPHNDrugAdministrationEvent):
         if not isinstance(other, type(self)):
             return NotImplemented
         return (
+                    self.has_start_datetime, 
+                    self.has_end_datetime, 
                     self.has_drug, 
                     self.has_administration_route_code, 
                     self.has_reason_to_stop_code, 
@@ -175,6 +177,8 @@ class SPHNContrastAgentAdministrationEvent(SPHNDrugAdministrationEvent):
                     sorted(self.has_flow_profile_interval_list) if self.has_flow_profile_interval_list is not None else None, 
                     sorted(self.has_source_system_list) if self.has_source_system_list is not None else None
                 ) == (
+                    other.has_start_datetime, 
+                    other.has_end_datetime, 
                     other.has_drug, 
                     other.has_administration_route_code, 
                     other.has_reason_to_stop_code, 

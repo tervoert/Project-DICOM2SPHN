@@ -153,9 +153,9 @@ class DWSeriesProcessor:
         # Check if there is any instance defined in the current series
         if number_of_instances_in_current_series == 0:
             logger.warning(" "*(indent+2) + "No DICOM Instances found" +
-                           f" in series number : '{data_store.series_instance_number}'" +
+                           f" in series number : '{data_store.current_series_number}'" +
                            f" with DICOM SeriesInstanceUID: '{data_store.series_instance_uid}'" +
-                           f" in study number : '{data_store.study_instance_number}'" +
+                           f" in study number : '{data_store.current_study_number}'" +
                            f" with DICOM StudyInstanceUID: '{data_store.study_instance_uid}'"
             )
             data_store.increment_dicom_series_skipped_counter()

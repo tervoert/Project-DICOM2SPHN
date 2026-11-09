@@ -129,7 +129,7 @@ class SPHNCode(SPHNConcept):
                 json_dict_content_inline[f"{SPHN.hasName.n3(self.sphn_schema.namespace_manager())}"] = self.has_name
 
         if source_concept_id is not None:
-            json_dict_content_inline["SourceConceptID"] = source_concept_id
+            json_dict_content_inline["sourceConceptID"] = source_concept_id
 
         return json_dict_content_inline
 

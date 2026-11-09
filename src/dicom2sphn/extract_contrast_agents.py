@@ -118,7 +118,9 @@ def extract_contrast_agents(text: str, context: Context, indent: int=0) -> list:
     conc_sorted = sorted(concentrations_list, key=len, reverse=True)
 
     # Create a regex pattern for the concentrations
-    conc_pattern = "|".join(re.escape(conc) for conc in conc_sorted)
+    # The lookarounds ensure a concentration is never matched as part of a longer number,
+    # e.g. "300" must not match inside "1300" or "3000".
+    conc_pattern = r"(?<!\d)(?:" + "|".join(re.escape(conc) for conc in conc_sorted) + r")(?!\d)"
 
     # 
     # 3. Dictionary for standardizing units
@@ -148,7 +150,7 @@ def extract_contrast_agents(text: str, context: Context, indent: int=0) -> list:
             rf"|{dose_pattern}[-_\s]*{dose_pattern}"                        # dose followed by dose
             rf"|({conc_pattern})[-_\s]+{dose_pattern}"                      # dose followed by concentration
             rf"|{dose_pattern}"                                             # dose only
-            rf"|({conc_pattern})(?:[-_\s]*)\b"                              # concentration only
+            rf"|({conc_pattern})(?:[-_\s]*)\b"                              # concentration only (?![-\s]?(?:{unit_pattern}))
             , re.IGNORECASE
         )
 
@@ -269,141 +271,151 @@ def extract_contrast_agents(text: str, context: Context, indent: int=0) -> list:
                 groups_after = cd_match.groups()
                 logger.debug(" "*(indent+4) + f"  Groups (after): {groups_after}")
 
+            #
             # 5.2.4 Try to interpret the concentration and dose information and check for ambiguities
+            #
+
+            # 5.2.4.1 Check the initial situation
 
             # For the first contrast agent, the text before it should only contain dose information if any.
-            # This means that only groups [12-13] are allowed
+            # This means that only groups_before [12-13] are allowed
             if i==0 and (any(groups_before[0:11]) or groups_before[14]):
                 logger.debug(" "*(indent+4) + "Ambiguous concentration/dose information found. Skipping the concentration and dose extractions.")
                 too_complex = True
                 continue
 
-            # 5.2.4.1 Check situations where there was dose information before the previous contrast agent
+            # 5.2.4.2 Check situations where there was dose information before the previous contrast agent
             # and before the current contrast agent.
 
-            # If there was a Contrast Agent listed before the current one, and it had it's dose information listed before it, 
-            # we can not have two times dose information before the current agent.
-            if dose_location_prev == DoseLocation.BEFORE and any(groups_before[0:4]):
-                logger.debug(" "*(indent+4) + "Ambiguous concentration/dose information found. Skipping the concentration and dose extractions.")
-                too_complex = True
-                continue
-            
-            # If there was a Contrast Agent listed before the current one, and it had it's dose information listed before it, 
-            # we can not have two times dose information before the current agent.
-            if dose_location_prev == DoseLocation.BEFORE and any(groups_before[5:8]):
-                logger.debug(" "*(indent+4) + "Ambiguous concentration/dose information found. Skipping the concentration and dose extractions.")
-                too_complex = True
-                continue
+            if dose_location_prev == DoseLocation.BEFORE:
 
-            # If there was a Contrast Agent listed before the current one, and it had it's dose information listed before it, 
-            # we can have dose information listed before the current agent as well.
-            # The concentration is then related to the previous Contract Agent.
-            if dose_location_prev == DoseLocation.BEFORE and any(groups_before[9:11]):
-                raw_dose_value = groups_before[10]
-                raw_dose_unit = groups_before[11]
-                dose_location = DoseLocation.BEFORE
+                # If there was a Contrast Agent listed before the current one, and it had it's dose information listed before it, 
+                # we can not have two times dose information before the current agent.
+                if any(groups_before[0:4]):
+                    logger.debug(" "*(indent+4) + "Ambiguous concentration/dose information found. Skipping the concentration and dose extractions.")
+                    too_complex = True
+                    continue
+                
+                # If there was a Contrast Agent listed before the current one, and it had it's dose information listed before it, 
+                # we can not have two times dose information before the current agent.
+                if any(groups_before[5:8]):
+                    logger.debug(" "*(indent+4) + "Ambiguous concentration/dose information found. Skipping the concentration and dose extractions.")
+                    too_complex = True
+                    continue
 
-            # If there was a Contrast Agent listed before the current one, and it had it's dose information listed before it, 
-            # we can have dose information listed before the current agent as well.
-            if dose_location_prev == DoseLocation.BEFORE and any(groups_before[12:13]):
-                raw_dose_value = groups_before[12]
-                raw_dose_unit = groups_before[13]
-                dose_location = DoseLocation.BEFORE
+                # If there was a Contrast Agent listed before the current one, and it had it's dose information listed before it, 
+                # we can have dose information listed before the current agent as well.
+                # The concentration is then related to the previous Contract Agent.
+                if any(groups_before[9:11]):
+                    raw_dose_value = groups_before[10]
+                    raw_dose_unit = groups_before[11]
+                    dose_location = DoseLocation.BEFORE
 
-            # If there was a Contrast Agent listed before the current one, and it had it's dose information listed before it, 
-            # The concentration is then related to the previous Contract Agent.
-            if dose_location_prev == DoseLocation.BEFORE and groups_before[14]:
-                pass
+                # If there was a Contrast Agent listed before the current one, and it had it's dose information listed before it, 
+                # we can have dose information listed before the current agent as well.
+                if any(groups_before[12:13]):
+                    raw_dose_value = groups_before[12]
+                    raw_dose_unit = groups_before[13]
+                    dose_location = DoseLocation.BEFORE
 
-            # If there was a Contrast Agent listed before the current one, and it had it's dose information listed after it,
-            # we can have dose information listed before the current agent as well.
-            # The concentration and the first dose is then related to the previous Contract Agent.
-            if dose_location_prev == DoseLocation.AFTER and any(groups_before[0:4]):
-                raw_dose_value = groups_before[3]
-                raw_dose_unit = groups_before[4]
-                dose_location = DoseLocation.BEFORE
+                # If there was a Contrast Agent listed before the current one, and it had it's dose information listed before it, 
+                # The concentration is then related to the previous Contract Agent.
+                if groups_before[14]:
+                    pass
 
-            # 5.2.4.2 Check situations where there was dose information after the previous contrast agent
+            # 5.2.4.3 Check situations where there was dose information after the previous contrast agent
             # and before the current contrast agent.
 
-            # If there was a Contrast Agent listed before the current one, and it had it's dose information listed after it,
-            # we can have dose information listed before the current agent as well.
-            # The first dose is then related to the previous Contract Agent.
-            if dose_location_prev == DoseLocation.AFTER and any(groups_before[5:8]):
-                raw_dose_value = groups_before[7]
-                raw_dose_unit = groups_before[8]
-                dose_location = DoseLocation.BEFORE
+            if dose_location_prev == DoseLocation.AFTER:
 
-            # If there was a Contrast Agent listed before the current one, and it had it's dose information listed after it,
-            # we can have dose information listed before the current agent as well, but it belongs to the previous Contrast Agent.
-            # The concentration is then also related to the previous Contract Agent.
-            if dose_location_prev == DoseLocation.AFTER and any(groups_before[9:11]):
-                pass
+                # If there was a Contrast Agent listed before the current one, and it had it's dose information listed after it,
+                # we can have dose information listed before the current agent as well.
+                # The concentration and the first dose is then related to the previous Contract Agent.
+                if any(groups_before[0:4]):
+                    raw_dose_value = groups_before[3]
+                    raw_dose_unit = groups_before[4]
+                    dose_location = DoseLocation.BEFORE
 
-            # If there was a Contrast Agent listed before the current one, and it had it's dose information listed after it,
-            # we can have dose information listed before the current agent as well, but it belongs to the previous Contrast Agent.
-            if dose_location_prev == DoseLocation.AFTER and any(groups_before[12:13]):
-                pass
+                # If there was a Contrast Agent listed before the current one, and it had it's dose information listed after it,
+                # we can have dose information listed before the current agent as well.
+                # The first dose is then related to the previous Contract Agent.
+                if any(groups_before[5:8]):
+                    raw_dose_value = groups_before[7]
+                    raw_dose_unit = groups_before[8]
+                    dose_location = DoseLocation.BEFORE
 
-            # If there was a Contrast Agent listed before the current one, and it had it's dose information listed after it,
-            # it cannot be that now there is no dose information listed before the current Contrast Agent, 
-            # as it would belong the previous Contrast Agent.
-            if dose_location_prev == DoseLocation.AFTER and groups_before[14]:
-                raise AssertionError("This should not happen: dose after previous and group 14 is present.")
+                # If there was a Contrast Agent listed before the current one, and it had it's dose information listed after it,
+                # we can have dose information listed before the current agent as well, but it belongs to the previous Contrast Agent.
+                # The concentration is then also related to the previous Contract Agent.
+                if any(groups_before[9:11]):
+                    pass
 
-            # 5.2.4.3 Check situations where there was no dose information before or after the previous contrast agent
+                # If there was a Contrast Agent listed before the current one, and it had it's dose information listed after it,
+                # we can have dose information listed before the current agent as well, but it belongs to the previous Contrast Agent.
+                if any(groups_before[12:13]):
+                    pass
+
+                # If there was a Contrast Agent listed before the current one, and it had it's dose information listed after it,
+                # it cannot be that now there is no dose information listed before the current Contrast Agent, 
+                # as it would belong the previous Contrast Agent.
+                if groups_before[14]:
+                    raise AssertionError("This should not happen: dose after previous and group 14 is present.")
+
+            # 5.2.4.4 Check situations where there was no dose information before or after the previous contrast agent
             # but before the current contrast agent.
 
-            # If there was no dose information for the previous Contrast Agent, 
-            # we should not have two times dose information before the current agent,
-            # as the first one would be assumed to belong to the previous Contrast Agent.
-            if dose_location_prev == DoseLocation.NODOSE and any(groups_before[0:4]):
-                raise AssertionError("This should not happen: no dose previous and group 0-4 is present.")
+            if dose_location_prev == DoseLocation.NODOSE:
 
-            # If there was no dose information for the previous Contrast Agent, 
-            # we should not have two times dose information before the current agent,
-            # as the first one would be assumed to belong to the previous Contrast Agent.
-            if dose_location_prev == DoseLocation.NODOSE and any(groups_before[5:8]):
-                raise AssertionError("This should not happen: no dose previous and group 5-8 is present.")
-            
-            # If there was no dose information for the previous Contrast Agent, 
-            # we should not have dose information before the current agent,
-            # as it would be assumed to belong to the previous Contrast Agent.
-            # The concentration is then related to the previous Contract Agent.
-            if dose_location_prev == DoseLocation.NODOSE and any(groups_before[9:11]):
-                raise AssertionError("This should not happen: no dose previous and group 9-11 is present.")
+                # If there was no dose information for the previous Contrast Agent, 
+                # we should not have two times dose information before the current agent,
+                # as the first one would be assumed to belong to the previous Contrast Agent.
+                if any(groups_before[0:4]):
+                    raise AssertionError("This should not happen: no dose previous and group 0-4 is present.")
 
-            # If there was no dose information for the previous Contrast Agent, 
-            # we should not have dose information before the current agent,
-            # as it would be assumed to belong to the previous Contrast Agent.
-            # But only in case it is not the very first contrast agent in the text.
-            if i>0 and dose_location_prev == DoseLocation.NODOSE and any(groups_before[12:13]):
-                raise AssertionError("This should not happen: no dose previous and group 12-13 is present.")
+                # If there was no dose information for the previous Contrast Agent, 
+                # we should not have two times dose information before the current agent,
+                # as the first one would be assumed to belong to the previous Contrast Agent.
+                if any(groups_before[5:8]):
+                    raise AssertionError("This should not happen: no dose previous and group 5-8 is present.")
+                
+                # If there was no dose information for the previous Contrast Agent, 
+                # we should not have dose information before the current agent,
+                # as it would be assumed to belong to the previous Contrast Agent.
+                # The concentration is then related to the previous Contract Agent.
+                if any(groups_before[9:11]):
+                    raise AssertionError("This should not happen: no dose previous and group 9-11 is present.")
 
-            # If there was no dose information for the previous Contrast Agent, 
-            # we should not have dose information before the current agent,
-            # as it would be assumed to belong to the previous Contrast Agent.
-            # Unless it is the very first contrast agent in the text.
-            if i==0 and dose_location_prev == DoseLocation.NODOSE and any(groups_before[12:13]):
-                raw_dose_value = groups_before[12]
-                raw_dose_unit = groups_before[13]
-                dose_location = DoseLocation.BEFORE
+                # If there was no dose information for the previous Contrast Agent, 
+                # we should not have dose information before the current agent,
+                # as it would be assumed to belong to the previous Contrast Agent.
+                # But only in case it is not the very first contrast agent in the text.
+                if i>0 and any(groups_before[12:13]):
+                    raise AssertionError("This should not happen: no dose previous and group 12-13 is present.")
 
-            # If there was no dose information for the previous Contrast Agent,
-            # we can have a concentration listed before the current agent, but it belongs to the previous Contrast Agent.
-            # But only in case it is not the very first contrast agent
-            if i>0 and dose_location_prev == DoseLocation.NODOSE and groups_before[14]:
-                pass
+                # If there was no dose information for the previous Contrast Agent, 
+                # we should not have dose information before the current agent,
+                # as it would be assumed to belong to the previous Contrast Agent.
+                # Unless it is the very first contrast agent in the text.
+                if i==0 and any(groups_before[12:13]):
+                    raw_dose_value = groups_before[12]
+                    raw_dose_unit = groups_before[13]
+                    dose_location = DoseLocation.BEFORE
 
-            # If there was no dose information for the previous Contrast Agent,
-            # we can have a concentration listed before the current agent, but it belongs to the previous Contrast Agent.
-            # Unless it is the very first contrast agent in the text
-            if i==0 and dose_location_prev == DoseLocation.NODOSE and groups_before[14]:
-                logger.debug(" "*(indent+4) + "Ambiguous concentration/dose information found. Skipping the concentration and dose extractions.")
-                too_complex = True
-                continue
+                # If there was no dose information for the previous Contrast Agent,
+                # we can have a concentration listed before the current agent, but it belongs to the previous Contrast Agent.
+                # But only in case it is not the very first contrast agent
+                if i>0 and groups_before[14]:
+                    pass
 
-            # 5.2.4.4 Check situations where there was dose information obtained that was listed before the current contrast agent
+                # If there was no dose information for the previous Contrast Agent,
+                # we can have a concentration listed before the current agent, but it belongs to the previous Contrast Agent.
+                # Unless it is the very first contrast agent in the text
+                if i==0 and groups_before[14]:
+                    logger.debug(" "*(indent+4) + "Ambiguous concentration/dose information found. Skipping the concentration and dose extractions.")
+                    too_complex = True
+                    continue
+
+            # 5.2.4.5 Check situations where there was dose information obtained that was listed before the current contrast agent
             # and there is concentration and/or dose information after the current contrast agent.
 
             if dose_location == DoseLocation.BEFORE:
@@ -439,7 +451,7 @@ def extract_contrast_agents(text: str, context: Context, indent: int=0) -> list:
                 if groups_after[14]:
                     raw_conc_value = groups_after[14]
 
-            # 5.2.4.5 Check situations where there was no dose information obtained for the current contrast agent
+            # 5.2.4.6 Check situations where there was no dose information obtained before the current contrast agent
             # and there is concentration and/or dose information after the current contrast agent.
 
             if dose_location == DoseLocation.NODOSE:
@@ -479,10 +491,20 @@ def extract_contrast_agents(text: str, context: Context, indent: int=0) -> list:
                 if groups_after[14]:
                     raw_conc_value = groups_after[14]
 
+            # 5.2.4.7 If by now, there was dose information obtained after the previous contrast agent, 
+            # and no dose information was obtained before or after the current contrast agent,
+            # the dose information is ambiguous, as it is unclear whether it belongs to the previous or the current contrast agent
+            if dose_location_prev == DoseLocation.AFTER and dose_location == DoseLocation.NODOSE:
+                logger.debug(" "*(indent+4) + "Ambiguous dose information found. Skipping the concentration and dose extractions.")
+                too_complex = True
+                continue
+
             # 5.2.5 Process the raw findings, if any
 
             # Update the previous dose location for the next iteration
             dose_location_prev = dose_location
+            # Reset the current dose location for the next iteration
+            dose_location = DoseLocation.NODOSE
 
             # Standardize the dose unit
             dose_unit = None
@@ -538,10 +560,12 @@ def extract_contrast_agents(text: str, context: Context, indent: int=0) -> list:
 def test_extraction() -> None:
 
     test_cases = [
+        "Omnipaque 1300 provided.",                                         # Should not be recognized as dose 300
+        "Contrast agent 300 50ml.",                                         # The "contrast agent", concentration and volume should be recognized
         "15 ml DotareM-300 20 mg VisiPaqUE-320.",                           # The dose and concentration should be recognized for both contrast agents and their names should be standardized
         "302 15 ml Dotarem-300 20 mg Visipaque-320.",                       # 302 is an uncommon concentration and therefore ignored
         "15 ml Dotarem-300 20 mg Visipaque-320 3.",                         # 3 is an uncommon concentration and therefore ignored
-        "15 cc of Dotarem 15.",                                             # cc should be converted to 'ml'
+        "15 cc of Dotarem 15.",                                             # cc should be converted to 'ml' and 15 is an uncommon concentration and therefore ignored
         "omnipaque 300 mg provided.",                                       # mg should be recognized as the concentration unit
         "Visipaque 10.4ml injected.",                                       # decimal notation should be recognized
         "Visipaque 10,5ml injected.",                                       # decimal notation with comma should be recognized
@@ -559,7 +583,8 @@ def test_extraction() -> None:
         "350 15 ml Dotarem-300 20 mg Visipaque-320.",                       # 350 is a common concentration and therefore not ignored, it gives a too complex case
         "30ml 15 ml Dotarem-300 20 mg Visipaque-320.",                      # Multiple doses (30 ml and 15 ml) before the contrast agent makes it too complex
         "15 ml Dotarem-300 16 ml 20 mg Visipaque-320.",                     # Multiple doses (15 ml and 16 ml and 20 mg) before/after the contrast agent make it too complex
-        "15 ml Dotarem-300 20 mg Visipaque-320 350."                        # Multiple concentrations make it too complex
+        "15 ml Dotarem-300 20 mg Visipaque-320 350.",                       # Multiple concentrations make it too complex
+        "Omnipaque 300 50ml Visipaque 320 Ultravist 370",                   # Unclear whether the dose belongs to which contrast agent, too complex
     ]
 
     # Set the initial indentation level for logging
