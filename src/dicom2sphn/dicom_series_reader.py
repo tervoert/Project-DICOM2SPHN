@@ -4,13 +4,11 @@ dicom_series_reader.py:
     It contains functions for reading DICOM Series metadata for the SPHN ImagingSeries concept.
 """
 
-from datetime import datetime
-
 from pydicom import Dataset
 
 from .context import Context
 from .sphn_concepts.sphn_imaging_series import SPHNImagingSeries
-from .tools import combine_dicom_date_and_time, is_valid_string
+from .tools import combine_dicom_date_and_time, get_dicom_timezone, is_valid_string
 
 
 #
@@ -19,7 +17,10 @@ from .tools import combine_dicom_date_and_time, is_valid_string
 def get_series_metadata_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> None:
     """
     Get the metadata related to SPHN ImagingSeries from the dataset
-        - dataset is a DICOM dataset (DICOM header) that contains DICOM DataElements (tags)
+    Parameters:
+        - dataset: The DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
+        - context: The Context object that holds the data_store, logger and other relevant information
+        - indent: The indentation level for logging (default is 0)
     """
 
     # Checks
@@ -32,7 +33,9 @@ def get_series_metadata_from_dicom(dataset: Dataset, context: Context, indent: i
 
     logger = context.logger
     data_store = context.data_store
-    sphn_schema = data_store.sphn_schema
+
+    # The SPHN ImagingSeries must be available in the data store
+    assert isinstance(data_store.sphn_imaging_series, SPHNImagingSeries)            
 
     # -------------------------------------------------------------------------------------------------------------
 
@@ -60,19 +63,23 @@ def get_series_metadata_from_dicom(dataset: Dataset, context: Context, indent: i
         else:
             logger.debug(" "*(indent+0) + "SeriesTime not found")
 
-        # Combine StudyDate and StudyTime
+        # DICOM dates and times are local times: get the timezone (TimezoneOffsetFromUTC or the configured local timezone)
+        assert context.local_timezone is not None
+        dicom_timezone = get_dicom_timezone(dataset, context.local_timezone, logger, indent=indent+2)
+
+        # Combine SeriesDate and SeriesTime
         series_start_datetime_obj = None
         if series_date and series_time:
 
             # Combine the SeriesDate and SeriesTime strings into a single complete DICOM datetime (DT) object
             # - series datetime is completed by filling in missing components for Month, Day, Hour, Minute, Second
-            series_start_datetime_obj = combine_dicom_date_and_time(series_date, series_time, logger, indent=indent+2)
-        
+            series_start_datetime_obj = combine_dicom_date_and_time(series_date, series_time, dicom_timezone, logger, indent=indent+2)
+
         elif series_date and not series_time:
 
             # Combine the SeriesDate and SeriesTime strings into a single complete DICOM datetime (DT) object
             # - series datetime is completed by filling in missing components for Month, Day, Hour, Minute, Second
-            series_start_datetime_obj = combine_dicom_date_and_time(series_date, "", logger, indent=indent+2)
+            series_start_datetime_obj = combine_dicom_date_and_time(series_date, "", dicom_timezone, logger, indent=indent+2)
         else:
             logger.debug(" "*(indent+0) + "Could not combine SeriesDate and SeriesTime: Series Date not defined")
         
@@ -94,17 +101,19 @@ def get_series_metadata_from_dicom(dataset: Dataset, context: Context, indent: i
     # SeriesDescription
     #
 
-    series_description = get_series_description_from_dicom(dataset, context, indent=indent+2)
+    if data_store.sphn_imaging_series.has_description is None:
 
-    if series_description is not None:
+        series_description = get_series_description_from_dicom(dataset, context, indent=indent+2)
 
-        assert is_valid_string(series_description)
+        if series_description is not None:
 
-        # Set the ImagingSeries property
-        data_store.sphn_imaging_series.has_description = series_description
-        logger.debug(" "*(indent+0) + f"Added SPHN ImagingSeries has_description: '{series_description}'")
-    else:
-        logger.debug(" "*(indent+0) + "SPHN ImagingSeries has_description not defined")
+            assert is_valid_string(series_description)
+
+            # Set the ImagingSeries property
+            data_store.sphn_imaging_series.has_description = series_description
+            logger.debug(" "*(indent+0) + f"Added SPHN ImagingSeries has_description: '{series_description}'")
+        else:
+            logger.debug(" "*(indent+0) + "SPHN ImagingSeries has_description not defined")
 
     # -------------------------------------------------------------------------------------------------------------
 
@@ -112,17 +121,19 @@ def get_series_metadata_from_dicom(dataset: Dataset, context: Context, indent: i
     # ProtocolName
     #
 
-    protocol_name = get_protocol_name_from_dicom(dataset, context, indent=indent+2)
+    if data_store.sphn_imaging_series.has_protocol_name is None:
 
-    if protocol_name is not None:
+        protocol_name = get_protocol_name_from_dicom(dataset, context, indent=indent+2)
 
-        assert is_valid_string(protocol_name)
+        if protocol_name is not None:
 
-        # Set the ImagingSeries property
-        data_store.sphn_imaging_series.has_protocol_name = protocol_name
-        logger.debug(" "*(indent+0) + f"Added SPHN ImagingSeries has_protocol_name: '{protocol_name}'")
-    else:
-        logger.debug(" "*(indent+0) + "SPHN ImagingSeries has_protocol_name not defined")
+            assert is_valid_string(protocol_name)
+
+            # Set the ImagingSeries property
+            data_store.sphn_imaging_series.has_protocol_name = protocol_name
+            logger.debug(" "*(indent+0) + f"Added SPHN ImagingSeries has_protocol_name: '{protocol_name}'")
+        else:
+            logger.debug(" "*(indent+0) + "SPHN ImagingSeries has_protocol_name not defined")
 
     # -------------------------------------------------------------------------------------------------------------
 
@@ -155,18 +166,22 @@ def get_series_metadata_from_dicom(dataset: Dataset, context: Context, indent: i
 # -----------------------------------------------------------------------------------------------------------------
 
 #
-# Edwin 2026-08-09
+# Edwin 2026-11-11
 #
 def get_series_date_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> str|None:
     """
     Returns the value corresponding to the value of the DICOM SeriesDate tag
-        dataset is a DICOM dataset (DICOM header) that contains DICOM DataElements (tags)
+    Parameters:
+        - dataset: The DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
+        - context: The Context object that holds the data_store, logger and other relevant information
+        - indent: The indentation level for logging (default is 0)
     """
 
-    # Keyword:              SeriesDate
-    # Value Representation: Date (DA)
+    # Tag:	                (0008,0021)
     # Type:	                Optional (3)
+    # Keyword:              SeriesDate
     # Value Multiplicity:   1
+    # Value Representation: Date (DA)
 
     # Check
     assert isinstance(dataset, Dataset)
@@ -175,52 +190,44 @@ def get_series_date_from_dicom(dataset: Dataset, context: Context, indent: int=0
 
     logger = context.logger
 
-    if "SeriesDate" not in dataset:
+    # Get the value of the DICOM SeriesDate tag
+    value = dataset.get("SeriesDate", None)
+
+    if value is None:
         logger.debug(" "*(indent+0) + "DICOM SeriesDate tag was not found")  
         return None
 
-    # Get the DataElement
-    data_element = dataset["SeriesDate"]
-
-    # Get the value
-    value = data_element.value
-    
-    # Get the Value Multiplicity
-    value_multiplicity = data_element.VM
-    
-    # Check if it is empty
-    if value_multiplicity == 0 or value is None:
-        logger.debug(" "*(indent+0) + "DICOM SeriesDate tag value was not provided")
+    # Convert value to str and trim whitespace
+    try:
+        value_str = str(value).strip()
+    except (ValueError, TypeError):
+        logger.warning(" "*(indent+0) + "DICOM SeriesDate tag value could not be converted to str")
         return None
-    
-    # It should be a single-valued tag, a string
-    if value_multiplicity != 1 or not isinstance(value, str):
-        logger.warning(" "*(indent+0) + "DICOM SeriesDate tag has an unknown format")
-        return None
-    
-    # Remove whitespace
-    series_date_str = value.strip()
 
-    # Check if value is not empty
-    if len(series_date_str) == 0:
+    if not value_str:
         logger.debug(" "*(indent+0) + "DICOM SeriesDate tag contains only whitespace")
         return None
 
-    return series_date_str
+    return value_str
+
 
 #
-# Edwin 2026-08-09
+# Edwin 2026-11-11
 #
 def get_series_time_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> str|None:
     """
     Returns the value corresponding to the value of the DICOM SeriesTime tag
-        dataset is a DICOM dataset (DICOM header) that contains DICOM DataElements (tags)
+    Parameters:
+        - dataset: The DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
+        - context: The Context object that holds the data_store, logger and other relevant information
+        - indent: The indentation level for logging (default is 0)
     """
 
-    # Keyword:              SeriesTime
-    # Value Representation: Time (TM)
+    # Tag:	                (0008,0031)
     # Type:	                Optional (3)
+    # Keyword:              SeriesTime
     # Value Multiplicity:   1
+    # Value Representation: Time (TM)
 
     # Check
     assert isinstance(dataset, Dataset)
@@ -229,52 +236,43 @@ def get_series_time_from_dicom(dataset: Dataset, context: Context, indent: int=0
 
     logger = context.logger
 
-    if "SeriesTime" not in dataset:
+    # Get the value of the DICOM SeriesTime tag
+    value = dataset.get("SeriesTime", None)
+
+    if value is None:
         logger.debug(" "*(indent+0) + "DICOM SeriesTime tag was not found")  
         return None
 
-    # Get the DataElement
-    data_element = dataset["SeriesTime"]
-
-    # Get the value
-    value = data_element.value
-    
-    # Get the Value Multiplicity
-    value_multiplicity = data_element.VM
-    
-    # Check if it is empty
-    if value_multiplicity == 0 or value is None:
-        logger.debug(" "*(indent+0) + "DICOM SeriesTime tag value was not provided")
+    # Convert value to str and trim whitespace
+    try:
+        value_str = str(value).strip()
+    except (ValueError, TypeError):
+        logger.warning(" "*(indent+0) + "DICOM SeriesTime tag value could not be converted to str")
         return None
-            
-    # It should be a single-valued tag, a string
-    if value_multiplicity != 1 or not isinstance(value, str):
-        logger.warning(" "*(indent+0) + "DICOM SeriesTime tag has an unknown format")
-        return None
-    
-    # Remove whitespace
-    series_time_str = value.strip()
 
-    # Check if value is not empty
-    if len(series_time_str) == 0:
+    if not value_str:
         logger.debug(" "*(indent+0) + "DICOM SeriesTime tag contains only whitespace")
         return None
 
-    return series_time_str
+    return value_str
+
 
 #
-# Edwin 2025-05-28
+# Edwin 2026-11-11
 #
 def get_series_description_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> str|None:
     """
     Returns the value corresponding to the value of the DICOM SeriesDescription tag
-        dataset is a DICOM dataset (DICOM header) that contains DICOM DataElements (tags)
+        - dataset: The DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
+        - context: The Context object that holds the data_store, logger and other relevant information
+        - indent: The indentation level for logging (default is 0)
     """
 
-    # Keyword:              SeriesDescription
-    # Value Representation: Long String (LO)
+    # Tag:	                (0008,103E)
     # Type:	                Optional (3)
+    # Keyword:              SeriesDescription
     # Value Multiplicity:   1
+    # Value Representation: Long String (LO)
 
     # Check
     assert isinstance(dataset, Dataset)
@@ -283,89 +281,65 @@ def get_series_description_from_dicom(dataset: Dataset, context: Context, indent
 
     logger = context.logger
 
-    if "SeriesDescription" not in dataset:
+    # Get the value of the DICOM SeriesDescription tag
+    value = dataset.get("SeriesDescription", None)
+
+    if value is None:
         logger.debug(" "*(indent+0) + "DICOM SeriesDescription tag was not found")  
         return None
 
-    # Get the DataElement
-    data_element = dataset["SeriesDescription"]
-
-    # Get the value
-    value = data_element.value
-    
-    # Get the Value Multiplicity
-    value_multiplicity = data_element.VM
-    
-    # Check if it is empty
-    if value_multiplicity == 0 or value is None:
-        logger.debug(" "*(indent+0) + "DICOM SeriesDescription tag value was not provided")
-        return None
-    
-    # It should be a single-valued tag, a string
-    if value_multiplicity != 1 or not isinstance(value, str):
-        logger.warning(" "*(indent+0) + "DICOM SeriesDescription tag has an unknown format")
-        return None
+    assert isinstance(value, str)
 
     # Remove whitespace
-    series_description_str = value.strip()
+    value_str = value.strip()
 
-    # Check if value is not empty
-    if len(series_description_str) == 0:
+    if not value_str:
         logger.debug(" "*(indent+0) + "DICOM SeriesDescription tag contains only whitespace")
         return None
-    
-    return series_description_str
+
+    return value_str
+
 
 #
-# Edwin 2026-08-09
+# Edwin 2026-11-11
 #
 def get_protocol_name_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> str|None:
     """
     Returns the value corresponding to the value of the DICOM ProtocolName tag
-        dataset is a DICOM dataset (DICOM header) that contains DICOM DataElements (tags)
+    Parameters:
+        - dataset: The DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
+        - context: The Context object that holds the data_store, logger and other relevant information
+        - indent: The indentation level for logging (default is 0)
     """
 
-    # Keyword:              ProtocolName
-    # Value Representation: Long String (LO)
+    # Tag:	                (0018,1030)
     # Type:	                Optional (3)
+    # Keyword:              ProtocolName
     # Value Multiplicity:   1
-    # Check
+    # Value Representation: Long String (LO)
 
+    # Check
     assert isinstance(dataset, Dataset)
     assert isinstance(context, Context)
     assert isinstance(indent,int) and indent>=0
 
     logger = context.logger
 
-    if "ProtocolName" not in dataset:
+    # Get the value of the DICOM ProtocolName tag
+    value = dataset.get("ProtocolName", None)
+
+    if value is None:
         logger.debug(" "*(indent+0) + "DICOM ProtocolName tag was not found")  
         return None
 
-    # Get the DataElement
-    data_element = dataset["ProtocolName"]
+    assert isinstance(value, str)
 
-    # Get the value
-    value = data_element.value
-    
-    # Get the Value Multiplicity
-    value_multiplicity = data_element.VM
-    
-    # Check if it is empty
-    if value_multiplicity == 0 or value is None:
-        logger.debug(" "*(indent+0) + "DICOM ProtocolName tag value was not provided")
-        return None
-    
-    # It should be a single-valued tag, a string
-    if value_multiplicity != 1 or not isinstance(value, str):
-        logger.warning(" "*(indent+0) + "DICOM ProtocolName tag has an unknown format")
-        return None
-    
     # Remove whitespace
-    protocol_name = value.strip()
+    value_str = value.strip()
 
-    # Check if value is not empty
-    if len(protocol_name) == 0:
+    if not value_str:
         logger.debug(" "*(indent+0) + "DICOM ProtocolName tag contains only whitespace")
         return None
-    
-    return protocol_name
+
+    return value_str
+

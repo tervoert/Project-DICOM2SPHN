@@ -8,15 +8,19 @@ from pydicom import Dataset
 
 from .context import Context
 from .sphn_concepts.sphn_software import SPHNSoftware
+from .tools import is_valid_string
 
 
 #
-# Edwin 2026-07-24
+# Edwin 2026-11-11
 #
 def get_imaging_device_metadata_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> None:
     """
     Get the metadata related to SPHN ImagingDevice from the dataset
-        dataset is a DICOM dataset (DICOM header) that contains DICOM DataElements (tags)
+    Parameters:
+        - dataset: The DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
+        - context: The Context object that holds the data_store, logger and other relevant information
+        - indent: The indentation level for logging (default is 0)
     """
 
     # Check
@@ -31,92 +35,104 @@ def get_imaging_device_metadata_from_dicom(dataset: Dataset, context: Context, i
     # Manufacturer
     #
 
-    manufacturer_name = get_manufacturer_from_dicom(dataset, context, indent=indent) 
-    
-    if manufacturer_name is not None:
-        data_store.manufacturer_name = manufacturer_name
-        logger.debug(" "*(indent+0) + f"Manufacturer name: '{manufacturer_name}'")
-    else:
-        logger.debug(" "*(indent+0) + "Manufacturer name not defined")
+    if data_store.manufacturer_name is None:
+
+        manufacturer_name = get_manufacturer_from_dicom(dataset, context, indent=indent) 
+        
+        if manufacturer_name is not None:
+            data_store.manufacturer_name = manufacturer_name
+            logger.debug(" "*(indent+0) + f"Manufacturer name: '{manufacturer_name}'")
+        else:
+            logger.debug(" "*(indent+0) + "Manufacturer name not defined")
 
     # 
     # ManufacturerModelName
     #
 
-    manufacturer_model_name = get_manufacturer_model_name_from_dicom(dataset, context, indent=indent) 
+    if data_store.manufacturer_model_name is None:
 
-    if manufacturer_model_name is not None:
-        data_store.manufacturer_model_name = manufacturer_model_name
-        logger.debug(" "*(indent+0) + f"ManufacturerModelName: '{manufacturer_model_name}'")
-    else:
-        logger.debug(" "*(indent+0) + "ManufacturerModelName not defined")
+        manufacturer_model_name = get_manufacturer_model_name_from_dicom(dataset, context, indent=indent) 
+
+        if manufacturer_model_name is not None:
+            data_store.manufacturer_model_name = manufacturer_model_name
+            logger.debug(" "*(indent+0) + f"ManufacturerModelName: '{manufacturer_model_name}'")
+        else:
+            logger.debug(" "*(indent+0) + "ManufacturerModelName not defined")
 
     # 
     # DeviceSerialNumber
     #
 
-    device_serial_number = get_device_serial_number_from_dicom(dataset, context, indent=indent) 
+    if data_store.device_serial_number is None:
 
-    if device_serial_number is not None:
-        data_store.device_serial_number = device_serial_number
-        logger.debug(" "*(indent+0) + f"DeviceSerialNumber: '{device_serial_number}'")
-    else:
-        logger.debug(" "*(indent+0) + "DeviceSerialNumber not defined")
+        device_serial_number = get_device_serial_number_from_dicom(dataset, context, indent=indent) 
+
+        if device_serial_number is not None:
+            data_store.device_serial_number = device_serial_number
+            logger.debug(" "*(indent+0) + f"DeviceSerialNumber: '{device_serial_number}'")
+        else:
+            logger.debug(" "*(indent+0) + "DeviceSerialNumber not defined")
 
     # 
     # SoftwareVersions
     #
 
-    software_versions_list = get_software_versions_from_dicom(dataset, context, indent=indent) 
+    if data_store.software_list is None:
 
-    if software_versions_list is not None:
+        software_versions_list = get_software_versions_from_dicom(dataset, context, indent=indent) 
 
-        counter=0
-        for software_version in software_versions_list:
-            
-            # ToDo: Edwin - 2026-07-24
-            #   - Try to split name and version
+        if software_versions_list is not None:
 
-            sphn_software = SPHNSoftware(
-                sphn_schema=data_store.sphn_schema,
-                has_name=software_version,
-                has_version=software_version
-            )
+            counter=0
+            for software_version in software_versions_list:
+                
+                # ToDo: Edwin - 2026-07-24
+                #   - Try to split name and version
 
-            # Add the SPHN Software to the data_store if it is not already in the list
-            if data_store.software_list is None:
-                data_store.software_list = [sphn_software]
-                counter += 1
+                sphn_software = SPHNSoftware(
+                    sphn_schema=data_store.sphn_schema,
+                    has_name=software_version,
+                    has_version=software_version
+                )
 
-            elif sphn_software not in data_store.software_list:
-                data_store.software_list.append(sphn_software)
-                counter += 1
-            else:
-                logger.debug(" "*(indent+0) + "SoftwareVersion is already in the list")
-                continue
+                # Add the SPHN Software to the data_store if it is not already in the list
+                if data_store.software_list is None:
+                    data_store.software_list = [sphn_software]
+                    counter += 1
 
-        logger.debug(" "*(indent+0) + f"Total new SoftwareVersions added: {counter}")
+                elif sphn_software not in data_store.software_list:
+                    data_store.software_list.append(sphn_software)
+                    counter += 1
+                else:
+                    logger.debug(" "*(indent+0) + "SoftwareVersion is already in the list")
+                    continue
 
-    else:
-        logger.debug(" "*(indent+0) + "SoftwareVersions not defined")
+            logger.debug(" "*(indent+0) + f"Total new SoftwareVersions added: {counter}")
+
+        else:
+            logger.debug(" "*(indent+0) + "SoftwareVersions not defined")
 
 # -----------------------------------------------------------------------------------------------------------------
 # DICOM tag reading functions for SPHN ImagingFrame metadata
 # -----------------------------------------------------------------------------------------------------------------
 
 #
-#  Edwin 2026-07-24
+#  Edwin 2026-11-11
 #
 def get_manufacturer_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> str|None:
     """
     Returns the value corresponding to the value of the DICOM Manufacturer tag
-        - dataset is the DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
+    Parameters:
+        - dataset: The DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
+        - context: The Context object that holds the data_store, logger and other relevant information
+        - indent: The indentation level for logging (default is 0)
     """
 
-    # Keyword:              Manufacturer
-    # Value Representation: Long String (LO)
+    # Tag:	                (0008,0070)
     # Type:	                Required, Empty if Unknown (2)
+    # Keyword:              Manufacturer
     # Value Multiplicity:   1
+    # Value Representation: Long String (LO)
 
     # Note:
     #   Available in CR, DX, CT, MR, PT, enhanced CT, enhanced MR, enhanced PT
@@ -128,52 +144,43 @@ def get_manufacturer_from_dicom(dataset: Dataset, context: Context, indent: int=
 
     logger = context.logger
 
-    if "Manufacturer" not in dataset:
-        logger.warning(" "*(indent+0) + "DICOM Manufacturer tag was not found")
-        return None
-    
-    # Get the DataElement
-    data_element = dataset["Manufacturer"]
+    # Get the value of the DICOM Manufacturer tag
+    value = dataset.get("Manufacturer", None)
 
-    # Get the value
-    value = data_element.value
-        
-    # Get the Value Multiplicity
-    value_multiplicity = data_element.VM
-        
-    # Check if it is empty
-    if value_multiplicity == 0 or value is None:
-        logger.debug(" "*(indent+0) + "DICOM Manufacturer tag value was not provided")
+    if value is None:
+        logger.debug(" "*(indent+0) + "DICOM Manufacturer tag was not found")  
         return None
-    
-    # It should be a single-valued tag, a string
-    if value_multiplicity != 1 or not isinstance(value, str):
-        logger.warning(" "*(indent+0) + "DICOM Manufacturer tag has an unknown format")
-        return None
-    
+
+    assert isinstance(value, str)
+
     # Remove whitespace
-    manufacturer_str = value.strip()
+    value_str = value.strip()
 
-    # Check if value is not empty
-    if len(manufacturer_str) == 0:
+    if not value_str:
         logger.debug(" "*(indent+0) + "DICOM Manufacturer tag contains only whitespace")
         return None
 
-    return manufacturer_str
+    assert is_valid_string(value_str)
+    
+    return value_str
+
 
 #
-# Edwin 2026-07-24
+# Edwin 2026-11-11
 #
 def get_manufacturer_model_name_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> str|None:
     """
     Returns the value corresponding to the value of the DICOM ManufacturerModelName tag
-        - dataset is the DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
+        - dataset: The DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
+        - context: The Context object that holds the data_store, logger and other relevant information
+        - indent: The indentation level for logging (default is 0)
     """
 
-    # Keyword:              ManufacturerModelName
-    # Value Representation: Long String (LO)
+    # Tag:	                (0008,1090)
     # Type:	                Optional (3)
+    # Keyword:              ManufacturerModelName
     # Value Multiplicity:   1
+    # Value Representation: Long String (LO)
 
     # Check
     assert isinstance(dataset, Dataset)
@@ -182,54 +189,45 @@ def get_manufacturer_model_name_from_dicom(dataset: Dataset, context: Context, i
 
     logger = context.logger
 
-    if "ManufacturerModelName" not in dataset:
+    # Get the value of the DICOM ManufacturerModelName tag
+    value = dataset.get("ManufacturerModelName", None)
+
+    if value is None:
         logger.debug(" "*(indent+0) + "DICOM ManufacturerModelName tag was not found")  
         return None
 
-    # Get the DataElement
-    data_element = dataset["ManufacturerModelName"]
-
-    # Get the value
-    value = data_element.value
-    
-    # Get the Value Multiplicity
-    value_multiplicity = data_element.VM
-        
-    # Check if it is empty
-    if value_multiplicity == 0 or value is None:
-        logger.debug(" "*(indent+0) + "DICOM ManufacturerModelName tag value was not provided")
-        return None
-        
-    # It should be a single-valued tag, a string
-    if value_multiplicity != 1 or not isinstance(value, str):
-        logger.warning(" "*(indent+0) + "DICOM ManufacturerModelName tag has an unknown format")
-        return None
+    assert isinstance(value, str)
 
     # Remove whitespace
-    manufacturer_model_name = value.strip()
+    value_str = value.strip()
 
-    # Check if value is not empty
-    if len(manufacturer_model_name) == 0:
+    if not value_str:
         logger.debug(" "*(indent+0) + "DICOM ManufacturerModelName tag contains only whitespace")
         return None
 
-    return manufacturer_model_name
+    assert is_valid_string(value_str)
+
+    return value_str
+
 
 #
-# Edwin 2026-07-24
+# Edwin 2026-11-11
 #
-# (Not used in the metadata in this example due to privacy concerns)
+# (Not used in the SPHN metadata due to privacy concerns)
 #
 def get_device_serial_number_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> str|None:
     """
     Returns the value corresponding to the value of the DICOM DeviceSerialNumber tag
-        dataset is the DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
+        - dataset: The DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
+        - context: The Context object that holds the data_store, logger and other relevant information
+        - indent: The indentation level for logging (default is 0)
     """
 
-    # Keyword:              DeviceSerialNumber
-    # Value Representation: Long String (LO)
+    # Tag:	                (0018,1000)
     # Type:	                Optional (3)
+    # Keyword:              DeviceSerialNumber
     # Value Multiplicity:   1
+    # Value Representation: Long String (LO)
 
     # Check
     assert isinstance(dataset, Dataset)
@@ -238,52 +236,43 @@ def get_device_serial_number_from_dicom(dataset: Dataset, context: Context, inde
 
     logger = context.logger
 
-    if "DeviceSerialNumber" not in dataset:
+    # Get the value of the DICOM DeviceSerialNumber tag
+    value = dataset.get("DeviceSerialNumber", None)
+
+    if value is None:
         logger.debug(" "*(indent+0) + "DICOM DeviceSerialNumber tag was not found")  
         return None
 
-    # Get the DataElement
-    data_element = dataset["DeviceSerialNumber"]
-
-    # Get the value
-    value = data_element.value
-    
-    # Get the Value Multiplicity
-    value_multiplicity = data_element.VM
-        
-    # Check if it is empty
-    if value_multiplicity == 0 or value is None:
-        logger.debug(" "*(indent+0) + "DICOM DeviceSerialNumber tag value was not provided")
-        return None
-
-    # It should be a single-valued tag, a string
-    if value_multiplicity != 1 or not isinstance(value, str):
-        logger.warning(" "*(indent+0) + "DICOM DeviceSerialNumber tag has an unknown format")
-        return None
+    assert isinstance(value, str)
 
     # Remove whitespace
-    device_serial_number = value.strip()
+    value_str = value.strip()
 
-    # Check if value is not empty
-    if len(device_serial_number) == 0:
+    if not value_str:
         logger.debug(" "*(indent+0) + "DICOM DeviceSerialNumber tag contains only whitespace")
         return None
+    
+    assert is_valid_string(value_str)
 
-    return device_serial_number
+    return value_str
+
 
 #
-# Edwin 2026-07-24
+# Edwin 2026-11-11
 #
 def get_software_versions_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> list[str]|None:
     """
     Returns a list of values corresponding to the values of the DICOM SoftwareVersions tag
-        - dataset is the DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
+        - dataset: The DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
+        - context: The Context object that holds the data_store, logger and other relevant information
+        - indent: The indentation level for logging (default is 0)
     """
 
-    # Keyword:              SoftwareVersions
-    # Value Representation: Long String (LO)
+    # Tag:	                (0018,1020)
     # Type:	                Optional (3)
+    # Keyword:              SoftwareVersions
     # Value Multiplicity:   1-n
+    # Value Representation: Long String (LO)
 
     # Check
     assert isinstance(dataset, Dataset)
@@ -295,26 +284,15 @@ def get_software_versions_from_dicom(dataset: Dataset, context: Context, indent:
     # Set initial value
     software_versions_list = []
 
-    if "SoftwareVersions" not in dataset:
+    # Get the value of the DICOM SoftwareVersions tag
+    value = dataset.get("SoftwareVersions", None)
+
+    if value is None:
         logger.debug(" "*(indent+0) + "DICOM SoftwareVersions tag was not found")  
         return None
 
-    # Get the DataElement
-    data_element = dataset["SoftwareVersions"]
-
-    # Get the value
-    value = data_element.value
-    
-    # Get the Value Multiplicity
-    value_multiplicity = data_element.VM
-    
-    # Check if it is empty
-    if value_multiplicity == 0 or value is None:
-        logger.debug(" "*(indent+0) + "DICOM SoftwareVersions tag value was not provided")
-        return None
-
     # It could be a multi-valued tag
-    if value_multiplicity >= 1 and isinstance(value, pydicom.multival.MultiValue):
+    if isinstance(value, pydicom.multival.MultiValue):
 
         # For each value in the multi-value list
         for value_item in value:
@@ -324,29 +302,33 @@ def get_software_versions_from_dicom(dataset: Dataset, context: Context, indent:
                 continue
                 
             # Remove whitespace
-            software_version_str = value_item.strip()
+            value_item_str = value_item.strip()
 
             # Check if value is not empty
-            if len(software_version_str) == 0:
+            if not value_item_str:
                 logger.debug(" "*(indent+0) + "DICOM SoftwareVersions tag value-item contains only whitespace")
                 continue
 
+            assert is_valid_string(value_item_str)
+
             # Adding to the list
-            software_versions_list.append(software_version_str)
+            software_versions_list.append(value_item_str)
 
     # It could be a single-valued tag, a string
-    elif value_multiplicity == 1 and isinstance(value, str):
+    elif isinstance(value, str):
 
         # Remove whitespace
-        software_version_str = value.strip()
+        value_str = value.strip()
 
         # Check if value is not empty
-        if len(software_version_str) == 0:
+        if not value_str:
             logger.debug(" "*(indent+0) + "DICOM SoftwareVersions tag contains only whitespace")
             return None
-        
+
+        assert is_valid_string(value_str)
+
         # Convert to a list with a string
-        software_versions_list = [software_version_str]
+        software_versions_list = [value_str]
 
     else:
         logger.warning(" "*(indent+0) + "DICOM SoftwareVersions tag has an unknown format")

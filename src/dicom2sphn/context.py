@@ -3,6 +3,8 @@ context.py:
     Part of the example dicom2sphn package.
     It contains the Context class, which holds the application context and configuration.
 """
+from datetime import tzinfo
+
 from dicomweb_client.api import DICOMwebClient
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -26,6 +28,8 @@ class Context(BaseModel):
     orthanc_rest_api_user: OrthancRestAPIUser | None = Field(None, description="Orthanc REST API user credentials")
     dicomweb_api_user: DicomwebAPIUser | None = Field(None, description="DICOMweb API user credentials")
     database_api_user: DatabaseAPIUser | None = Field(None, description="Database user credentials")
+
+    local_timezone: tzinfo | None = Field(None, description="Timezone of the DICOM dates and times, used when a dataset has no TimezoneOffsetFromUTC")
 
     add_only_unique_sphn_imaging_procedures: bool = False
     add_only_unique_sphn_imaging_series: bool = False

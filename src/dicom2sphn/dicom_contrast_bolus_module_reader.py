@@ -53,20 +53,21 @@ from .tools import complete_dicom_time, is_valid_string
 #       - has a mandatory "Contrast/Bolus Agent Number Attribute (0018,9337)" tag in the "Contrast/Bolus Agent Sequence Attribute (0018,0012)" tag in case contrast agent was present.
 #       - doesn't have the "Contrast/Bolus Agent Attribute (0018,0010)" tag.
 
-    # ToDo: Edwin 2026-10-09 - Implement processing for Contrast / Bolus module
-    # ToDo: Edwin 2026-10-09 - Implement processing for Enhanced Contrast / Bolus module
-
 # ---------------------------------------------------------------------------------------------------------------------
-# Functions for processing the Legacy (single-frame) "Contrast/Bolus" module
+# Functions for processing the Legacy/Enhanced "Contrast/Bolus" module
 # ---------------------------------------------------------------------------------------------------------------------
 
 #
-# Edwin 2026-11-08
+# Edwin 2026-11-11
 #
 def process_dicom_contrast_information(dataset: Dataset, context: Context, indent: int=0) -> None:
     """
     Processes the DICOM Contrast/Bolus information, either legacy (single-frame) or enhanced (multi-frame),
     and stores contrast agent administration events in the data_store.
+    Parameters:
+        - dataset: The DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
+        - context: The Context object that holds the data_store, logger and other relevant information
+        - indent: The indentation level for logging (default is 0)
     """
 
     # Check
@@ -89,7 +90,7 @@ def process_dicom_contrast_information(dataset: Dataset, context: Context, inden
 
     elif has_legacy_contrast_bolus_module and not has_enhanced_contrast_bolus_module:
         logger.debug(" "*(indent+0) + "Found DICOM legacy (single-frame) Contrast/Bolus module.")
-        process_contrast_bolus_module_from_dicom(dataset, context, indent=indent+2)
+        process_legacy_contrast_bolus_module_from_dicom(dataset, context, indent=indent+2)
 
     elif has_enhanced_contrast_bolus_module and not has_legacy_contrast_bolus_module:
         logger.debug(" "*(indent+0) + "Found DICOM enhanced (multi-frame) Contrast/Bolus module.")
@@ -98,11 +99,14 @@ def process_dicom_contrast_information(dataset: Dataset, context: Context, inden
     else:
         raise ValueError("This should not happen: Found both DICOM legacy (single-frame) and enhanced (multi-frame) Contrast/Bolus modules.")
 
+# ---------------------------------------------------------------------------------------------------------------------
+# Functions for processing the Legacy (single-frame) "Contrast/Bolus" module
+# ---------------------------------------------------------------------------------------------------------------------
 
 #
 # Edwin 2026-11-08
 #
-def process_contrast_bolus_module_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> None:
+def process_legacy_contrast_bolus_module_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> None:
     """
     Processes the DICOM legacy (single-frame) Contrast/Bolus Module information 
     and stores contrast agent administration events in the data_store.
@@ -3197,15 +3201,18 @@ def get_contrast_bolus_t1_relaxivity_from_dicom(dataset: Dataset, context: Conte
         logger.debug(" "*(indent+0) + "DICOM ContrastBolusT1Relaxivity tag was not found")  
         return None
 
-    assert isinstance(value, float)
-
-    contrast_bolus_t1_relaxivity = value
-
-    if contrast_bolus_t1_relaxivity < 0:
-        logger.debug(" "*(indent+0) + f"DICOM ContrastBolusT1Relaxivity: '{contrast_bolus_t1_relaxivity}' is probably not a valid value.")
+    # Convert value to float
+    try:
+        value_float = float(value)
+    except (ValueError, TypeError):
+        logger.warning(" "*(indent+0) + "DICOM ContrastBolusT1Relaxivity tag value could not be converted to float")
         return None
 
-    return contrast_bolus_t1_relaxivity
+    if value_float < 0:
+        logger.debug(" "*(indent+0) + f"DICOM ContrastBolusT1Relaxivity: '{value_float}' is probably not a valid value.")
+        return None
+
+    return value_float
 
 
 #
@@ -3240,15 +3247,18 @@ def get_contrast_bolus_agent_number_from_dicom(dataset: Dataset, context: Contex
         logger.debug(" "*(indent+0) + "DICOM ContrastBolusAgentNumber tag was not found")  
         return None
 
-    assert isinstance(value, int)
-
-    contrast_bolus_agent_number = value
-
-    if contrast_bolus_agent_number <= 0:
-        logger.warning(" "*(indent+0) + f"DICOM ContrastBolusAgentNumber: '{contrast_bolus_agent_number}' is not a valid value.")
+    # Convert value to int
+    try:
+        value_int = int(value)
+    except (ValueError, TypeError):
+        logger.warning(" "*(indent+0) + "DICOM ContrastBolusAgentNumber tag value could not be converted to int")
+        return None
+    
+    if value_int <= 0:
+        logger.warning(" "*(indent+0) + f"DICOM ContrastBolusAgentNumber: '{value_int}' is not a valid value.")
         return None
 
-    return contrast_bolus_agent_number
+    return value_int
 
 # ---------------------------------------------------------------------------------------------------------------------
 # Tools
@@ -3311,9 +3321,13 @@ def get_contrast_bolus_datetime(
     acq_time_clean = acq_time_clean.ljust(6, '0')
     contrast_time_clean = contrast_time_clean.ljust(6, '0')
    
+    # The contrast/bolus time is a local time in the same timezone as the reference (acquisition, series, or study) datetime
+    reference_datetime = acquisition_datetime if acquisition_datetime else series_datetime if series_datetime else study_datetime
+    reference_timezone = reference_datetime.tzinfo
+
     # 4. Generate baseline datetime objects assuming they share the same date initially
-    acq_dt = datetime.strptime(f"{acq_date}{acq_time_clean}", "%Y%m%d%H%M%S")
-    contrast_dt = datetime.strptime(f"{acq_date}{contrast_time_clean}", "%Y%m%d%H%M%S")
+    acq_dt = datetime.strptime(f"{acq_date}{acq_time_clean}", "%Y%m%d%H%M%S").replace(tzinfo=reference_timezone)
+    contrast_dt = datetime.strptime(f"{acq_date}{contrast_time_clean}", "%Y%m%d%H%M%S").replace(tzinfo=reference_timezone)
 
     # 5. Handle Both Midnight Scenarios (Forward and Reverse Crossings)
     time_difference = contrast_dt - acq_dt

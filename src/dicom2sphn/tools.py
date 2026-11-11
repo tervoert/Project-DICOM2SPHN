@@ -7,8 +7,9 @@ tools.py:
 import logging
 import re
 import uuid
-from datetime import UTC
+from datetime import timedelta, timezone, tzinfo
 
+from pydicom import Dataset
 from pydicom.valuerep import DA, DT, TM
 
 
@@ -41,7 +42,36 @@ def make_clean(input: str) -> str:
     return output
 
 
-def combine_dicom_date_and_time(dicom_date: str, dicom_time: str, logger: logging.Logger, indent: int = 0) -> DT|None:
+def get_dicom_timezone(dataset: Dataset, local_timezone: tzinfo, logger: logging.Logger, indent: int = 0) -> tzinfo:
+    """
+    Returns the timezone to use for the (local) DICOM dates and times in the dataset:
+        - the fixed offset from the DICOM TimezoneOffsetFromUTC (0008,0201) tag, if present and valid,
+        - otherwise the configured local timezone (e.g. ZoneInfo("Europe/Zurich")), which also handles daylight saving time.
+    """
+    assert isinstance(dataset, Dataset)
+    assert isinstance(local_timezone, tzinfo)
+
+    value = dataset.get("TimezoneOffsetFromUTC", None)
+    if value is None or str(value).strip() == "":
+        return local_timezone
+
+    offset_str = str(value).strip()
+
+    # Format: &ZZXX, with & = '+' or '-', ZZ = hours and XX = minutes
+    match = re.fullmatch(r"([+-])(\d{2})(\d{2})", offset_str)
+    if match is None or int(match.group(2)) > 14 or int(match.group(3)) > 59:
+        logger.warning(" "*(indent+0) + f"DICOM TimezoneOffsetFromUTC tag value '{offset_str}' is invalid, using the configured local timezone '{local_timezone}' instead.")
+        return local_timezone
+
+    sign = -1 if match.group(1) == "-" else 1
+    offset = timedelta(hours=int(match.group(2)), minutes=int(match.group(3)))
+
+    logger.debug(" "*(indent+0) + f"Using DICOM TimezoneOffsetFromUTC tag value '{offset_str}' as timezone.")
+
+    return timezone(sign * offset)
+
+
+def combine_dicom_date_and_time(dicom_date: str, dicom_time: str, tz: tzinfo, logger: logging.Logger, indent: int = 0) -> DT|None:
     """
     Returns the DICOM datetime (DT) object given a date and a time string obtained from DICOM
         - dicom_date is the date string obtained from a DICOM SOP Instance,
@@ -55,12 +85,14 @@ def combine_dicom_date_and_time(dicom_date: str, dicom_time: str, logger: loggin
           - The frac may be up to 6 positions (FFFFFF)
           - One or more components HH, MM, SS, or frac may be unspecified as long as every component to the right is also unspecified
           - Any timezone information in the DICOM time string will be ignored.
-          The resulting datetime will be completed to a full DICOM DT datetime (DT) in UTC.
+          The resulting datetime will be completed to a full DICOM DT datetime (DT) in the timezone tz
+          (see get_dicom_timezone(), as DICOM dates and times are local times).
           - If any component of the date or time is missing, it will be assumed to be the earliest valid value (e.g., month=01, day=01, hour=00, minute=00, second=00).
     """
 
     assert isinstance(dicom_date, str)
     assert isinstance(dicom_time, str)
+    assert isinstance(tz, tzinfo)
 
     if not dicom_date:
         logger.debug(" "*(indent+0) + "DICOM date string is empty.")
@@ -78,7 +110,7 @@ def combine_dicom_date_and_time(dicom_date: str, dicom_time: str, logger: loggin
 
     # Parse the DICOM date string YYYYMMDD into a datetime.date object.
     try:
-        dicom_dt= DT.combine(dicom_date_modified, dicom_time_modified, tzinfo=UTC)
+        dicom_dt= DT.combine(dicom_date_modified, dicom_time_modified, tzinfo=tz)
     except ValueError as e:
         logger.debug(" "*(indent+0) + f"Failed to combine DICOM date (DA) and DICOM time (TM) to a DICOM datetime (DT): {e}")
         return None
@@ -219,15 +251,17 @@ def complete_dicom_time(dicom_time: str, logger: logging.Logger, indent: int=0) 
     return dicom_t
 
 
-def complete_dicom_datetime(dicom_datetime: str, logger: logging.Logger, indent: int=0) -> DT|None:
+def complete_dicom_datetime(dicom_datetime: str, tz: tzinfo, logger: logging.Logger, indent: int=0) -> DT|None:
     """
     Completes a DICOM datetime string by filling in missing components with default values.
     The resulting DT object will have the format YYYYMMDDHHMMSS, optionally with milliseconds and timezone.
     Note:
     - If any component of the datetime is missing, it will be assumed to be the earliest valid value (e.g., month=01, day=01, hours=00, minutes=00, seconds=00).
     - Any timezone information in the DICOM datetime string will be preserved.
+    - Without timezone information in the DICOM datetime string, the timezone tz is used (see get_dicom_timezone()).
     Args:
         dicom_datetime (str): The DICOM datetime string to complete.
+        tz (tzinfo): The timezone to use if the DICOM datetime string has no timezone (see get_dicom_timezone()).
         logger (logging.Logger): Logger for debug and warning messages.
         indent (int, optional): Indentation level for log messages. Defaults to 0.
 
@@ -235,6 +269,7 @@ def complete_dicom_datetime(dicom_datetime: str, logger: logging.Logger, indent:
         DT|None: The completed DICOM datetime object, or None if the input is invalid.
     """
     assert isinstance(dicom_datetime, str)
+    assert isinstance(tz, tzinfo)
 
     # Remove whitespace
     dt_str = dicom_datetime.strip()
@@ -290,7 +325,11 @@ def complete_dicom_datetime(dicom_datetime: str, logger: logging.Logger, indent:
     except ValueError as e:
         logger.debug(" "*(indent+0) + f"Failed to parse DICOM datetime string: '{total_dt}'. Error: {e}")
         return None
-    
+
+    # DICOM datetimes without a timezone suffix are local times
+    if dicom_dt.tzinfo is None:
+        dicom_dt = DT.combine(dicom_dt.date(), dicom_dt.time(), tzinfo=tz)
+
     return dicom_dt
 
 

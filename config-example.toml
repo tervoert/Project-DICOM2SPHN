@@ -52,7 +52,12 @@ allowed_sop_classes = [
 #    { UID = "1.2.840.10008.5.1.4.1.1.1",        Meaning = "Computed Radiography Image Storage" },
 #    { UID = "1.2.840.10008.5.1.4.1.1.77.1.6",   Meaning = "VL Whole Slide Microscopy Image Storage" },
 
-# Set a DICOM StudyDate and StudyTime for DICOM Studies without a date/time:
+# Timezone of the DICOM dates and times (IANA name, see https://en.wikipedia.org/wiki/List_of_tz_database_time_zones).
+# DICOM dates and times are local times. This timezone (including daylight saving time) is used,
+# unless the DICOM dataset contains a TimezoneOffsetFromUTC (0008,0201) tag:
+local_timezone = "Europe/Zurich"
+
+# Set a DICOM StudyDate and StudyTime for DICOM Studies without a date/time (these placeholder datetimes are in UTC):
 fallback_study_date = "1800-01-01" # "YYYY-MM-DD"
 fallback_study_time = "12:00:00"   # "HH:MM:SS"
 

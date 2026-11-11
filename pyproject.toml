@@ -42,7 +42,8 @@ dependencies = [
   "dicomweb-client",
   "numpy",
   "rdflib",
-  "pydantic"
+  "pydantic",
+  "tzdata"  # IANA timezone database for zoneinfo (needed on Windows)
 ]
 
 [dependency-groups]

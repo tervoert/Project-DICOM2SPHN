@@ -7,6 +7,7 @@ import tomllib
 from datetime import UTC, datetime
 from pathlib import Path
 from time import time
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from pydicom.uid import UID
 from pynetdicom import sop_class
@@ -154,8 +155,16 @@ def import_config_settings(config_file: Path, context: Context, indent: int=0) -
     context.logger.info(" "*(indent+0) + "Successfully processed the allowed SOP Classes settings.")
 
     # -----------------------------------------------------------------------------------------------------------------
-    # Process the DICOM settings: StudyDate and StudyTime for DICOM Studies without a date/time
+    # Process the DICOM settings: TimeZone and StudyDate and StudyTime for DICOM Studies without a date/time
     # -----------------------------------------------------------------------------------------------------------------
+
+    context.logger.info(" "*(indent+0) + "Trying to process the local timezone setting.")
+
+    context.local_timezone = get_local_timezone_from_dicom_options_settings(settings, context, indent=indent+2)
+
+    context.logger.info(" "*(indent+2) + f"Using local timezone: '{context.local_timezone}' for DICOM dates and times without a TimezoneOffsetFromUTC.")
+
+    context.logger.info(" "*(indent+0) + "Successfully processed the local timezone setting.")
 
     context.logger.info(" "*(indent+0) + "Trying to process the StudyDate and StudyTime settings for DICOM Studies without a date/time.")
 
@@ -824,19 +833,58 @@ def get_fallback_study_datetime_from_dicom_options_settings(settings:dict, conte
 
     # Validate the date and time formats
     try:
-        result_date = datetime.strptime(fallback_study_date,"%Y-%m-%d").replace(tzinfo=UTC).date()
+        result_date = datetime.strptime(fallback_study_date,"%Y-%m-%d").date()
     except ValueError as e:
         raise ImportConfigSettingsError(f"Failed to parse 'fallback_study_date' in the 'dicom_options' settings (expected format: 'YYYY-MM-DD'): {e}")
     
     try:
-        result_time = datetime.strptime(fallback_study_time,"%H:%M:%S").replace(tzinfo=UTC).time()
+        result_time = datetime.strptime(fallback_study_time,"%H:%M:%S").time()
     except ValueError as e:
         raise ImportConfigSettingsError(f"Failed to parse 'fallback_study_time' in the 'dicom_options' settings (expected format: 'HH:MM:SS'): {e}")
 
     # Combine date and time
+    # Note: UTC is used on purpose and not the local timezone, as this is a placeholder datetime. For dates before ~1894,
+    # IANA timezones use the Local Mean Time with a seconds offset (e.g. +00:34:08 for Europe/Zurich), which is not a valid xsd:dateTime offset.
     result_datetime = datetime.combine(result_date, result_time, tzinfo=UTC)
 
     return result_datetime
+
+#
+# Edwin 2026-11-10
+#
+def get_local_timezone_from_dicom_options_settings(settings:dict, context: Context, indent: int=0) -> ZoneInfo:
+    """
+    Get the local timezone (IANA name, e.g. "Europe/Zurich") from the 'dicom_options' in the configuration settings.
+    DICOM dates and times are local times, this timezone is used when a dataset has no TimezoneOffsetFromUTC tag.
+    """
+
+    # Checks
+    assert isinstance(settings,dict)
+    assert isinstance(context,Context)
+    assert isinstance(indent,int) and indent>=0
+
+    if "dicom_options" not in settings:
+        raise ImportConfigSettingsError("No 'dicom_options' settings found in the configuration settings.")
+
+    dicom_options_settings = settings["dicom_options"]
+
+    if not isinstance(dicom_options_settings, dict):
+        raise ImportConfigSettingsError("The 'dicom_options' settings have the wrong format.")
+
+    if "local_timezone" not in dicom_options_settings:
+        raise ImportConfigSettingsError("No 'local_timezone' found in the 'dicom_options' settings (e.g. local_timezone = \"Europe/Zurich\").")
+
+    local_timezone = dicom_options_settings["local_timezone"]
+
+    if not is_valid_string(local_timezone):
+        raise ImportConfigSettingsError("The 'local_timezone' must be a non-empty string in the 'dicom_options' settings (e.g. \"Europe/Zurich\").")
+
+    try:
+        result_timezone = ZoneInfo(local_timezone)
+    except (ZoneInfoNotFoundError, ValueError) as e:
+        raise ImportConfigSettingsError(f"The 'local_timezone' '{local_timezone}' in the 'dicom_options' settings is not a known IANA timezone (e.g. \"Europe/Zurich\"): {e}")
+
+    return result_timezone
 
 #
 # Edwin 2026-08-07
@@ -877,16 +925,18 @@ def get_fallback_contrast_agent_datetime_from_dicom_options_settings(settings:di
 
     # Validate the date and time formats
     try:
-        result_date = datetime.strptime(fallback_contrast_agent_date,"%Y-%m-%d").replace(tzinfo=UTC).date()
+        result_date = datetime.strptime(fallback_contrast_agent_date,"%Y-%m-%d").date()
     except ValueError as e:
         raise ImportConfigSettingsError(f"Failed to parse 'fallback_contrast_agent_date' in the 'dicom_options' settings (expected format: 'YYYY-MM-DD'): {e}")
     
     try:
-        result_time = datetime.strptime(fallback_contrast_agent_time,"%H:%M:%S").replace(tzinfo=UTC).time()
+        result_time = datetime.strptime(fallback_contrast_agent_time,"%H:%M:%S").time()
     except ValueError as e:
         raise ImportConfigSettingsError(f"Failed to parse 'fallback_contrast_agent_time' in the 'dicom_options' settings (expected format: 'HH:MM:SS'): {e}")
 
     # Combine date and time
+    # Note: UTC is used on purpose and not the local timezone, as this is a placeholder datetime. For dates before ~1894,
+    # IANA timezones use the Local Mean Time with a seconds offset (e.g. +00:34:08 for Europe/Zurich), which is not a valid xsd:dateTime offset.
     result_datetime = datetime.combine(result_date, result_time, tzinfo=UTC)
 
     return result_datetime

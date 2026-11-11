@@ -64,7 +64,8 @@ def get_code_value_from_dicom(dataset: Dataset, context: Context, indent: int=0)
 def get_coding_scheme_designator_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> str|None:
     """
     Returns the string corresponding to the value of the DICOM Coding Scheme Designator tag
-        - dataset is the DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
+    Parameters:
+        - dataset: The DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
         - context: The Context object that holds the data_store, logger and other relevant information
         - indent: The indentation level for logging (default is 0)
     """
@@ -111,7 +112,8 @@ def get_coding_scheme_designator_from_dicom(dataset: Dataset, context: Context, 
 def get_coding_scheme_version_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> str|None:
     """
     Returns the string corresponding to the value of the DICOM Coding Scheme Version tag
-        - dataset is the DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
+    Parameters:
+        - dataset: The DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
         - context: The Context object that holds the data_store, logger and other relevant information
         - indent: The indentation level for logging (default is 0)
     """
@@ -157,8 +159,8 @@ def get_coding_scheme_version_from_dicom(dataset: Dataset, context: Context, ind
 #
 def get_code_meaning_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> str|None:
     """
-    Returns the string corresponding to the value of the DICOM Code Meaning tag
-        - dataset is the DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
+    Parameters:
+        - dataset: The DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
         - context: The Context object that holds the data_store, logger and other relevant information
         - indent: The indentation level for logging (default is 0)
     """
@@ -206,7 +208,7 @@ def get_long_code_value_from_dicom(dataset: Dataset, context: Context, indent: i
     """
     Returns the string corresponding to the value of the DICOM LongCodeValue tag
     Parameters:
-        - dataset is the DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
+        - dataset: The DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
         - context: The Context object that holds the data_store, logger and other relevant information
         - indent: The indentation level for logging (default is 0)
     """
@@ -253,7 +255,7 @@ def get_urn_code_value_from_dicom(dataset: Dataset, context: Context, indent: in
     """
     Returns the string corresponding to the value of the DICOM URNCodeValue tag
     Parameters:
-        - dataset is the DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
+        - dataset: The DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
         - context: The Context object that holds the data_store, logger and other relevant information
         - indent: The indentation level for logging (default is 0)
     """
@@ -278,16 +280,18 @@ def get_urn_code_value_from_dicom(dataset: Dataset, context: Context, indent: in
         logger.debug(" "*(indent+0) + "DICOM URN Code Value tag was not found")  
         return None
 
-    assert isinstance(value, str)
-
-    # Remove whitespace
-    urn_code_value = value.strip()
+    # Convert value to str and trim whitespace
+    try:
+        value_str = str(value).strip()
+    except (ValueError, TypeError):
+        logger.warning(" "*(indent+0) + "DICOM URN Code Value tag value could not be converted to str")
+        return None
 
     # Check if value is not empty
-    if len(urn_code_value) == 0:
+    if not value_str:
         logger.debug(" "*(indent+0) + "DICOM URN Code Value tag value contains only whitespace")
         return None
 
-    assert is_valid_string(urn_code_value)
+    assert is_valid_string(value_str)
 
-    return urn_code_value
+    return value_str

@@ -24,6 +24,7 @@ from .sphn_concepts.sphn_unit import SPHNUnit
 from .tools import (
     combine_dicom_date_and_time,
     complete_dicom_datetime,
+    get_dicom_timezone,
     is_clean_string,
     is_valid_string,
 )
@@ -60,8 +61,8 @@ def get_frame_metadata_from_dicom(dataset: Dataset, frame_number: int, context: 
     """
     Get the metadata related to SPHN ImagingFrame from the dataset
     Parameters:
-        - dataset is a DICOM dataset (DICOM header) that contains DICOM DataElements (tags)
-        - frame_number is the frame number (1-based index) for single- and multi-frame DICOM instances
+        - dataset: The DICOM Dataset (DICOM header) that contains DICOM DataElements (tags)
+        - frame_number: The frame number (1-based index) for single- and multi-frame DICOM instances
         - context: The Context object that holds the data_store, logger and other relevant information
         - indent: The indentation level for logging (default is 0)
     """
@@ -72,21 +73,26 @@ def get_frame_metadata_from_dicom(dataset: Dataset, frame_number: int, context: 
     assert isinstance(context, Context)
     assert isinstance(indent, int) and indent>=0
 
-    assert context.logger is not None
-    assert context.data_store is not None
-
     logger = context.logger
     data_store = context.data_store
     sphn_schema = data_store.sphn_schema
 
     # -------------------------------------------------------------------------------------------------------------
 
-    # 
+    #
+    # Timezone
+    #
+
+    # DICOM dates and times are local times: get the timezone (TimezoneOffsetFromUTC or the configured local timezone)
+    assert context.local_timezone is not None
+    dicom_timezone = get_dicom_timezone(dataset, context.local_timezone, logger, indent=indent+2)
+
+    #
     # AcquisitionDateTime
     #
 
     if data_store.acquisition_start_datetime is None:
-        
+
         acquisition_datetime_str = get_acquisition_datetime_from_dicom(dataset, context, indent=indent+2)
         
         if acquisition_datetime_str is not None:
@@ -97,7 +103,7 @@ def get_frame_metadata_from_dicom(dataset: Dataset, frame_number: int, context: 
 
             # Convert the AcquisitionDateTime string into a complete DICOM datetime (DT) object
             # - acquisition datetime is completed by filling in missing components for Month, Day, Hour, Minute, Second
-            acquisition_datetime_obj = complete_dicom_datetime(acquisition_datetime_str, logger=logger, indent=indent+2)
+            acquisition_datetime_obj = complete_dicom_datetime(acquisition_datetime_str, dicom_timezone, logger=logger, indent=indent+2)
 
             if acquisition_datetime_obj is not None:
                 # Set the acquisition start datetime in the data store
@@ -139,13 +145,13 @@ def get_frame_metadata_from_dicom(dataset: Dataset, frame_number: int, context: 
 
             # Combine the AcquisitionDate and AcquisitionTime strings into a single complete DICOM datetime (DT) object
             # - acquisition datetime is completed by filling in missing components for Month, Day, Hour, Minute, Second
-            acquisition_start_datetime_obj = combine_dicom_date_and_time(acquisition_date, acquisition_time, logger, indent=indent+2)
+            acquisition_start_datetime_obj = combine_dicom_date_and_time(acquisition_date, acquisition_time, dicom_timezone, logger, indent=indent+2)
         
         elif acquisition_date and not acquisition_time:
 
             # Combine the AcquisitionDate and a missing or empty AcquisitionTime strings into a single complete DICOM datetime (DT) object
             # - acquisition datetime is completed by filling in missing components for Month, Day, Hour, Minute, Second
-            acquisition_start_datetime_obj = combine_dicom_date_and_time(acquisition_date, "", logger, indent=indent+2)
+            acquisition_start_datetime_obj = combine_dicom_date_and_time(acquisition_date, "", dicom_timezone, logger, indent=indent+2)
         else:
             logger.debug(" "*(indent+0) + "Could not combine AcquisitionDate and AcquisitionTime: Acquisition Date not defined")
         
@@ -157,6 +163,7 @@ def get_frame_metadata_from_dicom(dataset: Dataset, frame_number: int, context: 
         else:
             logger.debug(" "*(indent+0) + "Could not combine AcquisitionDate and AcquisitionTime")
 
+    # -------------------------------------------------------------------------------------------------------------
 
     # 
     # FrameAcquisitionDateTime
@@ -227,144 +234,141 @@ def get_frame_metadata_from_dicom(dataset: Dataset, frame_number: int, context: 
     # sphn_pixel_dimensions will be used later to create the SPHN ImageDimensions instance
     sphn_pixel_dimensions = None
 
-    pixel_size = get_pixel_spacing_from_dicom(dataset, context, indent=indent+2)
-    
-    if pixel_size is not None:
+    if data_store.sphn_pixel_dimensions is None:
 
-        assert isinstance(pixel_size, list)
-        assert len(pixel_size) == 2
-        assert all(isinstance(x, float) for x in pixel_size)
+        pixel_size = get_pixel_spacing_from_dicom(dataset, context, indent=indent+2)
+        
+        if pixel_size is not None:
 
-        logger.debug(" "*(indent+0) + f"PixelSpacing row: '{pixel_size[0]}' mm")
-        logger.debug(" "*(indent+0) + f"PixelSpacing column: '{pixel_size[1]}' mm")
+            assert isinstance(pixel_size, tuple) \
+                and len(pixel_size) == 2 \
+                and isinstance(pixel_size[0], float) \
+                and isinstance(pixel_size[1], float)
 
-        sphn_pixel_dimensions = create_sphn_pixel_dimensions(pixel_size, context, indent=indent+2)
+            logger.debug(" "*(indent+0) + f"PixelSpacing row: '{pixel_size[0]}' mm")
+            logger.debug(" "*(indent+0) + f"PixelSpacing column: '{pixel_size[1]}' mm")
 
-        # Store the SPHN PixelDimensions in the data_store
-        data_store.sphn_pixel_dimensions = sphn_pixel_dimensions
+            sphn_pixel_dimensions = create_sphn_pixel_dimensions(pixel_size, context, indent=indent+2)
 
-        logger.debug(" "*(indent+0) + "SPHN PixelDimensions created and added to the data_store")
+            # Store the SPHN PixelDimensions in the data_store
+            data_store.sphn_pixel_dimensions = sphn_pixel_dimensions
+
+            logger.debug(" "*(indent+0) + "SPHN PixelDimensions created and added to the data_store")
 
     # -------------------------------------------------------------------------------------------------------------
     
-    # 
-    # Rows
-    #
 
-    # sphn_quantity_rows will be used later to create the SPHN ImageDimensions instance
+    # Will be used later to create the SPHN ImageDimensions instance
     sphn_quantity_rows = None
-
-    num_of_rows = get_rows_from_dicom(dataset, context, indent=indent+2) 
-
-    if num_of_rows is not None:
-
-        assert isinstance(num_of_rows, int)
-
-        logger.debug(" "*(indent+0) + f"Number of rows: '{num_of_rows}'")
-
-        sphn_quantity_rows = create_sphn_quantity_for_number_of_items(num_of_rows, context, indent=indent+2)
-
-        logger.debug(" "*(indent+0) + "SPHN Quantity for number of rows created")
-
-    # 
-    # Columns
-    #
-
-    # sphn_quantity_columns will be used later to create the SPHN ImageDimensions instance
     sphn_quantity_columns = None
-
-    num_of_columns = get_columns_from_dicom(dataset, context, indent=indent+2) 
-
-    if num_of_columns is not None:
-
-        assert isinstance(num_of_columns, int)
-
-        logger.debug(" "*(indent+0) + f"Number of columns: '{num_of_columns}'")
-
-        sphn_quantity_columns = create_sphn_quantity_for_number_of_items(num_of_columns, context, indent=indent+2)
-
-        logger.debug(" "*(indent+0) + "SPHN Quantity for number of columns created")
-
-    
-    # 
-    # SpacingBetweenSlices
-    #
-
-    # sphn_quantity_slice_spacing will be used later to create the SPHN ImageDimensions instance
     sphn_quantity_slice_spacing = None
-
-    slice_spacing = get_spacing_between_slices_from_dicom(dataset, context, indent=indent+2)
-
-    if slice_spacing is not None:
-
-        logger.debug(" "*(indent+0) + f"Spacing between center of slices: '{slice_spacing}'")
-
-        sphn_quantity_slice_spacing = create_sphn_quantity_for_distance_in_mm(slice_spacing, context, indent=indent+2)
-
-        logger.debug(" "*(indent+0) + "SPHN Quantity for spacing between center of slices created")
-
-    # 
-    # SliceThickness
-    #
-
-    # sphn_quantity_slice_thickness will be used later to create the SPHN ImageDimensions instance
     sphn_quantity_slice_thickness = None
-
-    thickness = get_slice_thickness_from_dicom(dataset, context, indent=indent+2)
-
-    if thickness is not None:
-        
-        logger.debug(" "*(indent+0) + f"Slice thickness: '{thickness}'")
-
-        sphn_quantity_slice_thickness = create_sphn_quantity_for_distance_in_mm(thickness, context, indent=indent+2)
-
-        logger.debug(" "*(indent+0) + "SPHN Quantity for slice thickness created")
-
-    # 
-    # SamplesPerPixel
-    #
-
-    # sphn_quantity_samples_per_pixel will be used later to create the SPHN ImageDimensions instance
     sphn_quantity_samples_per_pixel = None
 
-    samples_per_pixel = get_samples_per_pixel_from_dicom(dataset, context,indent=indent+2)
+    if data_store.sphn_image_dimensions is None:
 
-    if samples_per_pixel is not None:
+        # 
+        # Rows
+        #
 
-        logger.debug(" "*(indent+0) + f"Samples per pixel: '{samples_per_pixel}'")
+        num_of_rows = get_rows_from_dicom(dataset, context, indent=indent+2) 
 
-        sphn_quantity_samples_per_pixel = create_sphn_quantity_for_number_of_items(samples_per_pixel, context, indent=indent+2)
+        if num_of_rows is not None:
 
-        logger.debug(" "*(indent+0) + "SPHN Quantity for samples per pixel created")
+            assert isinstance(num_of_rows, int)
 
+            logger.debug(" "*(indent+0) + f"Number of rows: '{num_of_rows}'")
 
-    # 
-    # SPHN ImageDimensions 
-    #
+            sphn_quantity_rows = create_sphn_quantity_for_number_of_items(num_of_rows, context, indent=indent+2)
 
-    if sphn_pixel_dimensions is not None \
-        or sphn_quantity_rows is not None \
-        or sphn_quantity_columns is not None \
-        or sphn_quantity_slice_spacing is not None \
-        or sphn_quantity_slice_thickness is not None:
-        # ToDo: Edwin, or sphn_quantity_samples_per_pixel is not None: (not an SPHN property yet)
-        
-        sphn_image_dimensions = SPHNImageDimensions(
-            sphn_schema=sphn_schema,
-            has_number_of_rows=sphn_quantity_rows,
-            has_number_of_columns=sphn_quantity_columns,
-            has_number_of_slices=None,
-            has_slice_spacing=sphn_quantity_slice_spacing,
-            has_slice_thickness=sphn_quantity_slice_thickness,
-            has_pixel_dimensions=sphn_pixel_dimensions,
-            has_number_of_samples_per_pixel=sphn_quantity_samples_per_pixel
-        )
+            logger.debug(" "*(indent+0) + "SPHN Quantity for number of rows created")
 
-        data_store.sphn_image_dimensions = sphn_image_dimensions
-        logger.debug(" "*(indent+0) + "SPHN ImageDimensions created and added to the data_store")
+        # 
+        # Columns
+        #
 
-    else:
-        logger.debug(" "*(indent+0) + "No SPHN ImageDimensions metadata found")
+        num_of_columns = get_columns_from_dicom(dataset, context, indent=indent+2) 
+
+        if num_of_columns is not None:
+
+            assert isinstance(num_of_columns, int)
+
+            logger.debug(" "*(indent+0) + f"Number of columns: '{num_of_columns}'")
+
+            sphn_quantity_columns = create_sphn_quantity_for_number_of_items(num_of_columns, context, indent=indent+2)
+
+            logger.debug(" "*(indent+0) + "SPHN Quantity for number of columns created")
+
+    
+        # 
+        # SpacingBetweenSlices
+        #
+
+        slice_spacing = get_spacing_between_slices_from_dicom(dataset, context, indent=indent+2)
+
+        if slice_spacing is not None:
+
+            logger.debug(" "*(indent+0) + f"Spacing between center of slices: '{slice_spacing}'")
+
+            sphn_quantity_slice_spacing = create_sphn_quantity_for_distance_in_mm(slice_spacing, context, indent=indent+2)
+
+            logger.debug(" "*(indent+0) + "SPHN Quantity for spacing between center of slices created")
+
+        # 
+        # SliceThickness
+        #
+
+        thickness = get_slice_thickness_from_dicom(dataset, context, indent=indent+2)
+
+        if thickness is not None:
+            
+            logger.debug(" "*(indent+0) + f"Slice thickness: '{thickness}'")
+
+            sphn_quantity_slice_thickness = create_sphn_quantity_for_distance_in_mm(thickness, context, indent=indent+2)
+
+            logger.debug(" "*(indent+0) + "SPHN Quantity for slice thickness created")
+
+        # 
+        # SamplesPerPixel
+        #
+
+        samples_per_pixel = get_samples_per_pixel_from_dicom(dataset, context,indent=indent+2)
+
+        if samples_per_pixel is not None:
+
+            logger.debug(" "*(indent+0) + f"Samples per pixel: '{samples_per_pixel}'")
+
+            sphn_quantity_samples_per_pixel = create_sphn_quantity_for_number_of_items(samples_per_pixel, context, indent=indent+2)
+
+            logger.debug(" "*(indent+0) + "SPHN Quantity for samples per pixel created")
+
+        # 
+        # SPHN ImageDimensions 
+        #
+
+        if sphn_pixel_dimensions is not None \
+            or sphn_quantity_rows is not None \
+            or sphn_quantity_columns is not None \
+            or sphn_quantity_slice_spacing is not None \
+            or sphn_quantity_slice_thickness is not None:
+            # ToDo: Edwin, or sphn_quantity_samples_per_pixel is not None: (not an SPHN property yet)
+            
+            sphn_image_dimensions = SPHNImageDimensions(
+                sphn_schema=sphn_schema,
+                has_number_of_rows=sphn_quantity_rows,
+                has_number_of_columns=sphn_quantity_columns,
+                has_number_of_slices=None,
+                has_slice_spacing=sphn_quantity_slice_spacing,
+                has_slice_thickness=sphn_quantity_slice_thickness,
+                has_pixel_dimensions=sphn_pixel_dimensions,
+                has_number_of_samples_per_pixel=sphn_quantity_samples_per_pixel
+            )
+
+            data_store.sphn_image_dimensions = sphn_image_dimensions
+            logger.debug(" "*(indent+0) + "SPHN ImageDimensions created and added to the data_store")
+
+        else:
+            logger.debug(" "*(indent+0) + "No SPHN ImageDimensions metadata found")
 
     # -------------------------------------------------------------------------------------------------------------
 
@@ -471,13 +475,15 @@ def get_frame_metadata_from_dicom(dataset: Dataset, frame_number: int, context: 
     # ContentQualification
     #
 
-    content_qualification = get_content_qualification_from_dicom(dataset, context, indent=indent+2)
+    if data_store.sphn_imagingframe_content_qualification_valueset_member is None:
 
-    if content_qualification is not None:
-        logger.debug(" "*(indent+0) + f"SPHN ImagingFrame ContentQualification ValueSet member: '{content_qualification}'")
-        data_store.sphn_imagingframe_content_qualification_valueset_member = content_qualification
-    else:
-        logger.debug(" "*(indent+0) + "No SPHN ImagingFrame ContentQualification metadata found")
+        content_qualification = get_content_qualification_from_dicom(dataset, context, indent=indent+2)
+
+        if content_qualification is not None:
+            logger.debug(" "*(indent+0) + f"SPHN ImagingFrame ContentQualification ValueSet member: '{content_qualification}'")
+            data_store.sphn_imagingframe_content_qualification_valueset_member = content_qualification
+        else:
+            logger.debug(" "*(indent+0) + "No SPHN ImagingFrame ContentQualification metadata found")
 
 
     # -------------------------------------------------------------------------------------------------------------
@@ -579,7 +585,7 @@ def get_frame_metadata_from_dicom(dataset: Dataset, frame_number: int, context: 
     # -------------------------------------------------------------------------------------------------------------
 
     #
-    # Read the Contrast/Bolus information from the DICOM dataset and add it to the data_store
+    # Contrast/Bolus
     #
     
     logger.debug(" "*(indent+0) + "Start processing Contrast/Bolus information from DICOM dataset")
@@ -597,19 +603,20 @@ def get_frame_metadata_from_dicom(dataset: Dataset, frame_number: int, context: 
 # -----------------------------------------------------------------------------------------------------------------
 
 #
-# Edwin 2026-10-22
+# Edwin 2026-11-11
 #
-def create_sphn_pixel_dimensions(dicom_pixel_spacing: list[float], context: Context, indent: int=0) -> SPHNPixelDimensions:
+def create_sphn_pixel_dimensions(dicom_pixel_spacing: tuple[float,float], context: Context, indent: int=0) -> SPHNPixelDimensions:
     """
     Creates SPHN Pixel Dimensions object
     Parameters:
-        - dicom_pixel_spacing: The DICOM PixelSpacing values as a list of two floats [row_spacing, column_spacing]
+        - dicom_pixel_spacing: The DICOM PixelSpacing values as a tuple of two floats [row_spacing, column_spacing]
         - context: The Context object that contains the logger and other relevant information
         - indent: The indentation level for logging messages (default is 0)
     """
-    assert isinstance(dicom_pixel_spacing, list)
-    assert len(dicom_pixel_spacing) == 2
-    assert all(isinstance(x, float) for x in dicom_pixel_spacing)
+    assert isinstance(dicom_pixel_spacing, tuple)
+    assert len(dicom_pixel_spacing) == 2 \
+        and isinstance(dicom_pixel_spacing[0], float) \
+        and isinstance(dicom_pixel_spacing[1], float)
     assert isinstance(context, Context)
     assert isinstance(indent,int) and indent>=0
 
@@ -881,9 +888,9 @@ def get_image_type_list_from_dicom(dataset: Dataset, context: Context, indent: i
 
 
 #
-# Edwin 2026-10-22
+# Edwin 2026-11-11
 #
-def get_pixel_spacing_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> list[float]|None:
+def get_pixel_spacing_from_dicom(dataset: Dataset, context: Context, indent: int=0) -> tuple[float,float]|None:
     """
     Returns the value corresponding to the value of the DICOM PixelSpacing tag
     Parameters:
@@ -909,25 +916,25 @@ def get_pixel_spacing_from_dicom(dataset: Dataset, context: Context, indent: int
 
     logger = context.logger
 
+    # Get the value of the DICOM PixelSpacing tag
     value = dataset.get("PixelSpacing", None)
+
     if value is None:
         logger.debug(" "*(indent+0) + "DICOM PixelSpacing tag was not found or empty")
         return None
 
     if not isinstance(value, pydicom.multival.MultiValue) \
-       or len(value) != 2 \
-       or not isinstance(value[0], pydicom.valuerep.DSfloat) \
-       or not isinstance(value[1], pydicom.valuerep.DSfloat):
+       or len(value) != 2:
         logger.warning(" "*(indent+0) + "DICOM PixelSpacing tag has invalid format")
         return None
 
     try:
-        pixel_spacing = [float(v) for v in value]
+        pixel_spacing = (float(value[0]), float(value[1]))
     except (ValueError, TypeError):
         logger.warning(" "*(indent+0) + "DICOM PixelSpacing values could not be converted to float values")
         return None
     
-    if pixel_spacing[0] < 0 or pixel_spacing[1] < 0:
+    if pixel_spacing[0] < 0.0 or pixel_spacing[1] < 0.0:
         logger.warning(" "*(indent+0) + f"DICOM PixelSpacing values: '{pixel_spacing}' are likely not valid")
         return None
 
