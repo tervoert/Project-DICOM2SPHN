@@ -14,6 +14,7 @@ from pydicom.sequence import Sequence
 from .context import Context
 from .data_converter import DataConverter
 from .dicom_contrast_bolus_module_reader import process_dicom_contrast_information
+from .dicom_pet_isotope_module_reader import process_dicom_pet_isotope_information
 from .sphn_concepts.sphn_body_site import SPHNBodySite
 from .sphn_concepts.sphn_code import SPHNCode
 from .sphn_concepts.sphn_data_compression_algorithm import SPHNDataCompressionAlgorithm
@@ -588,14 +589,37 @@ def get_frame_metadata_from_dicom(dataset: Dataset, frame_number: int, context: 
     # Contrast/Bolus
     #
     
-    logger.debug(" "*(indent+0) + "Start processing Contrast/Bolus information from DICOM dataset")
+    # Only for CT, X-rax, MR images , etc.
+    if dataset.get("Modality", None) in ["CT", "MR", "XA", "RF", "US", "MG", "RTIMAGE",     # Both Legacy and Enhanced Module
+                                         "CR", "DX", "IO", "ES", "GM", "XC", "OT", "SC",    # Only Legacy Module (SC only multi-frame)
+                                         "OP", "OPT", "IVOCT" ]:                            # Only Enhanced Module
 
-    process_dicom_contrast_information(dataset, context, indent=indent+2)
+        logger.debug(" "*(indent+0) + "Start processing Contrast/Bolus information from DICOM dataset")
 
-    if data_store.sphn_contrast_agent_administration_event_list is not None:
-        logger.debug(" "*(indent+0) + f"SPHN Contrast Agent Administration Event list in the data_store contains {len(data_store.sphn_contrast_agent_administration_event_list)} event(s)")
-    else:
-        logger.debug(" "*(indent+0) + "No SPHN Contrast Agent Administration Event metadata found")
+        process_dicom_contrast_information(dataset, context, indent=indent+2)
+
+        if data_store.sphn_contrast_agent_administration_event_list is not None:
+            logger.debug(" "*(indent+0) + f"SPHN Contrast Agent Administration Event list in the data_store contains {len(data_store.sphn_contrast_agent_administration_event_list)} event(s)")
+        else:
+            logger.debug(" "*(indent+0) + "No SPHN Contrast Agent Administration Event metadata found")
+
+    # -------------------------------------------------------------------------------------------------------------
+
+    #
+    # PET Isotope (Radiopharmaceutical and Radionuclide)
+    #
+
+    # Only for PET images (Modality "PT"): NM images have a similar NM Isotope module, but use other DICOM code tables (CID 25 and CID 18)
+    if dataset.get("Modality", None) == "PT":
+
+        logger.debug(" "*(indent+0) + "Start processing PET Isotope information from DICOM dataset")
+
+        process_dicom_pet_isotope_information(dataset, context, indent=indent+2)
+
+        if data_store.sphn_radiopharmaceutical_administration_event_list is not None:
+            logger.debug(" "*(indent+0) + f"SPHN Radiopharmaceutical Administration Event list in the data_store contains {len(data_store.sphn_radiopharmaceutical_administration_event_list)} event(s)")
+        else:
+            logger.debug(" "*(indent+0) + "No SPHN Radiopharmaceutical Administration Event metadata found")
 
 
 # -----------------------------------------------------------------------------------------------------------------

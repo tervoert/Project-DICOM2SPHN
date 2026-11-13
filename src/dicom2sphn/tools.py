@@ -7,10 +7,12 @@ tools.py:
 import logging
 import re
 import uuid
-from datetime import timedelta, timezone, tzinfo
+from datetime import datetime, time, timedelta, timezone, tzinfo
 
 from pydicom import Dataset
 from pydicom.valuerep import DA, DT, TM
+
+from .data_converter import DataConverter
 
 
 def is_valid_string(string: str) -> bool:
@@ -22,6 +24,22 @@ def is_valid_string(string: str) -> bool:
     #return isinstance(string,str) and re.match(r"^\S+(?: \S+)*$", string) is not None
 
     return (isinstance(string,str) and len(string) > 0 and len(string) == len(string.strip()))
+
+
+def get_lookup_coding_scheme_designator(coding_scheme_designator: str) -> str:
+    """
+    Returns the coding scheme designator to use for looking up a DICOM code in the DataConverter mapping dictionaries.
+    The retired designator "SNM3" is replaced by "SRT", as both are used in older DICOM data for the same SNOMED-RT codes.
+    Other designators are returned unchanged (the case is kept, as some mapping keys use mixed case, e.g.: "NCIt").
+    Parameters:
+        - coding_scheme_designator: The coding scheme designator as found in DICOM (e.g.: "SCT", "SRT", "SNM3")
+    Returns:
+        - The coding scheme designator to use as the first item of the lookup key (e.g.: "SCT", "SRT")
+    """
+
+    assert is_valid_string(coding_scheme_designator)
+
+    return "SRT" if coding_scheme_designator.upper() == "SNM3" else coding_scheme_designator
 
 
 def is_clean_string(string: str) -> bool:
@@ -331,6 +349,119 @@ def complete_dicom_datetime(dicom_datetime: str, tz: tzinfo, logger: logging.Log
         dicom_dt = DT.combine(dicom_dt.date(), dicom_dt.time(), tzinfo=tz)
 
     return dicom_dt
+
+
+#
+# Edwin 2026-10-16 (moved from dicom_contrast_bolus_module_reader.get_contrast_bolus_datetime on 2026-11-13)
+#
+def combine_dicom_time_with_reference_datetime(
+        dicom_time: time,
+        acquisition_datetime: datetime|None,
+        series_datetime: datetime|None,
+        study_datetime: datetime|None,
+        logger: logging.Logger,
+        indent: int=0
+    ) -> datetime|None:
+    """
+    Returns the estimated datetime of a DICOM time only value (e.g. a contrast/bolus or radiopharmaceutical start time),
+    by combining it with the date of a reference datetime, adjusted for potential midnight boundary crossings.
+    Parameters:
+        dicom_time (datetime.time): The DICOM time, e.g. of the contrast/bolus or radiopharmaceutical injection.
+        acquisition_datetime (datetime|None): The datetime of the acquisition.
+        series_datetime (datetime|None): The datetime of the series.
+        study_datetime (datetime|None): The datetime of the study.
+        logger (logging.Logger): Logger for debug and warning messages.
+        indent (int): The indentation level for logging.
+
+    Returns:
+        datetime|None: The estimated datetime, adjusted for potential midnight boundary crossings. Returns None if insufficient information is provided.
+
+    Note: At least one of acquisition_datetime, series_datetime, or study_datetime must be provided.
+    The time is a local time in the same timezone as the reference (acquisition, series, or study) datetime.
+    """
+    assert isinstance(dicom_time, time)
+    assert acquisition_datetime is None or isinstance(acquisition_datetime, datetime)
+    assert series_datetime is None or isinstance(series_datetime, datetime)
+    assert study_datetime is None or isinstance(study_datetime, datetime)
+    assert isinstance(indent, int) and indent >= 0
+
+    # 1. Validate input parameters and ensure at least one datetime is provided
+    if acquisition_datetime is None and series_datetime is None and study_datetime is None:
+        logger.warning(" "*(indent+0) + "At least one of acquisition_datetime, series_datetime, or study_datetime must be provided.")
+        return None
+
+    # 2. Select the reference datetime: the acquisition, series, or study datetime
+    reference_datetime = acquisition_datetime if acquisition_datetime else series_datetime if series_datetime else study_datetime
+
+    # 3. Use whole seconds only, to ensure a uniform comparison
+    reference_dt = reference_datetime.replace(microsecond=0)
+    time_dt = datetime.combine(reference_dt.date(), dicom_time.replace(microsecond=0, tzinfo=None), tzinfo=reference_datetime.tzinfo)
+
+    # 4. Handle Both Midnight Scenarios (Forward and Reverse Crossings)
+    time_difference = time_dt - reference_dt.replace(tzinfo=reference_datetime.tzinfo)
+
+    # Scenario A: The time looks like it is 23+ hours AFTER the reference
+    # (Real world: Time right BEFORE midnight, the reference (e.g. scan) right AFTER midnight)
+    if time_difference.total_seconds() > 82800:
+        time_dt = time_dt - timedelta(days=1)
+
+    # Scenario B: The time looks like it is 23+ hours BEFORE the reference
+    # (Real world: The reference (e.g. scan) right BEFORE midnight, the time right AFTER midnight)
+    elif time_difference.total_seconds() < -82800:
+        time_dt = time_dt + timedelta(days=1)
+
+    # Scenario C: Normal daytime workflow or same-day post-midnight operations
+    # No adjustments needed, the calendar date matches perfectly.
+
+    logger.debug(" "*(indent+0) + f"Combined the DICOM time '{dicom_time!s}' with the reference datetime '{reference_datetime!s}': '{time_dt!s}'")
+
+    return time_dt
+
+
+#
+# Edwin 2026-10-28 (moved from dicom_contrast_bolus_module_reader.extract_administration_routes on 2026-11-13)
+#
+def extract_administration_routes_from_text(route_string: str, logger: logging.Logger, indent: int=0) -> list[dict]:
+    """
+    Extracts administration route codes from a (free text) route string, e.g. of the DICOM Contrast/Bolus Route or Radiopharmaceutical Route tag.
+    The routes are matched with DataConverter.route_patterns and coded with DataConverter.sphn_route_codes.
+    Parameters:
+        - route_string: The (free text) administration route string.
+        - logger: Logger for debug and warning messages.
+        - indent: The indentation level for logging (default is 0)
+    Returns:
+        - A list of dictionaries containing the matched administration routes ("Route") and their corresponding Codes ("Code").
+    """
+
+    assert is_valid_string(route_string)
+    assert isinstance(indent, int)
+
+    # Ensure that every route pattern has a corresponding code in the DataConverter class
+    assert hasattr(DataConverter, "route_patterns") \
+        and hasattr(DataConverter, "sphn_route_codes") \
+        and isinstance(DataConverter.route_patterns, dict) \
+        and isinstance(DataConverter.sphn_route_codes, dict) \
+        and all(isinstance(route_name, str) and isinstance(pattern, str) for route_name, pattern in DataConverter.route_patterns.items()) \
+        and all(isinstance(route_name, str) and isinstance(snomed_code, tuple) for route_name, snomed_code in DataConverter.sphn_route_codes.items()) \
+        and all(len(snomed_code) == 3 for snomed_code in DataConverter.sphn_route_codes.values()) \
+        and all(route_name in DataConverter.sphn_route_codes for route_name in DataConverter.route_patterns)
+
+    matches_found = []
+    # Check each route pattern (case-insensitive) against the route string
+    for route_name, pattern in DataConverter.route_patterns.items():
+        if re.search(pattern, route_string, re.IGNORECASE):
+
+            # Retrieve the corresponding Code for the matched route name
+            code = DataConverter.sphn_route_codes.get(route_name, None)
+
+            # Append the matched route and its Code to the list of matches found
+            matches_found.append({
+                "Route": route_name,
+                "Code": code
+            })
+            logger.debug(" "*(indent+0) + f"Matched route: '{route_name}' and mapped it to SPHN route code: '{code}'")
+
+    return matches_found
 
 
 def generate_id() -> str:

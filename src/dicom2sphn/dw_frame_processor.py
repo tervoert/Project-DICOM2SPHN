@@ -184,7 +184,10 @@ class DWFrameProcessor:
                 has_algorithm_list = data_store.sphn_data_compression_algorithm_list,
                 has_content_qualification = data_store.sphn_imagingframe_content_qualification_valueset_member,
                 has_imaging_metric = None,
-                has_anatomical_projection = None
+                has_anatomical_projection = None,
+                has_radiopharmaceutical_administration_event = data_store.sphn_radiopharmaceutical_administration_event_list[0] \
+                    if data_store.sphn_radiopharmaceutical_administration_event_list is not None \
+                        and len(data_store.sphn_radiopharmaceutical_administration_event_list) > 0 else None
             )
         elif sop_class_uid in ['empty_for_now']:
             # Create a specific SPHN XRayImagingFrame

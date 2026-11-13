@@ -1,10 +1,9 @@
 """
-dicom_contrast_bolus_tags_reader.py:
+dicom_contrast_bolus_module_reader.py:
     Part of the example dicom2sphn package.
     It contains functions for reading DICOM contrast bolus tags.
 """
-import re
-from datetime import datetime, time, timedelta
+from datetime import datetime
 
 from pydicom import Dataset
 from pydicom.multival import MultiValue
@@ -31,7 +30,13 @@ from .sphn_concepts.sphn_drug_article import SPHNDrugArticle
 from .sphn_concepts.sphn_flow_profile_interval import SPHNFlowProfileInterval
 from .sphn_concepts.sphn_quantity import SPHNQuantity
 from .sphn_concepts.sphn_unit import SPHNUnit
-from .tools import complete_dicom_time, is_valid_string
+from .tools import (
+    combine_dicom_time_with_reference_datetime,
+    complete_dicom_time,
+    extract_administration_routes_from_text,
+    get_lookup_coding_scheme_designator,
+    is_valid_string,
+)
 
 #
 # DICOM defines two modules for contrast bolus information: 
@@ -504,12 +509,12 @@ def process_legacy_contrast_bolus_module_from_dicom(dataset: Dataset, context: C
             logger.debug(" "*(indent+2) + "Failed to complete contrast/bolus start time from DICOM dataset.")
         else:
             # Get the complete contrast/bolus start datetime by combining the start time with the relevant acquisition/series/study date.
-            contrast_bolus_start_datetime = get_contrast_bolus_datetime(
-                contrast_bolus_time=contrast_bolus_start_time, 
+            contrast_bolus_start_datetime = combine_dicom_time_with_reference_datetime(
+                dicom_time=contrast_bolus_start_time, 
                 acquisition_datetime=data_store.acquisition_start_datetime, 
                 series_datetime=data_store.series_start_datetime,
                 study_datetime=data_store.study_start_datetime,
-                context=context, 
+                logger=logger, 
                 indent=indent+2
             )
 
@@ -546,12 +551,12 @@ def process_legacy_contrast_bolus_module_from_dicom(dataset: Dataset, context: C
 
         if contrast_bolus_end_time is not None:
             # Get the complete contrast/bolus end datetime by combining the end time with the relevant acquisition/series/study date.
-            contrast_bolus_end_datetime = get_contrast_bolus_datetime(
-                contrast_bolus_time=contrast_bolus_end_time, 
+            contrast_bolus_end_datetime = combine_dicom_time_with_reference_datetime(
+                dicom_time=contrast_bolus_end_time, 
                 acquisition_datetime=data_store.acquisition_start_datetime, 
                 series_datetime=data_store.series_start_datetime,
                 study_datetime=data_store.study_start_datetime,
-                context=context, 
+                logger=logger, 
                 indent=indent+2
             )
 
@@ -1204,7 +1209,7 @@ def process_contrast_bolus_route(route_string:str, context: Context, indent:int=
     sphn_code_list = []
     routes_found = []
 
-    matches_found = extract_administration_routes(route_string, context, indent=indent)
+    matches_found = extract_administration_routes_from_text(route_string, logger, indent=indent)
 
     if not matches_found:
         logger.debug(" "*(indent+0) + f"No matches found for route: '{route_string}'")
@@ -1244,59 +1249,6 @@ def process_contrast_bolus_route(route_string:str, context: Context, indent:int=
     data_store.add_contrast_bolus_route_to_dict(route_string, routes_found)
 
     return sphn_code_list
-
-
-#
-# Edwin 2026-10-28
-#
-def extract_administration_routes(route_string:str, context: Context, indent: int=0) -> list[dict]:
-    """
-    Extracts administration route codes from the Contrast/Bolus Route Tag string.
-    Parameters:
-        - route_string: The DICOM contrast bolus (administration) route string.
-        - context: The Context object that holds the data_store, logger and other relevant information
-        - indent: The indentation level for logging (default is 0)
-    Returns:
-        - A list of dictionaries containing the matched administration routes and their corresponding Codes.
-    """
-
-    assert is_valid_string(route_string)
-    assert isinstance(context, Context)
-    assert isinstance(indent, int)
-    
-    # Ensure that every route pattern has a corresponding code in the DataConverter class
-    assert hasattr(DataConverter, "route_patterns") \
-        and hasattr(DataConverter, "sphn_route_codes") \
-        and isinstance(DataConverter.route_patterns, dict) \
-        and isinstance(DataConverter.sphn_route_codes, dict) \
-        and all(isinstance(route_name, str) and isinstance(pattern, str) for route_name, pattern in DataConverter.route_patterns.items()) \
-        and all(isinstance(route_name, str) and isinstance(snomed_code, tuple) for route_name, snomed_code in DataConverter.sphn_route_codes.items()) \
-        and all(len(snomed_code) == 3 for snomed_code in DataConverter.sphn_route_codes.values()) \
-        and all(route_name in DataConverter.sphn_route_codes for route_name in DataConverter.route_patterns)
-    
-    logger = context.logger
-    
-    # Define the regex patterns for the administration routes (case-insensitive)
-    route_patterns = {}
-    for route_name, pattern in DataConverter.route_patterns.items():
-        route_patterns[route_name] = re.compile(pattern, re.IGNORECASE)
-            
-    matches_found = []
-    # Check each route pattern against the route string
-    for route_name, pattern in route_patterns.items():
-        if pattern.search(route_string):
-
-            # Retrieve the corresponding Code for the matched route name
-            code = DataConverter.sphn_route_codes.get(route_name, None)
-
-            # Append the matched route and its Code to the list of matches found
-            matches_found.append({
-                "Route": route_name,
-                "Code": code
-            })
-            logger.debug(" "*(indent+0) + f"Matched route: '{route_name}' and mapped it to SPHN route code: '{code}'")
-
-    return matches_found    
 
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -2031,7 +1983,8 @@ def process_contrast_bolus_administration_route_sequence_item(dataset:Dataset, c
     logger.debug(" "*(indent+4) + f"DICOM ContrastBolusAdministrationRouteSequence item has coding scheme designator '{coding_scheme_designator}' and code value '{code_value}' with description '{code_descr}'")
 
     # Try to convert the DICOM coding scheme designator and code value to a SPHN administration route SNOMED-CT code
-    result = DataConverter.administration_routes_list.get((coding_scheme_designator, code_value), None)
+    # (older DICOM data may use the retired SNOMED-RT codes, with the coding scheme designator "SRT" or "SNM3")
+    result = DataConverter.administration_routes_list.get((get_lookup_coding_scheme_designator(coding_scheme_designator), code_value), None)
 
     # Check if the route is known
     if result is None:
@@ -2099,12 +2052,12 @@ def process_contrast_administration_profile_sequence_item(dataset:Dataset, conte
 
         if contrast_bolus_start_time is not None:
             # Get the complete contrast/bolus start datetime by combining the start time with the relevant acquisition/series/study date.
-            contrast_bolus_start_datetime = get_contrast_bolus_datetime(
-                contrast_bolus_time=contrast_bolus_start_time, 
+            contrast_bolus_start_datetime = combine_dicom_time_with_reference_datetime(
+                dicom_time=contrast_bolus_start_time, 
                 acquisition_datetime=data_store.acquisition_start_datetime, 
                 series_datetime=data_store.series_start_datetime,
                 study_datetime=data_store.study_start_datetime,
-                context=context, 
+                logger=logger, 
                 indent=indent+2
             )
 
@@ -2130,12 +2083,12 @@ def process_contrast_administration_profile_sequence_item(dataset:Dataset, conte
 
         if contrast_bolus_end_time is not None:
             # Get the complete contrast/bolus end datetime by combining the end time with the relevant acquisition/series/study date.
-            contrast_bolus_end_datetime = get_contrast_bolus_datetime(
-                contrast_bolus_time=contrast_bolus_end_time, 
+            contrast_bolus_end_datetime = combine_dicom_time_with_reference_datetime(
+                dicom_time=contrast_bolus_end_time, 
                 acquisition_datetime=data_store.acquisition_start_datetime, 
                 series_datetime=data_store.series_start_datetime,
                 study_datetime=data_store.study_start_datetime,
-                context=context, 
+                logger=logger, 
                 indent=indent+2
             )
 
@@ -2264,9 +2217,10 @@ def mapping_dicom_coded_contrast_agent_2_sphn_contrast_agent_active_ingredient_s
 
     logger = context.logger
 
-    # Check if it is a known DICOM contrast agent code as listed in DICOM Table CID 12
+    # Check if it is a known DICOM contrast agent code as listed in DICOM Table CID 12 or CID 13
+    # (older DICOM data may use the retired SNOMED-RT codes, with the coding scheme designator "SRT" or "SNM3")
     # Link: https://dicom.nema.org/medical/dicom/current/output/chtml/part16/sect_CID_12.html
-    result = DataConverter.dicom_contrast_agents_coded_2_sphn_snomed_coded.get((coding_scheme_designator.upper(), code_value), None)
+    result = DataConverter.dicom_contrast_agents_coded_2_sphn_snomed_coded.get((get_lookup_coding_scheme_designator(coding_scheme_designator.upper()), code_value), None)
 
     if result is None:
         logger.warning(" "*(indent+0) + f"Failed to map the DICOM coding : '{(coding_scheme_designator, code_value, code_descr)}' to SPHN SNOMED-CT code")
@@ -3263,89 +3217,6 @@ def get_contrast_bolus_agent_number_from_dicom(dataset: Dataset, context: Contex
 # ---------------------------------------------------------------------------------------------------------------------
 # Tools
 # ---------------------------------------------------------------------------------------------------------------------
-
-#
-# Edwin 2026-10-16
-#
-def get_contrast_bolus_datetime(
-        contrast_bolus_time: time, 
-        acquisition_datetime: datetime|None, 
-        series_datetime: datetime|None,
-        study_datetime: datetime|None,
-        context: Context, 
-        indent: int=0
-    ) -> datetime|None:
-    """
-    Returns the estimated datetime of the contrast/bolus, adjusted for potential midnight boundary crossings.
-    Parameters:
-        contrast_bolus_time (datetime.time): The time of the contrast/bolus injection.
-        acquisition_datetime (datetime|None): The datetime of the acquisition.
-        series_datetime (datetime|None): The datetime of the series.
-        study_datetime (datetime|None): The datetime of the study.
-        context (Context): The context object containing logger and other information.
-        indent (int): The indentation level for logging.
-    
-    Returns:
-        datetime|None: The estimated datetime of the contrast/bolus, adjusted for potential midnight boundary crossings. Returns None if insufficient information is provided.
-
-    Note: At least one of acquisition_datetime, series_datetime, or study_datetime must be provided.
-    """
-    assert isinstance(contrast_bolus_time, time)
-    assert acquisition_datetime is None or isinstance(acquisition_datetime, datetime)
-    assert series_datetime is None or isinstance(series_datetime, datetime)
-    assert study_datetime is None or isinstance(study_datetime, datetime)
-    assert isinstance(context, Context)
-    assert isinstance(indent, int) and indent >= 0
-
-    logger = context.logger
-
-    # 1. Validate input parameters and ensure at least one datetime is provided
-    if acquisition_datetime is None and series_datetime is None and study_datetime is None:
-        logger.warning(" "*(indent+0) + "At least one of acquisition_datetime, series_datetime, or study_datetime must be provided.")
-        return None
-    
-    # 2. Safely retrieve required tags with logical fallbacks
-    acq_date = acquisition_datetime.strftime("%Y%m%d") if acquisition_datetime else series_datetime.strftime("%Y%m%d") if series_datetime else study_datetime.strftime("%Y%m%d")
-    acq_time = acquisition_datetime.strftime("%H%M%S") if acquisition_datetime else series_datetime.strftime("%H%M%S") if series_datetime else study_datetime.strftime("%H%M%S")
-    contrast_time = contrast_bolus_time.strftime("%H%M%S")
-    
-    if not all([acq_date, acq_time, contrast_time]):
-        logger.warning(" "*(indent+0) + "Required date/time values are missing.")
-        return None
-    
-    # 3. Strip fractional seconds/microseconds to ensure uniform string parsing
-    acq_time_clean = acq_time.split('.')[0]
-    contrast_time_clean = contrast_time.split('.')[0]
-    
-    # Pad strings with trailing zeros if they lack seconds (e.g., '1430' -> '143000')
-    acq_time_clean = acq_time_clean.ljust(6, '0')
-    contrast_time_clean = contrast_time_clean.ljust(6, '0')
-   
-    # The contrast/bolus time is a local time in the same timezone as the reference (acquisition, series, or study) datetime
-    reference_datetime = acquisition_datetime if acquisition_datetime else series_datetime if series_datetime else study_datetime
-    reference_timezone = reference_datetime.tzinfo
-
-    # 4. Generate baseline datetime objects assuming they share the same date initially
-    acq_dt = datetime.strptime(f"{acq_date}{acq_time_clean}", "%Y%m%d%H%M%S").replace(tzinfo=reference_timezone)
-    contrast_dt = datetime.strptime(f"{acq_date}{contrast_time_clean}", "%Y%m%d%H%M%S").replace(tzinfo=reference_timezone)
-
-    # 5. Handle Both Midnight Scenarios (Forward and Reverse Crossings)
-    time_difference = contrast_dt - acq_dt
-
-    # Scenario A: Contrast looks like it happened 23+ hours BEFORE the scan
-    # (Real world: Contrast happened right BEFORE midnight, Scan happened right AFTER midnight)
-    if time_difference.total_seconds() > 82800:
-        contrast_dt = contrast_dt - timedelta(days=1)
-
-    # Scenario B: Contrast looks like it happened 23+ hours AFTER the scan
-    # (Real world: Scan started right BEFORE midnight, Contrast injected right AFTER midnight)
-    elif time_difference.total_seconds() < -82800:
-        contrast_dt = contrast_dt + timedelta(days=1)
-
-    # Scenario C: Normal daytime workflow or same-day post-midnight operations
-    # No adjustments needed, the calendar date matches perfectly.
-            
-    return contrast_dt
 
 
 #

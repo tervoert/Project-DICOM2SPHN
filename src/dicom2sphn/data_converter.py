@@ -1197,6 +1197,59 @@ class DataConverter:
         ("SCT",   "385420005"): ("SNOMED",  "385420005", "| Contrast media (substance) |"),                                          # Contrast agent                       # The parent concept itself
         ### Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, but included in SPHN Contrast Agent Active Ingredient code
         ("SCT",    "43538006"): ("SNOMED",   "43538006", "| Non radiopaque medium (substance) |"),                                   # Non radiopaque medium                # Not a subclass of SNOMED-CT 385420005 | Contrast media (substance) |, but included in SPHN Contrast Agent Active Ingredient code
+
+        # Retired SNOMED-RT (SRT) codes of DICOM CID 12 and CID 13, as found in older DICOM data: the same values as for the corresponding SNOMED CT (SCT) codes
+        ("SRT",     "A-80230"): ("SNOMED",   "15158005", "| Air (substance) |"),                                                     # Air  # SNOMED-RT ID of SCT 15158005
+        ("SRT",     "C-12217"): ("SNOMED",  "396014007", "| Barium sulfate (substance) |"),                                          # Barium Sulfate  # SNOMED-RT ID of SCT 25419009
+        ("SRT",     "C-B0315"): ("SNOMED",   "90745007", "| Bunamiodyl (substance) |"),                                              # Bunamiodyl  # SNOMED-RT ID of SCT 90745007
+        ("SRT",     "C-10520"): ("SNOMED",   "31811003", "| Carbon dioxide (substance) |"),                                          # Carbon dioxide  # SNOMED-RT ID of SCT 31811003
+        ("SRT",     "C-B0316"): ("SNOMED",   "62442005", "| Chloriodized oil (substance) |"),                                        # Chloriodized oil  # SNOMED-RT ID of SCT 62442005
+        ("SRT",     "F-61D54"): ("SNOMED",  "385420005", "| Contrast media (substance) |"),                                          # Contrast agent  # SNOMED-RT ID of SCT 385420005
+        ("SRT",     "C-B0317"): ("SNOMED",  "396020008", "| Amidotrizoate (substance) |"),                                           # Diatrizoate  # SNOMED-RT ID of SCT 12335007
+        ("SRT",     "C-B0415"): ("SNOMED",  "418351005", "| Gadobutrol (substance) |"),                                              # Gadobutrol  # SNOMED-RT ID of SCT 407976008
+        ("SRT",     "C-B03C3"): ("SNOMED",  "396067007", "| Gadodiamide (substance) |"),                                             # Gadodiamide  # SNOMED-RT ID of SCT 354088005
+        ("SRT",     "C-B0321"): ("SNOMED",  "109216000", "| Gadopentetate dimeglumine (substance) |"),                               # Gadopentetate dimeglumine  # SNOMED-RT ID of SCT 109216000
+        ("SRT",     "C-F06BC"): ("SNOMED",  "712714000", "| Gadoterate meglumine (substance) |"),                                    # Gadoterate meglumine  # SNOMED-RT ID of SCT 712714000
+        ("SRT",     "C-B03AD"): ("SNOMED",  "420600009", "| Gadoteridol (substance) |"),                                             # Gadoteridol  # SNOMED-RT ID of SCT 353946009
+        ("SRT",     "C-B0493"): ("SNOMED",  "409476008", "| Gadoversetamide (substance) |"),                                         # Gadoversetamide  # SNOMED-RT ID of SCT 409477004
+        ("SRT",     "C-178FF"): ("SNOMED",  "440223009", "| Gadoxetate disodium (substance) |"),                                     # Gadoxetate disodium  # SNOMED-RT ID of SCT 440223009
+        ("SRT",     "C-B0326"): ("SNOMED",   "12801003", "| Iodamide meglumine (substance) |"),                                      # Iodamide meglumine  # SNOMED-RT ID of SCT 12801003
+        ("SRT",     "C-B0318"): ("SNOMED",  "398939009", "| Iodipamide (substance) |"),                                              # Iodipamide  # SNOMED-RT ID of SCT 73212002
+        ("SRT",     "C-B03BC"): ("SNOMED",  "395750001", "| Iodixanol (substance) |"),                                               # Iodixanol  # SNOMED-RT ID of SCT 353962003
+        ("SRT",     "C-B0319"): ("SNOMED",   "89595000", "| Iodized oil (substance) |"),                                             # Iodized oil  # SNOMED-RT ID of SCT 89595000
+        ("SRT",     "C-B0323"): ("SNOMED",   "86584005", "| Iodoalphionic acid (substance) |"),                                      # Iodoalphionic acid  # SNOMED-RT ID of SCT 86584005
+        ("SRT",     "C-B0341"): ("SNOMED",   "74554008", "| Iodophthalein (substance) |"),                                           # Iodophthalein  # SNOMED-RT ID of SCT 74554008
+        ("SRT",     "C-B0327"): ("SNOMED",   "40710000", "| Iodopyracet (substance) |"),                                             # Iodopyracet  # SNOMED-RT ID of SCT 40710000
+        ("SRT",     "C-B0322"): ("SNOMED",  "395751002", "| Iohexol (substance) |"),                                                 # Iohexol  # SNOMED-RT ID of SCT 109218004
+        ("SRT",     "C-B0329"): ("SNOMED",  "395754005", "| Iopamidol (substance) |"),                                               # Iopamidol  # SNOMED-RT ID of SCT 109219007
+        ("SRT",     "C-B0328"): ("SNOMED",  "412227008", "| Iopanoic acid (substance) |"),                                           # Iopanoic acid  # SNOMED-RT ID of SCT 76155001
+        ("SRT",     "C-B0331"): ("SNOMED",   "28121005", "| Iophendylate (substance) |"),                                            # Iophendylate  # SNOMED-RT ID of SCT 28121005
+        ("SRT",     "C-B0333"): ("SNOMED",   "23053002", "| Iophenoxic acid (substance) |"),                                         # Iophenoxic acid  # SNOMED-RT ID of SCT 23053002
+        ("SRT",     "C-B0382"): ("SNOMED",  "395756007", "| Iopromide (substance) |"),                                               # Iopromide  # SNOMED-RT ID of SCT 353903006
+        ("SRT",     "C-B038B"): ("SNOMED",  "395981002", "| Iothalamate (substance) |"),                                             # Iothalamate  # SNOMED-RT ID of SCT 353912008
+        ("SRT",     "C-B0332"): ("SNOMED",  "395759000", "| Ioversol (substance) |"),                                                # Ioversol  # SNOMED-RT ID of SCT 109222009
+        ("SRT",     "F-61E1C"): ("SNOMED",  "412228003", "| Ioxaglate meglumine (substance) |"),                                     # Ioxaglate  # SNOMED-RT ID of SCT 412228003
+        ("SRT",     "C-B0303"): ("SNOMED",  "409485008", "| Ioxilan (substance) |"),                                                 # Ioxilan  # SNOMED-RT ID of SCT 409484007
+        ("SRT",     "C-B0335"): ("SNOMED",   "87445005", "| Ipodate (substance) |"),                                                 # Ipodate  # SNOMED-RT ID of SCT 87445005
+        ("SRT",     "C-B0345"): ("SNOMED",   "47192000", "| Meglumine amidotrizoate (substance) |"),                                 # Meglumine diatrizoate  # SNOMED-RT ID of SCT 47192000
+        ("SRT",     "C-B0324"): ("SNOMED",   "69783005", "| Iodipamide meglumine (substance) |"),                                    # Meglumine iodipamide  # SNOMED-RT ID of SCT 69783005
+        ("SRT",     "C-B0348"): ("SNOMED",   "90733003", "| Metrizamide (substance) |"),                                             # Metrizamide  # SNOMED-RT ID of SCT 90733003
+        ("SRT",     "C-B03C9"): ("SNOMED",  "395792006", "| Metrizoate (substance) |"),                                              # Metrizoate  # SNOMED-RT ID of SCT 354094002
+        ("SRT",     "C-B0312"): ("SNOMED",   "43538006", "| Non radiopaque medium (substance) |"),                                   # Non radiopaque medium  # SNOMED-RT ID of SCT 43538006
+        ("SRT",     "C-10110"): ("SNOMED",   "24099007", "| Oxygen (substance) |"),                                                  # Oxygen  # SNOMED-RT ID of SCT 24099007
+        ("SRT",     "C-B0337"): ("SNOMED",  "111158001", "| Propyliodone (substance) |"),                                            # Propyliodone  # SNOMED-RT ID of SCT 111158001
+        ("SRT",     "F-61FEA"): ("SNOMED",  "419098001", "| Radiographic imaging contrast media (substance) |"),                     # Radiopaque medium  # SNOMED-RT ID of SCT 419098001
+        ("SRT",     "C-B0338"): ("SNOMED",   "32836007", "| Sodium acetrizoate (substance) |"),                                      # Sodium acetrizoate  # SNOMED-RT ID of SCT 32836007
+        ("SRT",     "C-B0342"): ("SNOMED",   "83423008", "| Sodium diprotrizoate (substance) |"),                                    # Sodium diprotrizoate  # SNOMED-RT ID of SCT 83423008
+        ("SRT",     "C-B0325"): ("SNOMED",     "925002", "| Sodium iodipamide (substance) |"),                                       # Sodium iodipamide  # SNOMED-RT ID of SCT 925002
+        ("SRT",     "C-B0344"): ("SNOMED",   "38344006", "| Sodium iodomethamate (substance) |"),                                    # Sodium iodomethamate  # SNOMED-RT ID of SCT 38344006
+        ("SRT",     "C-B0314"): ("SNOMED",  "109212003", "| Tyropanoate sodium (substance) |"),                                      # Sodium tyropanoate  # SNOMED-RT ID of SCT 109212003
+        ("SRT",     "C-10120"): ("SNOMED",   "11713004", "| Water (substance) |"),                                                   # Water  # SNOMED-RT ID of SCT 11713004
+        ("SRT",     "C-11400"): ("SNOMED",   "44588005", "| Iodine (substance) |"),                                                  # Iodine  # SNOMED-RT ID of SCT 44588005
+        ("SRT",     "C-17800"): ("SNOMED",   "58281002", "| Gadolinium (substance) |"),                                              # Gadolinium  # SNOMED-RT ID of SCT 58281002
+        ("SRT",     "C-12200"): ("SNOMED",   "39290007", "| Barium (substance) |"),                                                  # Barium  # SNOMED-RT ID of SCT 39290007
+        ("SRT",     "C-17200"): ("SNOMED",   "83598005", "| Xenon (substance) |"),                                                   # Xenon  # SNOMED-RT ID of SCT 83598005
+        ("SRT",     "C-13000"): ("SNOMED",    "3829006", "| Iron (substance) |"),                                                    # Iron  # SNOMED-RT ID of SCT 3829006
     }
 
 
@@ -1764,7 +1817,29 @@ class DataConverter:
         ("SCT", "420287000"):   ("SNOMED", "420287000",  "| Intraventricular route - cardiac (qualifier value) |"), # "Intraventricular route - cardiac",
         ("SCT", "46713006"):    ("SNOMED", "46713006",   "| Nasal route (qualifier value) |"),                      # "Nasal route",
         ("SCT", "447122006"):   ("SNOMED", "447122006",  "| Intratumor route (qualifier value) |"),                 # "Intratumor route",
-        ("SCT", "1259221004"):  ("SNOMED", "1259221004", "| Intracorporus cavernosum route (qualifier value) |")    # "Intracorpus cavernosum route"
+        ("SCT", "1259221004"):  ("SNOMED", "1259221004", "| Intracorporus cavernosum route (qualifier value) |"),   # "Intracorpus cavernosum route"
+
+        # Retired SNOMED-RT (SRT) codes of DICOM CID 11, as found in older DICOM data: the same values as for the corresponding SNOMED CT (SCT) codes
+        ("SRT", "G-D101"):      ("SNOMED", "47625008",   "| Intravenous route (qualifier value) |"),                # Intravenous route  # SNOMED-RT ID of SCT 47625008
+        ("SRT", "G-D102"):      ("SNOMED", "58100008",   "| Intra-arterial route (qualifier value) |"),             # Intra-arterial route  # SNOMED-RT ID of SCT 58100008
+        ("SRT", "G-D103"):      ("SNOMED", "78421000",   "| Intramuscular route (qualifier value) |"),              # Intramuscular route  # SNOMED-RT ID of SCT 78421000
+        ("SRT", "G-D104"):      ("SNOMED", "34206005",   "| Subcutaneous route (qualifier value) |"),               # Subcutaneous route  # SNOMED-RT ID of SCT 34206005
+        ("SRT", "G-D17D"):      ("SNOMED", "372464004",  "| Intradermal route (qualifier value) |"),                # Intracutaneous route  # SNOMED-RT ID of SCT 372464004
+        ("SRT", "G-D106"):      ("SNOMED", "38239002",   "| Intraperitoneal route (qualifier value) |"),            # Intraperitoneal route  # SNOMED-RT ID of SCT 38239002
+        ("SRT", "G-D107"):      ("SNOMED", "60213007",   "| Intramedullary route (qualifier value) |"),             # Intramedullary route  # SNOMED-RT ID of SCT 60213007
+        ("SRT", "G-D108"):      ("SNOMED", "72607000",   "| Intrathecal route (qualifier value) |"),                # Intrathecal route  # SNOMED-RT ID of SCT 72607000
+        ("SRT", "G-D109"):      ("SNOMED", "12130007",   "| Intra-articular route (qualifier value) |"),            # Intra-articular route  # SNOMED-RT ID of SCT 12130007
+        ("SRT", "G-D112"):      ("SNOMED", "6064005",    "| Topical route (qualifier value) |"),                    # Topical route  # SNOMED-RT ID of SCT 6064005
+        ("SRT", "G-D140"):      ("SNOMED", "26643006",   "| Oral route (qualifier value) |"),                       # Oral route  # SNOMED-RT ID of SCT 26643006
+        ("SRT", "G-D144"):      ("SNOMED", "37737002",   "| Intraluminal route (qualifier value) |"),               # Intraluminal route  # SNOMED-RT ID of SCT 37737002
+        ("SRT", "R-40B32"):     ("SNOMED", "447694001",  "| Respiratory tract route (qualifier value) |"),          # By inhalation  # SNOMED-RT ID of SCT 446406008
+        ("SRT", "G-D160"):      ("SNOMED", "37161004",   "| Rectal route (qualifier value) |"),                     # Per rectum  # SNOMED-RT ID of SCT 37161004
+        ("SRT", "G-D164"):      ("SNOMED", "16857009",   "| Vaginal route (qualifier value) |"),                    # Vaginal route  # SNOMED-RT ID of SCT 16857009
+        ("SRT", "G-D17C"):      ("SNOMED", "372463005",  "| Intracoronary route (qualifier value) |"),              # Intracoronary route  # SNOMED-RT ID of SCT 372463005
+        ("SRT", "G-D173"):      ("SNOMED", "372460008",  "| Intracardiac route (qualifier value) |"),               # Intracardiac route  # SNOMED-RT ID of SCT 372460008
+        ("SRT", "R-F2C86"):     ("SNOMED", "420287000",  "| Intraventricular route - cardiac (qualifier value) |"), # Intraventricular route - cardiac  # SNOMED-RT ID of SCT 420287000
+        ("SRT", "G-D172"):      ("SNOMED", "46713006",   "| Nasal route (qualifier value) |"),                      # Nasal route  # SNOMED-RT ID of SCT 46713006
+        ("SRT", "R-F2CD4"):     ("SNOMED", "447122006",  "| Intratumor route (qualifier value) |"),                 # Intratumor route  # SNOMED-RT ID of SCT 447122006
         #("NCIt", "C38244"):    ("SNOMED", "",           ""),                                                       # "Intraepithelial route",      # There used to be a SNOMED RT code: G-D111, but it is not in SNOMED CT, concept: 89947002
         #("NCIt", "C38306"):    ("SNOMED", "",           ""),                                                       # "Transluminal route",         # There used to be a SNOMED RT code: G-D142, but it is not in SNOMED CT, concept: 9942002
         #("NCIt", "C38213"):    ("SNOMED", "",           ""),                                                       # "Extraluminal route",         # There used to be a SNOMED RT code: G-D146, but it is not in SNOMED CT, concept: 31638007
@@ -2398,6 +2473,47 @@ class DataConverter:
         ("DCM",         "126739"): ("DCM",        "126739", "| Ublituximab ^89^Zr |"),                                                                 # Ublituximab ^89^Zr
         ("UMLS",      "C4506788"): ("UMLS",     "C4506788", "| UCB-J C^11^ |"),                                                                        # UCB-J C^11^                              # UMLS CUI not found in the NCI Metathesaurus (the UMLS API needs a license key), DICOM Code Meaning used as description
         ("DCM",         "126734"): ("DCM",        "126734", "| XmAb5574 ^89^Zr |"),                                                                    # XmAb5574 ^89^Zr
+
+        # Retired SNOMED-RT (SRT) codes of DICOM CID 4021, as found in older DICOM data: the same values as for the corresponding SNOMED CT (SCT) codes
+        ("SRT",        "C-B1043"): ("SNOMED",  "129513004", "| Carbon (11-C) acetate (substance) |"),                                                  # Acetate C^11^  # SNOMED-RT ID of SCT 129513004
+        ("SRT",        "C-B103C"): ("SNOMED",  "129508003", "| Ammonia (13-N) (substance) |"),                                                         # Ammonia N^13^  # SNOMED-RT ID of SCT 129508003
+        ("SRT",        "C-B07DB"): ("SNOMED",  "423432002", "| Copper (64-Cu) diacetyl-bis N-(4)-methylthiosemicarbazone (substance) |"),              # ATSM Cu^64^  # SNOMED-RT ID of SCT 422855001
+        ("SRT",        "C-B07DC"): ("SNOMED",  "423025003", "| Oxygen (15-O) butanol (substance) |"),                                                  # Butanol O^15^  # SNOMED-RT ID of SCT 422540000
+        ("SRT",        "C-B103B"): ("SNOMED",  "129507008", "| Oxygen (15-O) carbon dioxide (substance) |"),                                           # Carbon dioxide O^15^  # SNOMED-RT ID of SCT 129507008
+        ("SRT",        "C-B1045"): ("SNOMED",  "129515006", "| Carbon (11-C) carbon monoxide (substance) |"),                                          # Carbon monoxide C^11^  # SNOMED-RT ID of SCT 129515006
+        ("SRT",        "C-B103A"): ("SNOMED",  "129506004", "| Oxygen (15-O) carbon monoxide (substance) |"),                                          # Carbon monoxide O^15^  # SNOMED-RT ID of SCT 129506004
+        ("SRT",        "C-B103F"): ("SNOMED",  "129511002", "| Carbon (11-C) carfentanil (substance) |"),                                              # Carfentanil C^11^  # SNOMED-RT ID of SCT 129511002
+        ("SRT",        "C-B07DD"): ("SNOMED",  "424729005", "| Gallium (68-Ga) ethylenediamine tetra-acetate (substance) |"),                          # EDTA Ga^68^  # SNOMED-RT ID of SCT 423498000
+        ("SRT",        "C-D6858"): ("SNOMED",  "712736002", "| Florbetaben (18-F) (substance) |"),                                                     # Florbetaben F^18^  # SNOMED-RT ID of SCT 712736002
+        ("SRT",        "C-E0269"): ("SNOMED",  "456995000", "| Florbetapir (18-F) (substance) |"),                                                     # Florbetapir F^18^  # SNOMED-RT ID of SCT 456995000
+        ("SRT",        "C-E0265"): ("SNOMED",  "456999006", "| Fluciclatide (18-F) (substance) |"),                                                    # Fluciclatide F^18^  # SNOMED-RT ID of SCT 456999006
+        ("SRT",        "C-E026A"): ("SNOMED",  "457000009", "| Fluciclovine (18-F) (substance) |"),                                                    # Fluciclovine F^18^  # SNOMED-RT ID of SCT 457000009
+        ("SRT",        "C-B07DE"): ("SNOMED",  "424554007", "| Carbon (11-C) flumazenil (substance) |"),                                               # Flumazenil C^11^  # SNOMED-RT ID of SCT 423543007
+        ("SRT",        "C-B07DF"): ("SNOMED",  "423577002", "| Flumazenil (18-F) (substance) |"),                                                      # Flumazenil F^18^  # SNOMED-RT ID of SCT 422975006
+        ("SRT",        "C-B07E0"): ("SNOMED",  "423388007", "| Fluorethyltyrosine (18-F) (substance) |"),                                              # Fluorethyltyrosin F^18^  # SNOMED-RT ID of SCT 424708001
+        ("SRT",        "C-B07E4"): ("SNOMED",  "423061008", "| Fluorobenzothiazole (18-F) (substance) |"),                                             # Fluorobenzothiazole F^18^  # SNOMED-RT ID of SCT 423546004
+        ("SRT",        "C-E0273"): ("SNOMED",  "456992002", "| Fluorocholine (18-F) (substance) |"),                                                   # Fluorocholine F^18^  # SNOMED-RT ID of SCT 456992002
+        ("SRT",        "C-B1031"): ("SNOMED",   "35321007", "| Fluorodeoxyglucose (18-F) (substance) |"),                                              # Fluorodeoxyglucose F^18^  # SNOMED-RT ID of SCT 35321007
+        ("SRT",        "C-E0241"): ("SNOMED", "5811000122108", "| Fluorodopa (18-F) (substance) |"),                                                   # Fluoro-L-dopa F^18^  # SNOMED-RT ID of SCT 5811000122108
+        ("SRT",        "C-B07E2"): ("SNOMED",  "423071005", "| Fluoromethane (18-F) (substance) |"),                                                   # Fluoromethane F^18^  # SNOMED-RT ID of SCT 422763008
+        ("SRT",        "C-B07E1"): ("SNOMED",  "423795001", "| Fluoromisonidazole (18-F) (substance) |"),                                              # Fluoromisonidazole F^18^  # SNOMED-RT ID of SCT 422598008
+        ("SRT",        "C-B07E3"): ("SNOMED",  "423373002", "| Fluorouracil (18-F) (substance) |"),                                                    # Fluorouracil F^18^  # SNOMED-RT ID of SCT 425236000
+        ("SRT",        "C-E0267"): ("SNOMED",  "456997008", "| Flutemetamol (18-F) (substance) |"),                                                    # Flutemetamol F^18^  # SNOMED-RT ID of SCT 456997008
+        ("SRT",        "C-128A2"): ("SNOMED",   "53315004", "| Germanium-68 (substance) |"),                                                           # Germanium Ge^68^  # SNOMED-RT ID of SCT 53315004
+        ("SRT",        "C-B103D"): ("SNOMED",  "129509006", "| Glutamate (13-N) (substance) |"),                                                       # Glutamate N^13^  # SNOMED-RT ID of SCT 129509006
+        ("SRT",        "C-B07E5"): ("SNOMED",  "423450009", "| Carbon (11-C) mespiperone (substance) |"),                                              # Mespiperone C^11^  # SNOMED-RT ID of SCT 424789007
+        ("SRT",        "C-B103E"): ("SNOMED",  "129510001", "| Carbon (11-C) methionine (substance) |"),                                               # Methionine C^11^  # SNOMED-RT ID of SCT 129510001
+        ("SRT",        "C-114AA"): ("SNOMED",  "423249007", "| Iodine (124-I) labeled monoclonal antibody (substance) |"),                             # Monoclonal antibody I^124^  # SNOMED-RT ID of SCT 423249007
+        ("SRT",        "C-B1038"): ("SNOMED",  "129504001", "| Oxygen-15 (substance) |"),                                                              # Oxygen O^15^  # SNOMED-RT ID of SCT 129504001
+        ("SRT",        "C-B1039"): ("SNOMED",  "129505000", "| Oxygen (15-O) water (substance) |"),                                                    # Oxygen-water O^15^  # SNOMED-RT ID of SCT 129505000
+        ("SRT",        "C-B1044"): ("SNOMED",  "129514005", "| Carbon (11-C) palmitate (substance) |"),                                                # Palmitate C^11^  # SNOMED-RT ID of SCT 129514005
+        ("SRT",        "C-B07E7"): ("SNOMED",  "423809007", "| Copper (62-Cu) pyruvaldehyde-bis N-(4)-methyl-thiosemicarbazone (substance) |"),        # PTSM Cu^62^  # SNOMED-RT ID of SCT 422789008
+        ("SRT",        "C-B1042"): ("SNOMED",  "129512009", "| Carbon (11-C) raclopride (substance) |"),                                               # Raclopride C^11^  # SNOMED-RT ID of SCT 129512009
+        ("SRT",        "C-B1037"): ("SNOMED",  "129503007", "| Rubidium (82-Rb) chloride (substance) |"),                                              # Rubidium chloride Rb^82^  # SNOMED-RT ID of SCT 129503007
+        ("SRT",        "C-B1032"): ("SNOMED",  "129501009", "| Sodium fluoride (18-F) (substance) |"),                                                 # Sodium fluoride F^18^  # SNOMED-RT ID of SCT 129501009
+        ("SRT",        "C-B07E8"): ("SNOMED",  "423638007", "| Sodium iodide (124-I) (substance) |"),                                                  # Sodium iodide I^124^  # SNOMED-RT ID of SCT 422980002
+        ("SRT",        "C-155A1"): ("SNOMED",   "71633006", "| Sodium-22 (substance) |"),                                                              # Sodium Na^22^  # SNOMED-RT ID of SCT 71633006
+        ("SRT",        "C-B1033"): ("SNOMED",  "129499001", "| Spiperone (18-F) (substance) |"),                                                       # Spiperone F^18^  # SNOMED-RT ID of SCT 129499001
     }
 
     # Dictionary mapping the DICOM PET radionuclide names to regex patterns
@@ -2550,6 +2666,37 @@ class DataConverter:
         ("SCT",  "424079002"): ("SNOMED",  "424079002", "| Technetium-94m (substance) |"),  # ^94m^Technetium
         ("SCT",   "40937006"): ("SNOMED",   "40937006", "| Iodine-124 (substance) |"),      # ^124^Iodine
         ("DCM",     "126606"): ("DCM",        "126606", "| ^152^Terbium |"),                # ^152^Terbium
+
+        # Retired SNOMED-RT (SRT) codes of DICOM CID 4020, as found in older DICOM data: the same values as for the corresponding SNOMED CT (SCT) codes
+        ("SRT",    "C-105A1"): ("SNOMED",   "40565003", "| Carbon-11 (substance) |"),       # ^11^Carbon  # SNOMED-RT ID of SCT 40565003
+        ("SRT",    "C-107A1"): ("SNOMED",   "21576001", "| Nitrogen-13 (substance) |"),     # ^13^Nitrogen  # SNOMED-RT ID of SCT 21576001
+        ("SRT",    "C-1018C"): ("SNOMED",  "424875009", "| Oxygen-14 (substance) |"),       # ^14^Oxygen  # SNOMED-RT ID of SCT 424875009
+        ("SRT",    "C-B1038"): ("SNOMED",  "129504001", "| Oxygen-15 (substance) |"),       # ^15^Oxygen  # SNOMED-RT ID of SCT 129504001
+        ("SRT",    "C-111A1"): ("SNOMED",   "77004003", "| Fluorine-18 (substance) |"),     # ^18^Fluorine  # SNOMED-RT ID of SCT 77004003
+        ("SRT",    "C-155A1"): ("SNOMED",   "71633006", "| Sodium-22 (substance) |"),       # ^22^Sodium  # SNOMED-RT ID of SCT 71633006
+        ("SRT",    "C-135A4"): ("SNOMED",  "423764008", "| Potassium-38 (substance) |"),    # ^38^Potassium  # SNOMED-RT ID of SCT 423764008
+        ("SRT",    "C-166A2"): ("SNOMED",   "75696008", "| Titanium-45 (substance) |"),     # ^45^Titanium  # SNOMED-RT ID of SCT 75696008
+        ("SRT",    "C-130A1"): ("SNOMED",   "69089000", "| Iron-52 (substance) |"),         # ^52^Iron  # SNOMED-RT ID of SCT 69089000
+        ("SRT",    "C-149A1"): ("SNOMED",   "37225000", "| Manganese-52 (substance) |"),    # ^52^Manganese  # SNOMED-RT ID of SCT 37225000
+        ("SRT",    "C-127A4"): ("SNOMED",  "425364008", "| Copper-60 (substance) |"),       # ^60^Copper  # SNOMED-RT ID of SCT 425364008
+        ("SRT",    "C-127A1"): ("SNOMED",   "71425003", "| Copper-61 (substance) |"),       # ^61^Copper  # SNOMED-RT ID of SCT 71425003
+        ("SRT",    "C-127A5"): ("SNOMED",  "422934004", "| Copper-62 (substance) |"),       # ^62^Copper  # SNOMED-RT ID of SCT 422934004
+        ("SRT",    "C-141A1"): ("SNOMED",   "65054007", "| Zinc-62 (substance) |"),         # ^62^Zinc  # SNOMED-RT ID of SCT 65054007
+        ("SRT",    "C-127A2"): ("SNOMED",    "3932008", "| Copper-64 (substance) |"),       # ^64^Copper  # SNOMED-RT ID of SCT 3932008
+        ("SRT",    "C-131A1"): ("SNOMED",   "79477007", "| Gallium-66 (substance) |"),      # ^66^Gallium  # SNOMED-RT ID of SCT 79477007
+        ("SRT",    "C-131A3"): ("SNOMED",   "35337001", "| Gallium-68 (substance) |"),      # ^68^Gallium  # SNOMED-RT ID of SCT 35337001
+        ("SRT",    "C-128A2"): ("SNOMED",   "53315004", "| Germanium-68 (substance) |"),    # ^68^Germanium  # SNOMED-RT ID of SCT 53315004
+        ("SRT",    "C-115A2"): ("SNOMED",    "2705002", "| Arsenic-72 (substance) |"),      # ^72^Arsenic  # SNOMED-RT ID of SCT 2705002
+        ("SRT",    "C-116A2"): ("SNOMED",   "87437000", "| Selenium-73 (substance) |"),     # ^73^Selenium  # SNOMED-RT ID of SCT 87437000
+        ("SRT",    "C-113A1"): ("SNOMED",   "17910003", "| Bromine-75 (substance) |"),      # ^75^Bromine  # SNOMED-RT ID of SCT 17910003
+        ("SRT",    "C-113A2"): ("SNOMED",   "79523006", "| Bromine-76 (substance) |"),      # ^76^Bromine  # SNOMED-RT ID of SCT 79523006
+        ("SRT",    "C-113A3"): ("SNOMED",   "86521004", "| Bromine-77 (substance) |"),      # ^77^Bromine  # SNOMED-RT ID of SCT 86521004
+        ("SRT",    "C-159A2"): ("SNOMED",   "79197006", "| Rubidium-82 (substance) |"),     # ^82^Rubidium  # SNOMED-RT ID of SCT 79197006
+        ("SRT",    "C-162A3"): ("SNOMED",   "10738001", "| Yttrium-86 (substance) |"),      # ^86^Yttrium  # SNOMED-RT ID of SCT 10738001
+        ("SRT",    "C-168A4"): ("SNOMED",   "63360001", "| Zirconium-89 (substance) |"),    # ^89^Zirconium  # SNOMED-RT ID of SCT 63360001
+        ("SRT",    "C-162A7"): ("SNOMED",   "14691008", "| Yttrium-90 (substance) |"),      # ^90^Yttrium  # SNOMED-RT ID of SCT 14691008
+        ("SRT",    "C-163AA"): ("SNOMED",  "424079002", "| Technetium-94m (substance) |"),  # ^94m^Technetium  # SNOMED-RT ID of SCT 424079002
+        ("SRT",    "C-114A5"): ("SNOMED",   "40937006", "| Iodine-124 (substance) |"),      # ^124^Iodine  # SNOMED-RT ID of SCT 40937006
     }
 
     # Dictionary mapping the codes of the PET radionuclides of DICOM CID 4020 to their half-life and positron fraction
@@ -2983,6 +3130,107 @@ class DataConverter:
         ("SCT",      "439007"): ("SNOMED",     "439007", "| Therapeutic radioisotope (product) |"),                                                                  # Therapeutic radioisotope                         # DICOM code is inactive in SNOMED CT without replacement, so it is not a subclass of SNOMED-CT 89457008 | Radioactive isotope (substance) |
         ("SCT",   "780783002"): ("SNOMED",   "80751004", "| Xenon-133 (substance) |"),                                                                               # Xenon^133^ gas                                   # Replaced DICOM code 780783002 | Product containing only xenon-133 in pulmonary dose form (medicinal product form) |, which is not a subclass of SNOMED-CT 89457008 | Radioactive isotope (substance) |
         ("SCT",   "764678003"): ("SNOMED",  "764678003", "| Yttrium (90-Y) labeled microspheres (substance) |"),                                                     # Yttrium^90^ microspheres
+
+        # Retired SNOMED-RT (SRT) codes of DICOM CID 25, as found in older DICOM data: the same values as for the corresponding SNOMED CT (SCT) codes
+        ("SRT",     "C-B1302"): ("SNOMED",    "2942001", "| Carbon (14-C) xylose (substance) |"),                                                                    # Carbon^14^ D-xylose  # SNOMED-RT ID of SCT 2942001
+        ("SRT",     "C-B1300"): ("SNOMED",   "42417005", "| Carbon (14-C) triolein (substance) |"),                                                                  # Carbon^14^ triolein  # SNOMED-RT ID of SCT 42417005
+        ("SRT",     "C-B1140"): ("SNOMED",   "17069007", "| Chromic phosphate (32-P) (substance) |"),                                                                # Chromic phosphate P^32^  # SNOMED-RT ID of SCT 17069007
+        ("SRT",     "C-B1012"): ("SNOMED",    "4693006", "| Chromium (51-Cr) albumin (substance) |"),                                                                # Chromium^51^ albumin  # SNOMED-RT ID of SCT 4693006
+        ("SRT",     "C-B1013"): ("SNOMED",    "6973004", "| Chromium (51-Cr) chloride (substance) |"),                                                               # Chromium^51^ chloride  # SNOMED-RT ID of SCT 6973004
+        ("SRT",     "C-B1017"): ("SNOMED",   "78686003", "| Copper (64-Cu) acetate (substance) |"),                                                                  # Copper^64^ acetate  # SNOMED-RT ID of SCT 78686003
+        ("SRT",     "C-B1016"): ("SNOMED",   "88166005", "| Copper (64-Cu) versenate (substance) |"),                                                                # Copper^64^ versenate  # SNOMED-RT ID of SCT 88166005
+        ("SRT",     "C-B1018"): ("SNOMED",   "29460005", "| Copper (67-Cu) ceruloplasmin (substance) |"),                                                            # Copper^67^ ceruloplasmin  # SNOMED-RT ID of SCT 29460005
+        ("SRT",     "C-B1021"): ("SNOMED",     "187006", "| Cyanocobalamin (57-Co) (substance) |"),                                                                  # Cyanocobalamin Co^57^  # SNOMED-RT ID of SCT 187006
+        ("SRT",     "C-B1022"): ("SNOMED",    "5692007", "| Cyanocobalamin (58-Co) (substance) |"),                                                                  # Cyanocobalamin Co^58^  # SNOMED-RT ID of SCT 5692007
+        ("SRT",     "C-B1023"): ("SNOMED",   "72159005", "| Cyanocobalamin (60-Co) (substance) |"),                                                                  # Cyanocobalamin Co^60^  # SNOMED-RT ID of SCT 72159005
+        ("SRT",     "C-B1000"): ("SNOMED",   "17600005", "| Diagnostic radioisotope (product) |"),                                                                   # Diagnostic radioisotope  # SNOMED-RT ID of SCT 17600005
+        ("SRT",     "C-B1122"): ("SNOMED",   "31192007", "| Ferrous (59-Fe) chloride (substance) |"),                                                                # Ferrous chloride Fe^59^  # SNOMED-RT ID of SCT 31192007
+        ("SRT",     "C-B1121"): ("SNOMED",   "87958003", "| Ferrous (59-Fe) citrate (substance) |"),                                                                 # Ferrous citrate Fe^59^  # SNOMED-RT ID of SCT 87958003
+        ("SRT",     "C-B1123"): ("SNOMED",     "125001", "| Ferrous (59-Fe) sulfate (substance) |"),                                                                 # Ferrous sulfate Fe^59^  # SNOMED-RT ID of SCT 125001
+        ("SRT",     "C-B1082"): ("SNOMED",   "71636003", "| Fibrinogen (123-I) (substance) |"),                                                                      # Fibrinogen I^123^  # SNOMED-RT ID of SCT 71636003
+        ("SRT",     "C-B1031"): ("SNOMED",   "35321007", "| Fluorodeoxyglucose (18-F) (substance) |"),                                                               # Fluorodeoxyglucose F^18^  # SNOMED-RT ID of SCT 35321007
+        ("SRT",     "C-B1041"): ("SNOMED",   "73065000", "| Gallium (67-Ga) citrate (substance) |"),                                                                 # Gallium^67^ citrate  # SNOMED-RT ID of SCT 73065000
+        ("SRT",     "C-B1065"): ("SNOMED",    "6516008", "| Indium (111-In) ferric hydroxide (substance) |"),                                                        # Indium^111^-Fe(OH) >3<  # SNOMED-RT ID of SCT 6516008
+        ("SRT",     "C-B1135"): ("SNOMED",  "395747004", "| Indium (111-In) oxine (substance) |"),                                                                   # Indium^111^oxyquinoline  # SNOMED-RT ID of SCT 424570009
+        ("SRT",     "C-B1061"): ("SNOMED",   "29218008", "| Indium (111-In) pentetate (substance) |"),                                                               # Indium^111^ pentetate  # SNOMED-RT ID of SCT 29218008
+        ("SRT",     "C-B1066"): ("SNOMED",   "81621007", "| Indium (111-In) labeled erythrocyte (substance) |"),                                                     # Indium^111^ red cell label  # SNOMED-RT ID of SCT 81621007
+        ("SRT",     "C-B1067"): ("SNOMED",   "78570003", "| Indium (111-In) transferrin (substance) |"),                                                             # Indium^111^ transferrin  # SNOMED-RT ID of SCT 78570003
+        ("SRT",     "C-145AB"): ("SNOMED",  "446871009", "| Indium (111-In) capromab pendetide (substance) |"),                                                      # Indium^111 Capromab Pendetide  # SNOMED-RT ID of SCT 446871009
+        ("SRT",     "C-14512"): ("SNOMED",  "395742005", "| Indium (111-In) chloride (substance) |"),                                                                # Indium^111 Chloride  # SNOMED-RT ID of SCT 395742005
+        ("SRT",     "C-145AA"): ("SNOMED",  "446800006", "| Indium (111-In) pentetreotide (substance) |"),                                                           # Indium^111 Pentetreotide  # SNOMED-RT ID of SCT 446800006
+        ("SRT",     "C-B1068"): ("SNOMED",   "90617008", "| Indium (113-In) bleomycin (substance) |"),                                                               # Indium^113m^ bleomycin  # SNOMED-RT ID of SCT 90617008
+        ("SRT",     "C-B1070"): ("SNOMED",   "42728008", "| Indium (113-In) pentetate (substance) |"),                                                               # Indium^113m^ pentetate  # SNOMED-RT ID of SCT 42728008
+        ("SRT",     "C-B1084"): ("SNOMED",   "72015003", "| Iodinated (125-I) albumin (substance) |"),                                                               # Iodinated I^125^ albumin  # SNOMED-RT ID of SCT 72015003
+        ("SRT",     "C-B1100"): ("SNOMED",   "64488003", "| Iodinated (125-I) human serum albumin (substance) |"),                                                   # Iodinated I^125^ human serum albumin  # SNOMED-RT ID of SCT 64488003
+        ("SRT",     "C-B1096"): ("SNOMED",   "69839009", "| Povidone iodine (125-I) (substance) |"),                                                                 # Iodinated I^125^ povidone  # SNOMED-RT ID of SCT 69839009
+        ("SRT",     "C-B1099"): ("SNOMED",   "70154008", "| Sodium iodide (125-I) (substance) |"),                                                                   # Iodinated I^125^ sodium iodine  # SNOMED-RT ID of SCT 70154008
+        ("SRT",     "C-B1090"): ("SNOMED",   "55814006", "| Iodinated (131-I) aggregated albumin (substance) |"),                                                    # Iodinated I^131^ aggregated albumin  # SNOMED-RT ID of SCT 55814006
+        ("SRT",     "C-B1089"): ("SNOMED",   "39200002", "| Iodinated (131-I) albumin (substance) |"),                                                               # Iodinated I^131^ albumin  # SNOMED-RT ID of SCT 39200002
+        ("SRT",     "C-B1111"): ("SNOMED",   "52408003", "| Iodinated (131-I) gamma globulin (substance) |"),                                                        # Iodinated I^131^ gamma globulin  # SNOMED-RT ID of SCT 52408003
+        ("SRT",     "C-114AB"): ("SNOMED",  "447134003", "| Iodofiltic acid (123-I) (substance) |"),                                                                 # Iodine^123 15-(4-Iodophenyl)-3(R,S)-Methylpentadecanoic Acid  # SNOMED-RT ID of SCT 447134003
+        ("SRT",     "C-B110E"): ("SNOMED",  "395787009", "| Iobenguane (123-I) (substance) |"),                                                                      # Iodine^123 3-Iodobenzylguanidine MIBG  # SNOMED-RT ID of SCT 395787009
+        ("SRT",     "C-B1109"): ("SNOMED",   "35884005", "| Povidone iodine (131-I) (substance) |"),                                                                 # Iodine^131^ polyvinylpyrrolidone  # SNOMED-RT ID of SCT 35884005
+        ("SRT",     "C-B112D"): ("SNOMED",  "395789007", "| Iobenguane (131-I) (substance) |"),                                                                      # Iodine^131 3-Iodobenzylguanidine MIBG  # SNOMED-RT ID of SCT 395789007
+        ("SRT",     "C-B1087"): ("SNOMED",   "68967007", "| Iodocholesterol (131-I) (substance) |"),                                                                 # Iodocholesterol I^131^  # SNOMED-RT ID of SCT 68967007
+        ("SRT",     "C-B1095"): ("SNOMED",   "33785000", "| Iodine (125-I) liothyronine (substance) |"),                                                             # Iodohippurate I^123^ sodium  # SNOMED-RT ID of SCT 33785000
+        ("SRT",     "C-B1105"): ("SNOMED",   "36900006", "| Sodium Iodohippurate (125-I) (substance) |"),                                                            # Iodohippurate I^125^ sodium  # SNOMED-RT ID of SCT 36900006
+        ("SRT",     "C-B1091"): ("SNOMED",   "33271006", "| Iodohippurate (131-I) sodium (substance) |"),                                                            # Iodohippurate I^131^ sodium  # SNOMED-RT ID of SCT 33271006
+        ("SRT",     "C-B1108"): ("SNOMED",   "78481003", "| Iofetamine (123-I) hydrochloride (substance) |"),                                                        # Iofetamine I^123^ hydrochloride  # SNOMED-RT ID of SCT 78481003
+        ("SRT",     "C-B07EC"): ("SNOMED",  "428122004", "| Ioflupane (123-I) (substance) |"),                                                                       # Ioflupane I^123^  # SNOMED-RT ID of SCT 429296007
+        ("SRT",     "C-B1088"): ("SNOMED",  "395879003", "| Sodium iothalamate (125-I) (substance) |"),                                                              # Iothalamate sodium I^125^  # SNOMED-RT ID of SCT 55673009
+        ("SRT",     "C-B1124"): ("SNOMED",   "60459006", "| Iron (59-Fe) dextran (substance) |"),                                                                    # Iron Fe^59^ labeled dextran  # SNOMED-RT ID of SCT 60459006
+        ("SRT",     "C-173A5"): ("SNOMED",   "61716009", "| Krypton-81m (substance) |"),                                                                             # Krypton^81m  # SNOMED-RT ID of SCT 61716009
+        ("SRT",     "C-B1083"): ("SNOMED",   "22979004", "| Oleic acid (125-I) (substance) |"),                                                                      # Oleic acid I^125^  # SNOMED-RT ID of SCT 22979004
+        ("SRT",     "C-B1251"): ("SNOMED",   "29348008", "| Ytterbium (169-Yb) pentetate calcium trisodium (substance) |"),                                          # Pentetate calcium trisodium Yb^169^  # SNOMED-RT ID of SCT 29348008
+        ("SRT",     "C-B1151"): ("SNOMED",  "111161000", "| Potassium (K-42) carbonate (substance) |"),                                                              # Potassium carbonate K^42^  # SNOMED-RT ID of SCT 111161000
+        ("SRT",     "C-B1152"): ("SNOMED",   "36641004", "| Potassium (K-42) chloride (substance) |"),                                                               # Potassium chloride K^42^  # SNOMED-RT ID of SCT 36641004
+        ("SRT",     "C-B1150"): ("SNOMED",   "47729008", "| Potassium (K-43) chloride (substance) |"),                                                               # Potassium chloride K^43^  # SNOMED-RT ID of SCT 47729008
+        ("SRT",     "C-B1085"): ("SNOMED",  "111159009", "| Rose bengal (131-I) sodium (substance) |"),                                                              # Rose Bengal sodium I^131^  # SNOMED-RT ID of SCT 111159009
+        ("SRT",     "C-B10FB"): ("SNOMED",  "395894004", "| Tauroselcholic acid (75-Se) (substance) |"),                                                             # Selenium^75^ HCAT  # SNOMED-RT ID of SCT 395894004
+        ("SRT",     "C-B1171"): ("SNOMED",   "88473009", "| Selenomethionine (75-Se) (substance) |"),                                                                # Selenomethionione Se^75^  # SNOMED-RT ID of SCT 88473009
+        ("SRT",     "C-B1176"): ("SNOMED",    "6257000", "| Sodium (22-Na) chloride (substance) |"),                                                                 # Sodium chloride Na^22^  # SNOMED-RT ID of SCT 6257000
+        ("SRT",     "C-B1175"): ("SNOMED",   "31527000", "| Sodium (24-Na) chloride (substance) |"),                                                                 # Sodium chloride Na^24^  # SNOMED-RT ID of SCT 31527000
+        ("SRT",     "C-B1011"): ("SNOMED",   "62517004", "| Sodium chromate (51-Cr) (substance) |"),                                                                 # Sodium chromate Cr^51^  # SNOMED-RT ID of SCT 62517004
+        ("SRT",     "C-B1032"): ("SNOMED",  "129501009", "| Sodium fluoride (18-F) (substance) |"),                                                                  # Sodium fluoride F^18^  # SNOMED-RT ID of SCT 129501009
+        ("SRT",     "C-B1081"): ("SNOMED",   "67690002", "| Sodium iodide (123-I) (substance) |"),                                                                   # Sodium iodide I^123^  # SNOMED-RT ID of SCT 67690002
+        ("SRT",     "C-B1086"): ("SNOMED",  "111160004", "| Sodium iodide (131-I) (substance) |"),                                                                   # Sodium iodide I^131^  # SNOMED-RT ID of SCT 111160004
+        ("SRT",     "C-B1206"): ("SNOMED",   "19495007", "| Technetium (99m-Tc) sodium pertechnetate (substance) |"),                                                # Sodium pertechnetate Tc^99m^  # SNOMED-RT ID of SCT 19495007
+        ("SRT",     "C-B1142"): ("SNOMED",   "10781003", "| Sodium phosphate (32-P) (substance) |"),                                                                 # Sodium phosphate P^32^  # SNOMED-RT ID of SCT 10781003
+        ("SRT",     "C-B1180"): ("SNOMED",   "69076006", "| Strontium (85-Sr) chloride (substance) |"),                                                              # Strontium chloride Sr^85^  # SNOMED-RT ID of SCT 69076006
+        ("SRT",     "C-B1181"): ("SNOMED",   "38424001", "| Strontium (87-Sr) chloride (substance) |"),                                                              # Strontium chloride Sr^87^  # SNOMED-RT ID of SCT 38424001
+        ("SRT",     "C-B1184"): ("SNOMED",  "125701003", "| Strontium (89-Sr) chloride (substance) |"),                                                              # Strontium chloride Sr^89^  # SNOMED-RT ID of SCT 125701003
+        ("SRT",     "C-B1182"): ("SNOMED",    "8858006", "| Strontium (85-Sr) nitrate (substance) |"),                                                               # Strontium nitrate Sr^85^  # SNOMED-RT ID of SCT 8858006
+        ("SRT",     "C-B1183"): ("SNOMED",   "31953001", "| Strontium (87-Sr) nitrate (substance) |"),                                                               # Strontium nitrate Sr^87^  # SNOMED-RT ID of SCT 31953001
+        ("SRT",     "C-163B6"): ("SNOMED",  "446534003", "| Technetium (99m-Tc) galactosyl human serum albumin diethylenetriamine pentaacetic acid (substance) |"),  # Technetium^99m Galactosyl Human Serum Albumin Diethylenetriamine  # SNOMED-RT ID of SCT 446534003
+        ("SRT",     "C-163B9"): ("SNOMED",  "447125008", "| Technetium (99m-Tc) labeled carbon (substance) |"),                                                      # Technetium^99m labeled carbon  # SNOMED-RT ID of SCT 447125008
+        ("SRT",     "C-163B8"): ("SNOMED",  "446536001", "| Technetium (99m-Tc) tiatide (substance) |"),                                                             # Technetium^99m Mercaptoacetyl triglycine MAG3  # SNOMED-RT ID of SCT 446536001
+        ("SRT",     "C-163BA"): ("SNOMED",  "447126009", "| Technetium (99m-Tc) N-pyridoxyl-5-methyltryptophan (substance) |"),                                      # Technetium^99m N-pyridoxyl-5-methyltryptophan  # SNOMED-RT ID of SCT 447126009
+        ("SRT",     "C-163BB"): ("SNOMED",  "447127000", "| Technetium (99m-Tc) phytate (substance) |"),                                                             # Technetium^99m Phytate  # SNOMED-RT ID of SCT 447127000
+        ("SRT",     "C-163BC"): ("SNOMED",  "447128005", "| Technetium (99m-Tc) stannous colloid (substance) |"),                                                    # Technetium^99m Stannous Colloid  # SNOMED-RT ID of SCT 447128005
+        ("SRT",     "C-B1205"): ("SNOMED",   "55494003", "| Technetium (99m-Tc) albumin microspheres (substance) |"),                                                # Technetium Tc^99c^ albumin microspheres  # SNOMED-RT ID of SCT 55494003
+        ("SRT",     "C-B1200"): ("SNOMED",   "85693008", "| Technetium (99m-Tc) aggregated albumin (substance) |"),                                                  # Technetium Tc^99m^ aggregated albumin  # SNOMED-RT ID of SCT 85693008
+        ("SRT",     "C-B1133"): ("SNOMED",  "415704007", "| Technetium (99m-Tc) depreotide (substance) |"),                                                          # Technetium Tc^99m^ depreotide  # SNOMED-RT ID of SCT 415704007
+        ("SRT",     "C-B1207"): ("SNOMED",    "3040004", "| Technetium (99m-Tc) disofenin (substance) |"),                                                           # Technetium Tc^99m^ disofenin  # SNOMED-RT ID of SCT 3040004
+        ("SRT",     "C-B1223"): ("SNOMED",   "77313009", "| Technetium (99m-Tc) exametazime (substance) |"),                                                         # Technetium Tc^99m^ exametazime  # SNOMED-RT ID of SCT 77313009
+        ("SRT",     "C-B1210"): ("SNOMED",   "87853006", "| Technetium (99m-Tc) iron ascorbate (substance) |"),                                                      # Technetium Tc^99m^ iron ascorbate  # SNOMED-RT ID of SCT 87853006
+        ("SRT",     "C-B1209"): ("SNOMED",    "7281000", "| Technetium (99m-Tc) lidofenin (substance) |"),                                                           # Technetium Tc^99m^ lidofenin  # SNOMED-RT ID of SCT 7281000
+        ("SRT",     "C-B1208"): ("SNOMED",    "4832001", "| Technetium (99m-Tc) mebrofenin (substance) |"),                                                          # Technetium Tc^99m^ mebrofenin  # SNOMED-RT ID of SCT 4832001
+        ("SRT",     "C-B1218"): ("SNOMED",   "96390006", "| Technetium (99m-Tc) medronate (substance) |"),                                                           # Technetium Tc^99m^ medronate  # SNOMED-RT ID of SCT 96390006
+        ("SRT",     "C-B1203"): ("SNOMED",   "81761004", "| Technetium (99m-Tc) microaggregated albumin (substance) |"),                                             # Technetium Tc^99m^ microaggregated albumin  # SNOMED-RT ID of SCT 81761004
+        ("SRT",     "C-B1225"): ("SNOMED",   "87410002", "| Technetium (99-Tc) lidofenin (substance) |"),                                                            # Technetium Tc^99m^ N-substituted iminodiacetate  # SNOMED-RT ID of SCT 87410002
+        ("SRT",     "C-B1213"): ("SNOMED",   "53951001", "| Technetium (99m-Tc) oxidronate (substance) |"),                                                          # Technetium Tc^99m^ oxidronate  # SNOMED-RT ID of SCT 53951001
+        ("SRT",     "C-163B0"): ("SNOMED",  "430276001", "| Technetium (99m-Tc) pentetate (substance) |"),                                                           # Technetium Tc^99m^ pentetate  # SNOMED-RT ID of SCT 430276001
+        ("SRT",     "C-B1216"): ("SNOMED",   "79610008", "| Technetium (99m-Tc) albumin (substance) |"),                                                             # Technetium Tc^99m^ serum albumin  # SNOMED-RT ID of SCT 79610008
+        ("SRT",     "C-163AB"): ("SNOMED",  "424299003", "| Technetium (99m-Tc) sestamibi (substance) |"),                                                           # Technetium Tc^99m^ sestamibi  # SNOMED-RT ID of SCT 424299003
+        ("SRT",     "C-B1220"): ("SNOMED",   "45849009", "| Technetium (99m-Tc) sodium glucoheptonate (substance) |"),                                               # Technetium Tc^99m^ sodium glucoheptonate  # SNOMED-RT ID of SCT 45849009
+        ("SRT",     "C-B1211"): ("SNOMED",  "111162007", "| Technetium (99m-Tc) stannous etidronate (substance) |"),                                                 # Technetium Tc^99m^ stannous etidronate  # SNOMED-RT ID of SCT 111162007
+        ("SRT",     "C-B1221"): ("SNOMED",   "24511001", "| Technetium (99m-Tc) succimer (substance) |"),                                                            # Technetium Tc^99m^ succimer  # SNOMED-RT ID of SCT 24511001
+        ("SRT",     "C-B1222"): ("SNOMED",    "5931004", "| Technetium (99m-Tc) sulfur colloid (substance) |"),                                                      # Technetium Tc^99m^ sulfur colloid  # SNOMED-RT ID of SCT 5931004
+        ("SRT",     "C-B1224"): ("SNOMED",   "89818005", "| Technetium (99-Tc) labeled red blood cells (substance) |"),                                              # Technetium Tc^99m^ tagged red cells  # SNOMED-RT ID of SCT 89818005
+        ("SRT",     "C-163AC"): ("SNOMED",  "424318009", "| Technetium (99m-Tc) teboroxime (substance) |"),                                                          # Technetium Tc^99m^Teboroxime  # SNOMED-RT ID of SCT 424318009
+        ("SRT",     "C-163AD"): ("SNOMED",  "424118002", "| Technetium (99m-Tc) tetrofosmin (substance) |"),                                                         # Technetium Tc^99m^Tetrofosmin  # SNOMED-RT ID of SCT 424118002
+        ("SRT",     "C-B1231"): ("SNOMED",   "73685002", "| Thallous (201-Tl) chloride (substance) |"),                                                              # Thallous chloride Tl^201^  # SNOMED-RT ID of SCT 73685002
+        ("SRT",     "C-B1010"): ("SNOMED",     "439007", "| Therapeutic radioisotope (product) |"),                                                                  # Therapeutic radioisotope  # SNOMED-RT ID of SCT 439007
     }
 
     # Dictionary mapping the DICOM NM/SPECT radionuclide names to regex patterns
@@ -3192,6 +3440,56 @@ class DataConverter:
         ("MSH",  "C000615137"): ("MSH",    "C000615137", "| Bismuth-213 |"),                 # ^213^Bismuth
         ("SCT",    "24853006"): ("SNOMED",   "24853006", "| Radium-223 (substance) |"),      # ^223^Radium
         ("SCT",    "32059002"): ("SNOMED",   "32059002", "| Actinium-225 (substance) |"),    # ^225^Actinium
+
+        # Retired SNOMED-RT (SRT) codes of DICOM CID 18, as found in older DICOM data: the same values as for the corresponding SNOMED CT (SCT) codes
+        ("SRT",     "C-105A2"): ("SNOMED",   "71647005", "| Carbon-14 (substance) |"),       # ^14^Carbon  # SNOMED-RT ID of SCT 71647005
+        ("SRT",     "C-111A1"): ("SNOMED",   "77004003", "| Fluorine-18 (substance) |"),     # ^18^Fluorine  # SNOMED-RT ID of SCT 77004003
+        ("SRT",     "C-155A1"): ("SNOMED",   "71633006", "| Sodium-22 (substance) |"),       # ^22^Sodium  # SNOMED-RT ID of SCT 71633006
+        ("SRT",     "C-155A2"): ("SNOMED",   "58541008", "| Sodium-24 (substance) |"),       # ^24^Sodium  # SNOMED-RT ID of SCT 58541008
+        ("SRT",     "C-106A1"): ("SNOMED",   "32505007", "| Phosphorus-32 (substance) |"),   # ^32^Phosphorus  # SNOMED-RT ID of SCT 32505007
+        ("SRT",     "C-135A2"): ("SNOMED",   "59844004", "| Potassium-42 (substance) |"),    # ^42^Potassium  # SNOMED-RT ID of SCT 59844004
+        ("SRT",     "C-135A3"): ("SNOMED",    "8202008", "| Potassium-43 (substance) |"),    # ^43^Potassium  # SNOMED-RT ID of SCT 8202008
+        ("SRT",     "C-129A2"): ("SNOMED",   "52745005", "| Chromium-51 (substance) |"),     # ^51^Chromium  # SNOMED-RT ID of SCT 52745005
+        ("SRT",     "C-144A3"): ("SNOMED",   "27054007", "| Cobalt-57 (substance) |"),       # ^57^Cobalt  # SNOMED-RT ID of SCT 27054007
+        ("SRT",     "C-144A4"): ("SNOMED",   "89272005", "| Cobalt-58 (substance) |"),       # ^58^Cobalt  # SNOMED-RT ID of SCT 89272005
+        ("SRT",     "C-130A3"): ("SNOMED",   "68580003", "| Iron-59 (substance) |"),         # ^59^Iron  # SNOMED-RT ID of SCT 68580003
+        ("SRT",     "C-144A6"): ("SNOMED",    "5405008", "| Cobalt-60 (substance) |"),       # ^60^Cobalt  # SNOMED-RT ID of SCT 5405008
+        ("SRT",     "C-127A2"): ("SNOMED",    "3932008", "| Copper-64 (substance) |"),       # ^64^Copper  # SNOMED-RT ID of SCT 3932008
+        ("SRT",     "C-127A3"): ("SNOMED",   "53700003", "| Copper-67 (substance) |"),       # ^67^Copper  # SNOMED-RT ID of SCT 53700003
+        ("SRT",     "C-131A2"): ("SNOMED",    "2008008", "| Gallium-67 (substance) |"),      # ^67^Gallium  # SNOMED-RT ID of SCT 2008008
+        ("SRT",     "C-116A3"): ("SNOMED",   "43239002", "| Selenium-75 (substance) |"),     # ^75^Selenium  # SNOMED-RT ID of SCT 43239002
+        ("SRT",     "C-173A5"): ("SNOMED",   "61716009", "| Krypton-81m (substance) |"),     # ^81m^Krypton  # SNOMED-RT ID of SCT 61716009
+        ("SRT",     "C-173A7"): ("SNOMED",   "34127007", "| Krypton-85 (substance) |"),      # ^85^Krypton  # SNOMED-RT ID of SCT 34127007
+        ("SRT",     "C-158A3"): ("SNOMED",  "111084009", "| Strontium-85 (substance) |"),    # ^85^Strontium  # SNOMED-RT ID of SCT 111084009
+        ("SRT",     "C-158A5"): ("SNOMED",   "78023008", "| Strontium-87m (substance) |"),   # ^87m^Strontium  # SNOMED-RT ID of SCT 78023008
+        ("SRT",     "C-158A6"): ("SNOMED",    "7770004", "| Strontium-89 (substance) |"),    # ^89^Strontium  # SNOMED-RT ID of SCT 7770004
+        ("SRT",     "C-162A7"): ("SNOMED",   "14691008", "| Yttrium-90 (substance) |"),      # ^90^Yttrium  # SNOMED-RT ID of SCT 14691008
+        ("SRT",     "C-180A2"): ("SNOMED",   "23788009", "| Ruthenium-97 (substance) |"),    # ^97^Ruthenium  # SNOMED-RT ID of SCT 23788009
+        ("SRT",     "C-163A8"): ("SNOMED",   "72454006", "| Technetium-99m (substance) |"),  # ^99m^Technetium  # SNOMED-RT ID of SCT 72454006
+        ("SRT",     "C-145A4"): ("SNOMED",   "56609000", "| Indium-111 (substance) |"),      # ^111^Indium  # SNOMED-RT ID of SCT 56609000
+        ("SRT",     "C-145A5"): ("SNOMED",   "48895003", "| Indium-113m (substance) |"),     # ^113m^Indium  # SNOMED-RT ID of SCT 48895003
+        ("SRT",     "C-114A3"): ("SNOMED",   "66956003", "| Iodine-122 (substance) |"),      # ^122^Iodine  # SNOMED-RT ID of SCT 66956003
+        ("SRT",     "C-114A4"): ("SNOMED",   "21572004", "| Iodine-123 (substance) |"),      # ^123^Iodine  # SNOMED-RT ID of SCT 21572004
+        ("SRT",     "C-172A2"): ("SNOMED",   "68153002", "| Xenon-123 (substance) |"),       # ^123^Xenon  # SNOMED-RT ID of SCT 68153002
+        ("SRT",     "C-114A6"): ("SNOMED",   "68630002", "| Iodine-125 (substance) |"),      # ^125^Iodine  # SNOMED-RT ID of SCT 68630002
+        ("SRT",     "C-172A5"): ("SNOMED",   "27081007", "| Xenon-127 (substance) |"),       # ^127^Xenon  # SNOMED-RT ID of SCT 27081007
+        ("SRT",     "C-114B1"): ("SNOMED",    "1368003", "| Iodine-131 (substance) |"),      # ^131^Iodine  # SNOMED-RT ID of SCT 1368003
+        ("SRT",     "C-122A5"): ("SNOMED",    "3027009", "| Barium-133 (substance) |"),      # ^133^Barium  # SNOMED-RT ID of SCT 3027009
+        ("SRT",     "C-172A8"): ("SNOMED",   "80751004", "| Xenon-133 (substance) |"),       # ^133^Xenon  # SNOMED-RT ID of SCT 80751004
+        ("SRT",     "C-178A8"): ("SNOMED",   "14529005", "| Gadolinium-153 (substance) |"),  # ^153^Gadolinium  # SNOMED-RT ID of SCT 14529005
+        ("SRT",     "C-B1134"): ("SNOMED",  "419804008", "| Samarium-153 (substance) |"),    # ^153^Samarium  # SNOMED-RT ID of SCT 419804008
+        ("SRT",     "C-181A3"): ("SNOMED",   "41758004", "| Ytterbium-169 (substance) |"),   # ^169^Ytterbium  # SNOMED-RT ID of SCT 41758004
+        ("SRT",     "C-101ED"): ("SNOMED",  "447553000", "| Lutetium-177 (substance) |"),    # ^177^Lutetium  # SNOMED-RT ID of SCT 447553000
+        ("SRT",     "C-156A6"): ("SNOMED",    "6301006", "| Tantalum-178 (substance) |"),    # ^178^Tantalum  # SNOMED-RT ID of SCT 6301006
+        ("SRT",     "C-11906"): ("SNOMED",  "395865006", "| Rhenium-186 (substance) |"),     # ^186^Rhenium  # SNOMED-RT ID of SCT 395865006
+        ("SRT",     "C-1018D"): ("SNOMED",  "423578007", "| Rhenium-188 (substance) |"),     # ^188^Rhenium  # SNOMED-RT ID of SCT 423578007
+        ("SRT",     "C-146A9"): ("SNOMED",   "24301009", "| Gold-198 (substance) |"),        # ^198^Gold  # SNOMED-RT ID of SCT 24301009
+        ("SRT",     "C-146B1"): ("SNOMED",   "70544003", "| Gold-199 (substance) |"),        # ^199^Gold  # SNOMED-RT ID of SCT 70544003
+        ("SRT",     "C-138A9"): ("SNOMED",   "60057003", "| Thallium-201 (substance) |"),    # ^201^Thallium  # SNOMED-RT ID of SCT 60057003
+        ("SRT",     "C-132A8"): ("SNOMED",   "47588004", "| Lead-203 (substance) |"),        # ^203^Lead  # SNOMED-RT ID of SCT 47588004
+        ("SRT",     "C-132B6"): ("SNOMED",   "87401005", "| Lead-212 (substance) |"),        # ^212^Lead  # SNOMED-RT ID of SCT 87401005
+        ("SRT",     "C-136A2"): ("SNOMED",   "24853006", "| Radium-223 (substance) |"),      # ^223^Radium  # SNOMED-RT ID of SCT 24853006
+        ("SRT",     "C-119A2"): ("SNOMED",   "32059002", "| Actinium-225 (substance) |"),    # ^225^Actinium  # SNOMED-RT ID of SCT 32059002
     }
 
     # Dictionary mapping the codes of the NM/SPECT radionuclides of DICOM CID 18 to their half-life

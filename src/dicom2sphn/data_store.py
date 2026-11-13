@@ -26,6 +26,9 @@ from .sphn_concepts.sphn_imaging_frame import SPHNImagingFrame
 from .sphn_concepts.sphn_imaging_procedure import SPHNImagingProcedure
 from .sphn_concepts.sphn_imaging_series import SPHNImagingSeries
 from .sphn_concepts.sphn_pixel_dimensions import SPHNPixelDimensions
+from .sphn_concepts.sphn_radiopharmaceutical_administration_event import (
+    SPHNRadiopharmaceuticalAdministrationEvent,
+)
 from .sphn_concepts.sphn_software import SPHNSoftware
 from .sphn_concepts.sphn_source_system import SPHNSourceSystem
 from .sphn_concepts.sphn_subject_pseudo_identifier import SPHNSubjectPseudoIdentifier
@@ -185,6 +188,7 @@ class DataStore:
     sphn_imagingframe_type_valueset_member_list: list[str]|None=None
 
     sphn_contrast_agent_administration_event_list: list[SPHNContrastAgentAdministrationEvent]|None=None
+    sphn_radiopharmaceutical_administration_event_list: list[SPHNRadiopharmaceuticalAdministrationEvent]|None=None
 
     study_start_datetime: datetime|None = None
     series_start_datetime: datetime|None = None
@@ -418,6 +422,7 @@ class DataStore:
         self.number_of_sphn_imaging_frames_stored = 0
 
         self.sphn_contrast_agent_administration_event_list = None
+        self.sphn_radiopharmaceutical_administration_event_list = None
 
         self.series_start_datetime = None
 
@@ -489,6 +494,26 @@ class DataStore:
                 logger.debug(" "*(indent+0) + "SPHN Contrast Agent Administration Event object added to the list")
             else:
                 logger.debug(" "*(indent+0) + "SPHN Contrast Agent Administration Event object already in the list")
+
+    #
+    # Edwin 2026-11-13
+    #
+    def add_sphn_radiopharmaceutical_administration_event_to_list(self, sphn_radiopharmaceutical_administration_event: SPHNRadiopharmaceuticalAdministrationEvent, logger: LoggerProtocol, indent=0) -> None:
+
+        # Check
+        assert isinstance(sphn_radiopharmaceutical_administration_event, SPHNRadiopharmaceuticalAdministrationEvent)
+        assert logger is not None and isinstance(logger, LoggerProtocol)
+        assert isinstance(indent, int) and indent >= 0
+
+        if self.sphn_radiopharmaceutical_administration_event_list is None:
+            self.sphn_radiopharmaceutical_administration_event_list = [sphn_radiopharmaceutical_administration_event]
+            logger.debug(" "*(indent+0) + "SPHN Radiopharmaceutical Administration Event object added to the list")
+        else:
+            if sphn_radiopharmaceutical_administration_event not in self.sphn_radiopharmaceutical_administration_event_list:
+                self.sphn_radiopharmaceutical_administration_event_list.append(sphn_radiopharmaceutical_administration_event)
+                logger.debug(" "*(indent+0) + "SPHN Radiopharmaceutical Administration Event object added to the list")
+            else:
+                logger.debug(" "*(indent+0) + "SPHN Radiopharmaceutical Administration Event object already in the list")
 
     #
     # Edwin 2026-10-22
