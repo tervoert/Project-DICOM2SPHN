@@ -78,11 +78,11 @@ class SPHNSubstance(SPHNConcept):
             "id": f"{self.id}"
         }
 
-        if self.has_generic_name is not None:
-            json_dict_content_inline[f"{SPHN.hasGenericName.n3(self.sphn_schema.namespace_manager())}"] = self.has_generic_name
-
         if self.has_code is not None:
             json_dict_content_inline[f"{SPHN.hasCode.n3(self.sphn_schema.namespace_manager())}"] = self.has_code.get_json_dict(content, self.id)
+
+        if self.has_generic_name is not None:
+            json_dict_content_inline[f"{SPHN.hasGenericName.n3(self.sphn_schema.namespace_manager())}"] = self.has_generic_name
 
         if self.has_quantity is not None:
             json_dict_content_inline[f"{SPHN.hasQuantity.n3(self.sphn_schema.namespace_manager())}"] = self.has_quantity.get_json_dict(content, self.id)

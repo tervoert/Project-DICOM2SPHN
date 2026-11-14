@@ -116,19 +116,13 @@ class SPHNDataFile(SPHNConcept):
             "id": f"{self.id}"
         }
 
+        if self.has_creation_datetime is not None:
+            json_dict_content[f"{SPHN.hasCreationDateTime.n3(self.sphn_schema.namespace_manager())}"] = self.has_creation_datetime.isoformat(timespec='milliseconds')
+
         if self.has_encoding is not None:
             json_dict_content[f"{SPHN.hasEncoding.n3(self.sphn_schema.namespace_manager())}"] = {
                 "iri": SPHN_IND + self.has_encoding
             }
-
-        if self.has_creation_datetime is not None:
-            json_dict_content[f"{SPHN.hasCreationDateTime.n3(self.sphn_schema.namespace_manager())}"] = self.has_creation_datetime.isoformat(timespec='milliseconds')
-
-        if self.has_uniform_resource_identifier is not None:
-            json_dict_content[f"{SPHN.hasUniformResourceIdentifier.n3(self.sphn_schema.namespace_manager())}"] = self.has_uniform_resource_identifier
-
-        if self.has_name is not None:
-            json_dict_content[f"{SPHN.hasName.n3(self.sphn_schema.namespace_manager())}"] = self.has_name
 
         if self.has_format_code is not None:
             json_dict_content[f"{SPHN.hasFormatCode.n3(self.sphn_schema.namespace_manager())}"] = self.has_format_code.get_json_dict(content, self.id)
@@ -136,8 +130,14 @@ class SPHNDataFile(SPHNConcept):
         if self.has_hash is not None:
             json_dict_content[f"{SPHN.hasHash.n3(self.sphn_schema.namespace_manager())}"] = self.has_hash.get_json_dict(content, self.id)
 
+        if self.has_name is not None:
+            json_dict_content[f"{SPHN.hasName.n3(self.sphn_schema.namespace_manager())}"] = self.has_name
+
         if self.has_source_system_list is not None and len(self.has_source_system_list)>0:
             json_dict_content[f"{SPHN.hasSourceSystem.n3(self.sphn_schema.namespace_manager())}"] = [source_system.get_json_dict(content, self.id) for source_system in self.has_source_system_list]
+
+        if self.has_uniform_resource_identifier is not None:
+            json_dict_content[f"{SPHN.hasUniformResourceIdentifier.n3(self.sphn_schema.namespace_manager())}"] = self.has_uniform_resource_identifier
 
         # subject = <prefix:classname>
         subject = f"{SPHN.DataFile.n3(self.sphn_schema.namespace_manager())}"

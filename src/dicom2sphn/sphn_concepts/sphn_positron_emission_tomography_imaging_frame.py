@@ -174,47 +174,46 @@ class SPHNPositronEmissionTomographyImagingFrame(SPHNImagingFrame):
             "id": f"{self.id}"
         }
 
-        if self.has_start_datetime is not None:
-            json_dict_content_inline[f"{SPHN.hasStartDateTime.n3(self.sphn_schema.namespace_manager())}"] = self.has_start_datetime.isoformat(timespec='milliseconds')
+        if self.has_algorithm_list is not None and len(self.has_algorithm_list)>0:
+            json_dict_content_inline[f"{SPHN.hasAlgorithm.n3(self.sphn_schema.namespace_manager())}"] = [algorithm.get_json_dict(content, self.id) for algorithm in self.has_algorithm_list]
 
-        if self.has_end_datetime is not None:
-            json_dict_content_inline[f"{SPHN.hasEndDateTime.n3(self.sphn_schema.namespace_manager())}"] = self.has_end_datetime.isoformat(timespec='milliseconds')
-
-        if self.has_type_list is not None and len(self.has_type_list)>0:
-            json_dict_content_inline[f"{SPHN.hasType.n3(self.sphn_schema.namespace_manager())}"] = [{"iri": SPHN_IND + image_type} for image_type in self.has_type_list]
-
-        if self.has_image_dimensions is not None:
-            json_dict_content_inline[f"{SPHN.hasImageDimensions.n3(self.sphn_schema.namespace_manager())}"] = self.has_image_dimensions.get_json_dict(content, self.id)
+        if self.has_anatomical_projection is not None:
+            json_dict_content_inline[f"{SPHN.hasAnatomicalProjection.n3(self.sphn_schema.namespace_manager())}"] = self.has_anatomical_projection.get_json_dict(content, self.id)
 
         if self.has_body_site_list is not None and len(self.has_body_site_list)>0:
             json_dict_content_inline[f"{SPHN.hasBodySite.n3(self.sphn_schema.namespace_manager())}"] = [body_site.get_json_dict(content, self.id) for body_site in self.has_body_site_list]
 
-        if self.has_algorithm_list is not None and len(self.has_algorithm_list)>0:
-            json_dict_content_inline[f"{SPHN.hasAlgorithm.n3(self.sphn_schema.namespace_manager())}"] = [algorithm.get_json_dict(content, self.id) for algorithm in self.has_algorithm_list]
+        if self.has_cardiac_procedural_state_code is not None:  # Added
+            json_dict_content_inline[f"{SPHN.hasCardiacProceduralStateCode.n3(self.sphn_schema.namespace_manager())}"] = self.has_cardiac_procedural_state_code.get_json_dict(content, self.id)
 
         if self.has_content_qualification is not None:
             json_dict_content_inline[f"{SPHN.hasContentQualification.n3(self.sphn_schema.namespace_manager())}"] = {
                 "iri": SPHN_IND + self.has_content_qualification
             }
 
+        if self.has_end_datetime is not None:
+            json_dict_content_inline[f"{SPHN.hasEndDateTime.n3(self.sphn_schema.namespace_manager())}"] = self.has_end_datetime.isoformat(timespec='milliseconds')
+
+        if self.has_image_dimensions is not None:
+            json_dict_content_inline[f"{SPHN.hasImageDimensions.n3(self.sphn_schema.namespace_manager())}"] = self.has_image_dimensions.get_json_dict(content, self.id)
+
         if self.has_imaging_metric is not None:
             json_dict_content_inline[f"{SPHN.hasImagingMetric.n3(self.sphn_schema.namespace_manager())}"] = self.has_imaging_metric.get_json_dict(content, self.id)
 
-        if self.has_anatomical_projection is not None:
-            json_dict_content_inline[f"{SPHN.hasAnatomicalProjection.n3(self.sphn_schema.namespace_manager())}"] = self.has_anatomical_projection.get_json_dict(content, self.id)
-
-        # Added
-        if self.has_radiopharmaceutical_administration_event is not None:
+        if self.has_radiopharmaceutical_administration_event is not None:  # Added
             json_dict_content_inline[f"{SPHN.hasRadiopharmaceuticalAdministrationEvent.n3(self.sphn_schema.namespace_manager())}"] = self.has_radiopharmaceutical_administration_event.get_json_dict(content, self.id)
 
-        if self.has_subject_physiologic_state is not None:
+        if self.has_start_datetime is not None:
+            json_dict_content_inline[f"{SPHN.hasStartDateTime.n3(self.sphn_schema.namespace_manager())}"] = self.has_start_datetime.isoformat(timespec='milliseconds')
+
+        if self.has_subject_physiologic_state is not None:  # Added
             json_dict_content_inline[f"{SPHN.hasSubjectPhysiologicState.n3(self.sphn_schema.namespace_manager())}"] = self.has_subject_physiologic_state.get_json_dict(content, self.id)
 
-        if self.has_cardiac_procedural_state_code is not None:
-            json_dict_content_inline[f"{SPHN.hasCardiacProceduralStateCode.n3(self.sphn_schema.namespace_manager())}"] = self.has_cardiac_procedural_state_code.get_json_dict(content, self.id)
-
-        if self.has_synchronization is not None:
+        if self.has_synchronization is not None:  # Added
             json_dict_content_inline[f"{SPHN.hasSynchronization.n3(self.sphn_schema.namespace_manager())}"] = self.has_synchronization.get_json_dict(content, self.id)
+
+        if self.has_type_list is not None and len(self.has_type_list)>0:
+            json_dict_content_inline[f"{SPHN.hasType.n3(self.sphn_schema.namespace_manager())}"] = [{"iri": SPHN_IND + image_type} for image_type in self.has_type_list]
 
         # Return the JSON description
         return json_dict_content_inline

@@ -79,14 +79,14 @@ class SPHNDrugArticle(SPHNConcept):
             "id": f"{self.id}"
         }
 
-        if self.has_name is not None:
-            json_dict_content_inline[f"{SPHN.hasName.n3(self.sphn_schema.namespace_manager())}"] = self.has_name
-
         if self.has_code is not None:
             json_dict_content_inline[f"{SPHN.hasCode.n3(self.sphn_schema.namespace_manager())}"] = self.has_code.get_json_dict(content, self.id)
 
         if self.has_manufactured_dose_form is not None:
             json_dict_content_inline[f"{SPHN.hasManufacturedDoseForm.n3(self.sphn_schema.namespace_manager())}"] = self.has_manufactured_dose_form.get_json_dict(content, self.id)
+
+        if self.has_name is not None:
+            json_dict_content_inline[f"{SPHN.hasName.n3(self.sphn_schema.namespace_manager())}"] = self.has_name
 
         if self.has_source_system_list is not None and len(self.has_source_system_list)>0:
             json_dict_content_inline[f"{SPHN.hasSourceSystem.n3(self.sphn_schema.namespace_manager())}"] = [source_system.get_json_dict(content, self.id) for source_system in self.has_source_system_list]

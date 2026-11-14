@@ -55,14 +55,14 @@ class SPHNImagingMetric(SPHNConcept):
             "id": f"{self.id}"
         }
 
+        if self.has_description is not None:
+            json_dict_content_inline[f"{SPHN.hasDescription.n3(self.sphn_schema.namespace_manager())}"] = self.has_description
+
         if self.has_type_code is not None:
             json_dict_content_inline[f"{SPHN.hasTypeCode.n3(self.sphn_schema.namespace_manager())}"] = self.has_type_code.get_json_dict(content, self.id)
 
         if self.has_unit is not None:
             json_dict_content_inline[f"{SPHN.hasUnit.n3(self.sphn_schema.namespace_manager())}"] = self.has_unit.get_json_dict(content, self.id)
-
-        if self.has_description is not None:
-            json_dict_content_inline[f"{SPHN.hasDescription.n3(self.sphn_schema.namespace_manager())}"] = self.has_description
 
         # Return the JSON description
         return json_dict_content_inline

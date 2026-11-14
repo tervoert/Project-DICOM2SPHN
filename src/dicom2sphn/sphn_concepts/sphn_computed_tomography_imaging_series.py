@@ -159,29 +159,8 @@ class SPHNComputedTomographyImagingSeries(SPHNImagingSeries):
             "id": f"{self.id}"
         }
 
-        if self.has_start_datetime is not None:
-            json_dict_content[f"{SPHN.hasStartDateTime.n3(self.sphn_schema.namespace_manager())}"] = self.has_start_datetime.isoformat(timespec='milliseconds')
-
-        if self.has_end_datetime is not None:
-            json_dict_content[f"{SPHN.hasEndDateTime.n3(self.sphn_schema.namespace_manager())}"] = self.has_end_datetime.isoformat(timespec='milliseconds')
-
-        if self.has_description is not None:
-            json_dict_content[f"{SPHN.hasDescription.n3(self.sphn_schema.namespace_manager())}"] = self.has_description
-
-        if self.has_protocol_name is not None:
-            json_dict_content[f"{SPHN.hasProtocolName.n3(self.sphn_schema.namespace_manager())}"] = self.has_protocol_name
-
-        if self.has_imaging_modality_code is not None:
-            json_dict_content[f"{SPHN.hasImagingModalityCode.n3(self.sphn_schema.namespace_manager())}"] = self.has_imaging_modality_code.get_json_dict(content, self.id)
-
-        if self.has_imaging_frame_list is not None and len(self.has_imaging_frame_list)>0:
-            json_dict_content[f"{SPHN.hasImagingFrame.n3(self.sphn_schema.namespace_manager())}"] = [imaging_frame.get_json_dict(content, self.id) for imaging_frame in self.has_imaging_frame_list]
-
-        if self.has_number_of_frames is not None:
-            json_dict_content[f"{SPHN.hasNumberOfFrames.n3(self.sphn_schema.namespace_manager())}"] = self.has_number_of_frames.get_json_dict(content, self.id)
-
-        if self.has_medical_device is not None:
-            json_dict_content[f"{SPHN.hasMedicalDevice.n3(self.sphn_schema.namespace_manager())}"] = self.has_medical_device.get_json_dict(content, self.id)
+        if self.has_administrative_case is not None:
+            json_dict_content[f"{SPHN.hasAdministrativeCase.n3(self.sphn_schema.namespace_manager())}"] = self.has_administrative_case.get_json_dict(content, self.id)
 
         if self.has_body_position_list is not None and len(self.has_body_position_list)>0:
             json_dict_content[f"{SPHN.hasBodyPosition.n3(self.sphn_schema.namespace_manager())}"] = [body_position.get_json_dict(content, self.id) for body_position in self.has_body_position_list]
@@ -189,11 +168,32 @@ class SPHNComputedTomographyImagingSeries(SPHNImagingSeries):
         if self.has_data_file_list is not None and len(self.has_data_file_list)>0:
             json_dict_content[f"{SPHN.hasDataFile.n3(self.sphn_schema.namespace_manager())}"] = [data_file.get_json_dict(content, self.id) for data_file in self.has_data_file_list]
 
-        if self.has_administrative_case is not None:
-            json_dict_content[f"{SPHN.hasAdministrativeCase.n3(self.sphn_schema.namespace_manager())}"] = self.has_administrative_case.get_json_dict(content, self.id)
+        if self.has_description is not None:
+            json_dict_content[f"{SPHN.hasDescription.n3(self.sphn_schema.namespace_manager())}"] = self.has_description
+
+        if self.has_end_datetime is not None:
+            json_dict_content[f"{SPHN.hasEndDateTime.n3(self.sphn_schema.namespace_manager())}"] = self.has_end_datetime.isoformat(timespec='milliseconds')
+
+        if self.has_imaging_frame_list is not None and len(self.has_imaging_frame_list)>0:
+            json_dict_content[f"{SPHN.hasImagingFrame.n3(self.sphn_schema.namespace_manager())}"] = [imaging_frame.get_json_dict(content, self.id) for imaging_frame in self.has_imaging_frame_list]
+
+        if self.has_imaging_modality_code is not None:
+            json_dict_content[f"{SPHN.hasImagingModalityCode.n3(self.sphn_schema.namespace_manager())}"] = self.has_imaging_modality_code.get_json_dict(content, self.id)
+
+        if self.has_medical_device is not None:
+            json_dict_content[f"{SPHN.hasMedicalDevice.n3(self.sphn_schema.namespace_manager())}"] = self.has_medical_device.get_json_dict(content, self.id)
+
+        if self.has_number_of_frames is not None:
+            json_dict_content[f"{SPHN.hasNumberOfFrames.n3(self.sphn_schema.namespace_manager())}"] = self.has_number_of_frames.get_json_dict(content, self.id)
+
+        if self.has_protocol_name is not None:
+            json_dict_content[f"{SPHN.hasProtocolName.n3(self.sphn_schema.namespace_manager())}"] = self.has_protocol_name
 
         if self.has_source_system_list is not None and len(self.has_source_system_list)>0:
             json_dict_content[f"{SPHN.hasSourceSystem.n3(self.sphn_schema.namespace_manager())}"] = [source_system.get_json_dict(content, self.id) for source_system in self.has_source_system_list]
+
+        if self.has_start_datetime is not None:
+            json_dict_content[f"{SPHN.hasStartDateTime.n3(self.sphn_schema.namespace_manager())}"] = self.has_start_datetime.isoformat(timespec='milliseconds')
 
         # subject = <prefix:classname>
         subject = f"{SPHN.ComputedTomographyImagingSeries.n3(self.sphn_schema.namespace_manager())}"

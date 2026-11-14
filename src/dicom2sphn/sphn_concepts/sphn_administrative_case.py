@@ -90,17 +90,17 @@ class SPHNAdministrativeCase(SPHNConcept):
             "id": f"{self.id}"
         }
 
-        if self.has_identifier is not None:
-            json_dict_content[f"{SPHN.hasIdentifier.n3(self.sphn_schema.namespace_manager())}"] = self.has_identifier
-
         if self.has_admission is not None:
             json_dict_content[f"{SPHN.hasAdmission.n3(self.sphn_schema.namespace_manager())}"] = self.has_admission.get_json_dict(content, self.id)
+
+        if self.has_care_handling is not None:
+            json_dict_content[f"{SPHN.hasCareHandling.n3(self.sphn_schema.namespace_manager())}"] = self.has_care_handling.get_json_dict(content, self.id)
 
         if self.has_discharge is not None:
             json_dict_content[f"{SPHN.hasDischarge.n3(self.sphn_schema.namespace_manager())}"] = self.has_discharge.get_json_dict(content, self.id)
 
-        if self.has_care_handling is not None:
-            json_dict_content[f"{SPHN.hasCareHandling.n3(self.sphn_schema.namespace_manager())}"] = self.has_care_handling.get_json_dict(content, self.id)
+        if self.has_identifier is not None:
+            json_dict_content[f"{SPHN.hasIdentifier.n3(self.sphn_schema.namespace_manager())}"] = self.has_identifier
 
         if self.has_source_system_list is not None and len(self.has_source_system_list)>0:
             json_dict_content[f"{SPHN.hasSourceSystem.n3(self.sphn_schema.namespace_manager())}"] = [source_system.get_json_dict(content, self.id) for source_system in self.has_source_system_list]

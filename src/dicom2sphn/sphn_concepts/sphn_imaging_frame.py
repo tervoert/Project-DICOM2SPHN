@@ -161,34 +161,34 @@ class SPHNImagingFrame(SPHNConcept):
             "id": f"{self.id}"
         }
 
-        if self.has_start_datetime is not None:
-            json_dict_content_inline[f"{SPHN.hasStartDateTime.n3(self.sphn_schema.namespace_manager())}"] = self.has_start_datetime.isoformat(timespec='milliseconds')
+        if self.has_algorithm_list is not None and len(self.has_algorithm_list)>0:
+            json_dict_content_inline[f"{SPHN.hasAlgorithm.n3(self.sphn_schema.namespace_manager())}"] = [algorithm.get_json_dict(content, self.id) for algorithm in self.has_algorithm_list]
 
-        if self.has_end_datetime is not None:
-            json_dict_content_inline[f"{SPHN.hasEndDateTime.n3(self.sphn_schema.namespace_manager())}"] = self.has_end_datetime.isoformat(timespec='milliseconds')
-
-        if self.has_type_list is not None and len(self.has_type_list)>0:
-            json_dict_content_inline[f"{SPHN.hasType.n3(self.sphn_schema.namespace_manager())}"] = [{"iri": SPHN_IND + image_type} for image_type in self.has_type_list]
-
-        if self.has_image_dimensions is not None:
-            json_dict_content_inline[f"{SPHN.hasImageDimensions.n3(self.sphn_schema.namespace_manager())}"] = self.has_image_dimensions.get_json_dict(content, self.id)
+        if self.has_anatomical_projection is not None:
+            json_dict_content_inline[f"{SPHN.hasAnatomicalProjection.n3(self.sphn_schema.namespace_manager())}"] = self.has_anatomical_projection.get_json_dict(content, self.id)
 
         if self.has_body_site_list is not None and len(self.has_body_site_list)>0:
             json_dict_content_inline[f"{SPHN.hasBodySite.n3(self.sphn_schema.namespace_manager())}"] = [body_site.get_json_dict(content, self.id) for body_site in self.has_body_site_list]
-
-        if self.has_algorithm_list is not None and len(self.has_algorithm_list)>0:
-            json_dict_content_inline[f"{SPHN.hasAlgorithm.n3(self.sphn_schema.namespace_manager())}"] = [algorithm.get_json_dict(content, self.id) for algorithm in self.has_algorithm_list]
 
         if self.has_content_qualification is not None:
             json_dict_content_inline[f"{SPHN.hasContentQualification.n3(self.sphn_schema.namespace_manager())}"] = {
                 "iri": SPHN_IND + self.has_content_qualification
             }
 
+        if self.has_end_datetime is not None:
+            json_dict_content_inline[f"{SPHN.hasEndDateTime.n3(self.sphn_schema.namespace_manager())}"] = self.has_end_datetime.isoformat(timespec='milliseconds')
+
+        if self.has_image_dimensions is not None:
+            json_dict_content_inline[f"{SPHN.hasImageDimensions.n3(self.sphn_schema.namespace_manager())}"] = self.has_image_dimensions.get_json_dict(content, self.id)
+
         if self.has_imaging_metric is not None:
             json_dict_content_inline[f"{SPHN.hasImagingMetric.n3(self.sphn_schema.namespace_manager())}"] = self.has_imaging_metric.get_json_dict(content, self.id)
 
-        if self.has_anatomical_projection is not None:
-            json_dict_content_inline[f"{SPHN.hasAnatomicalProjection.n3(self.sphn_schema.namespace_manager())}"] = self.has_anatomical_projection.get_json_dict(content, self.id)
+        if self.has_start_datetime is not None:
+            json_dict_content_inline[f"{SPHN.hasStartDateTime.n3(self.sphn_schema.namespace_manager())}"] = self.has_start_datetime.isoformat(timespec='milliseconds')
+
+        if self.has_type_list is not None and len(self.has_type_list)>0:
+            json_dict_content_inline[f"{SPHN.hasType.n3(self.sphn_schema.namespace_manager())}"] = [{"iri": SPHN_IND + image_type} for image_type in self.has_type_list]
 
         # Return the JSON description
         return json_dict_content_inline

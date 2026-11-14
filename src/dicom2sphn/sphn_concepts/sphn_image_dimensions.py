@@ -51,23 +51,23 @@ class SPHNImageDimensions(SPHNConcept):
             "id": f"{self.id}"
         }
 
-        if self.has_number_of_rows is not None:
-            json_dict_content_inline[f"{SPHN.hasNumberOfRows.n3(self.sphn_schema.namespace_manager())}"] = self.has_number_of_rows.get_json_dict(content, self.id)
-
         if self.has_number_of_columns is not None:
             json_dict_content_inline[f"{SPHN.hasNumberOfColumns.n3(self.sphn_schema.namespace_manager())}"] = self.has_number_of_columns.get_json_dict(content, self.id)
 
+        if self.has_number_of_rows is not None:
+            json_dict_content_inline[f"{SPHN.hasNumberOfRows.n3(self.sphn_schema.namespace_manager())}"] = self.has_number_of_rows.get_json_dict(content, self.id)
+
         if self.has_number_of_slices is not None:
             json_dict_content_inline[f"{SPHN.hasNumberOfSlices.n3(self.sphn_schema.namespace_manager())}"] = self.has_number_of_slices.get_json_dict(content, self.id)
+
+        if self.has_pixel_dimensions is not None:
+            json_dict_content_inline[f"{SPHN.hasPixelDimensions.n3(self.sphn_schema.namespace_manager())}"] = self.has_pixel_dimensions.get_json_dict(content, self.id)
 
         if self.has_slice_spacing is not None:
             json_dict_content_inline[f"{SPHN.hasSliceSpacing.n3(self.sphn_schema.namespace_manager())}"] = self.has_slice_spacing.get_json_dict(content, self.id)
 
         if self.has_slice_thickness is not None:
             json_dict_content_inline[f"{SPHN.hasSliceThickness.n3(self.sphn_schema.namespace_manager())}"] = self.has_slice_thickness.get_json_dict(content, self.id)
-
-        if self.has_pixel_dimensions is not None:
-            json_dict_content_inline[f"{SPHN.hasPixelDimensions.n3(self.sphn_schema.namespace_manager())}"] = self.has_pixel_dimensions.get_json_dict(content, self.id)
 
         # Return the JSON description
         return json_dict_content_inline

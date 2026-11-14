@@ -48,14 +48,14 @@ class SPHNFlowProfileInterval(SPHNConcept):
             "id": f"{self.id}"
         }
 
-        if self.has_start_datetime is not None:
-            json_dict_content_inline[f"{SPHN.hasStartDateTime.n3(self.sphn_schema.namespace_manager())}"] = self.has_start_datetime.isoformat(timespec='milliseconds')
+        if self.has_duration is not None:
+            json_dict_content_inline[f"{SPHN.hasDuration.n3(self.sphn_schema.namespace_manager())}"] = self.has_duration.get_json_dict(content, self.id)
 
         if self.has_end_datetime is not None:
             json_dict_content_inline[f"{SPHN.hasEndDateTime.n3(self.sphn_schema.namespace_manager())}"] = self.has_end_datetime.isoformat(timespec='milliseconds')
 
-        if self.has_duration is not None:
-            json_dict_content_inline[f"{SPHN.hasDuration.n3(self.sphn_schema.namespace_manager())}"] = self.has_duration.get_json_dict(content, self.id)
+        if self.has_start_datetime is not None:
+            json_dict_content_inline[f"{SPHN.hasStartDateTime.n3(self.sphn_schema.namespace_manager())}"] = self.has_start_datetime.isoformat(timespec='milliseconds')
 
         if self.has_volume is not None:
             json_dict_content_inline[f"{SPHN.hasVolume.n3(self.sphn_schema.namespace_manager())}"] = self.has_volume.get_json_dict(content, self.id)

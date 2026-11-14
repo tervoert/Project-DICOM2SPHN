@@ -47,14 +47,14 @@ class SPHNRadioactivity(SPHNConcept):
             "id": f"{self.id}"
         }
 
-        if self.has_quantity is not None:
-            json_dict_content_inline[f"{SPHN.hasQuantity.n3(self.sphn_schema.namespace_manager())}"] = self.has_quantity.get_json_dict(content, self.id)
+        if self.has_data_determination is not None:
+            json_dict_content_inline[f"{SPHN.hasDataDetermination.n3(self.sphn_schema.namespace_manager())}"] = self.has_data_determination.get_json_dict(content, self.id)
 
         if self.has_datetime is not None:
             json_dict_content_inline[f"{SPHN.hasDateTime.n3(self.sphn_schema.namespace_manager())}"] = self.has_datetime.isoformat(timespec='milliseconds')
 
-        if self.has_data_determination is not None:
-            json_dict_content_inline[f"{SPHN.hasDataDetermination.n3(self.sphn_schema.namespace_manager())}"] = self.has_data_determination.get_json_dict(content, self.id)
+        if self.has_quantity is not None:
+            json_dict_content_inline[f"{SPHN.hasQuantity.n3(self.sphn_schema.namespace_manager())}"] = self.has_quantity.get_json_dict(content, self.id)
 
         # Return the JSON description
         return json_dict_content_inline

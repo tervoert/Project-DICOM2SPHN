@@ -44,11 +44,11 @@ class SPHNPixelDimensions(SPHNConcept):
             "id": f"{self.id}"
         }
 
-        if self.has_row_spacing is not None:
-            json_dict_content_inline[f"{SPHN.hasRowSpacing.n3(self.sphn_schema.namespace_manager())}"] = self.has_row_spacing.get_json_dict(content, self.id)
-
         if self.has_column_spacing is not None:
             json_dict_content_inline[f"{SPHN.hasColumnSpacing.n3(self.sphn_schema.namespace_manager())}"] = self.has_column_spacing.get_json_dict(content, self.id)
+
+        if self.has_row_spacing is not None:
+            json_dict_content_inline[f"{SPHN.hasRowSpacing.n3(self.sphn_schema.namespace_manager())}"] = self.has_row_spacing.get_json_dict(content, self.id)
 
         # Return the JSON description
         return json_dict_content_inline

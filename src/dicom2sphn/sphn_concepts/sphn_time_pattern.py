@@ -48,17 +48,17 @@ class SPHNTimePattern(SPHNConcept):
             "id": f"{self.id}"
         }
 
-        if self.has_offset is not None:
-            json_dict_content_inline[f"{SPHN.hasOffset.n3(self.sphn_schema.namespace_manager())}"] = self.has_offset.get_json_dict(content, self.id)
-
         if self.has_frequency is not None:
             json_dict_content_inline[f"{SPHN.hasFrequency.n3(self.sphn_schema.namespace_manager())}"] = self.has_frequency.get_json_dict(content, self.id)
 
-        if self.has_type_code is not None:
-            json_dict_content_inline[f"{SPHN.hasTypeCode.n3(self.sphn_schema.namespace_manager())}"] = self.has_type_code.get_json_dict(content, self.id)
+        if self.has_offset is not None:
+            json_dict_content_inline[f"{SPHN.hasOffset.n3(self.sphn_schema.namespace_manager())}"] = self.has_offset.get_json_dict(content, self.id)
 
         if self.has_time_of_day_code is not None:
             json_dict_content_inline[f"{SPHN.hasTimeOfDayCode.n3(self.sphn_schema.namespace_manager())}"] = self.has_time_of_day_code.get_json_dict(content, self.id)
+
+        if self.has_type_code is not None:
+            json_dict_content_inline[f"{SPHN.hasTypeCode.n3(self.sphn_schema.namespace_manager())}"] = self.has_type_code.get_json_dict(content, self.id)
 
         return json_dict_content_inline
 

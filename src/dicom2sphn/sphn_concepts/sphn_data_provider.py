@@ -81,9 +81,6 @@ class SPHNDataProvider(SPHNConcept):
             "id": f"{self.id}"
         }
 
-        if self.has_institution_code is not None:
-            json_dict[f"{SPHN.hasInstitutionCode.n3(self.sphn_schema.namespace_manager())}"] = self.has_institution_code.get_json_dict(content, self.id)
-
         if self.has_category is not None:
             json_dict[f"{SPHN.hasCategory.n3(self.sphn_schema.namespace_manager())}"] = {
                 "iri": SPHN_IND + self.has_category
@@ -91,6 +88,9 @@ class SPHNDataProvider(SPHNConcept):
 
         if self.has_department is not None:
             json_dict[f"{SPHN.hasDepartment.n3(self.sphn_schema.namespace_manager())}"] = self.has_department.get_json_dict(content, self.id)
+
+        if self.has_institution_code is not None:
+            json_dict[f"{SPHN.hasInstitutionCode.n3(self.sphn_schema.namespace_manager())}"] = self.has_institution_code.get_json_dict(content, self.id)
 
         return json_dict
 

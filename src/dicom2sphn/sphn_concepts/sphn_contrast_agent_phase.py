@@ -46,11 +46,11 @@ class SPHNContrastAgentPhase(SPHNConcept):
             "id": f"{self.id}"
         }
 
-        if self.has_timing_code is not None:
-            json_dict_content_inline[f"{SPHN.hasTimingCode.n3(self.sphn_schema.namespace_manager())}"] = self.has_timing_code.get_json_dict(content, self.id)
-
         if self.has_localization is not None:
             json_dict_content_inline[f"{SPHN.hasLocalization.n3(self.sphn_schema.namespace_manager())}"] = self.has_localization.get_json_dict(content, self.id)
+
+        if self.has_timing_code is not None:
+            json_dict_content_inline[f"{SPHN.hasTimingCode.n3(self.sphn_schema.namespace_manager())}"] = self.has_timing_code.get_json_dict(content, self.id)
 
         # Return the JSON description
         return json_dict_content_inline

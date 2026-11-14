@@ -57,16 +57,16 @@ class SPHNQuantity(SPHNConcept):
             "id": f"{self.id}"
         }
 
-        if self.has_value is not None:
-            json_dict_content_inline[f"{SPHN.hasValue.n3(self.sphn_schema.namespace_manager())}"] = self.has_value
-
-        if self.has_unit is not None:
-            json_dict_content_inline[f"{SPHN.hasUnit.n3(self.sphn_schema.namespace_manager())}"] = self.has_unit.get_json_dict(content, self.id)
-
         if self.has_comparator is not None:
             json_dict_content_inline[f"{SPHN.hasComparator.n3(self.sphn_schema.namespace_manager())}"] = {
                 "iri": SPHN_IND + self.has_comparator
             }
+
+        if self.has_unit is not None:
+            json_dict_content_inline[f"{SPHN.hasUnit.n3(self.sphn_schema.namespace_manager())}"] = self.has_unit.get_json_dict(content, self.id)
+
+        if self.has_value is not None:
+            json_dict_content_inline[f"{SPHN.hasValue.n3(self.sphn_schema.namespace_manager())}"] = self.has_value
 
         # Return the JSON description
         return json_dict_content_inline

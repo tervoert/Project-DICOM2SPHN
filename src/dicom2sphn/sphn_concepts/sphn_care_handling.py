@@ -70,11 +70,11 @@ class SPHNCareHandling(SPHNConcept):
             "id": f"{self.id}"
         }
 
-        if self.has_type_code is not None:
-            json_dict_content_inline[f"{SPHN.hasTypeCode.n3(self.sphn_schema.namespace_manager())}"] = self.has_type_code.get_json_dict(content, self.id)
-
         if self.has_source_system_list is not None and len(self.has_source_system_list)>0:
             json_dict_content_inline[f"{SPHN.hasSourceSystem.n3(self.sphn_schema.namespace_manager())}"] = [source_system.get_json_dict(content, self.id) for source_system in self.has_source_system_list]
+
+        if self.has_type_code is not None:
+            json_dict_content_inline[f"{SPHN.hasTypeCode.n3(self.sphn_schema.namespace_manager())}"] = self.has_type_code.get_json_dict(content, self.id)
 
         # Return the JSON description
         return json_dict_content_inline

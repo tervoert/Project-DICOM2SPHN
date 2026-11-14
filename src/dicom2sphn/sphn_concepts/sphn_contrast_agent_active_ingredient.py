@@ -80,23 +80,23 @@ class SPHNContrastAgentActiveIngredient(SPHNSubstance):
             "id": f"{self.id}"
         }
 
-        if self.has_generic_name is not None:
-            json_dict_content_inline[f"{SPHN.hasGenericName.n3(self.sphn_schema.namespace_manager())}"] = self.has_generic_name
-
         if self.has_code is not None:
             json_dict_content_inline[f"{SPHN.hasCode.n3(self.sphn_schema.namespace_manager())}"] = self.has_code.get_json_dict(content, self.id)
-
-        if self.has_quantity is not None:
-            json_dict_content_inline[f"{SPHN.hasQuantity.n3(self.sphn_schema.namespace_manager())}"] = self.has_quantity.get_json_dict(content, self.id)
 
         if self.has_concentration is not None:
             json_dict_content_inline[f"{SPHN.hasConcentration.n3(self.sphn_schema.namespace_manager())}"] = self.has_concentration.get_json_dict(content, self.id)
 
-        if self.has_volume_percentage is not None:
-            json_dict_content_inline[f"{SPHN.hasVolumePercentage.n3(self.sphn_schema.namespace_manager())}"] = self.has_volume_percentage.get_json_dict(content, self.id)
+        if self.has_generic_name is not None:
+            json_dict_content_inline[f"{SPHN.hasGenericName.n3(self.sphn_schema.namespace_manager())}"] = self.has_generic_name
+
+        if self.has_quantity is not None:
+            json_dict_content_inline[f"{SPHN.hasQuantity.n3(self.sphn_schema.namespace_manager())}"] = self.has_quantity.get_json_dict(content, self.id)
 
         if self.has_source_system_list is not None and len(self.has_source_system_list) > 0:
             json_dict_content_inline[f"{SPHN.hasSourceSystem.n3(self.sphn_schema.namespace_manager())}"] = [source_system.get_json_dict(content, self.id) for source_system in self.has_source_system_list]
+
+        if self.has_volume_percentage is not None:
+            json_dict_content_inline[f"{SPHN.hasVolumePercentage.n3(self.sphn_schema.namespace_manager())}"] = self.has_volume_percentage.get_json_dict(content, self.id)
 
         return json_dict_content_inline
 

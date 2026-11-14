@@ -92,32 +92,32 @@ class SPHNRadiopharmaceuticalAdministrationEvent(SPHNDrugAdministrationEvent):
             "id": f"{self.id}"
         }
 
-        if self.has_start_datetime is not None:
-            json_dict_content[f"{SPHN.hasStartDateTime.n3(self.sphn_schema.namespace_manager())}"] = self.has_start_datetime.isoformat(timespec='milliseconds')
-
-        if self.has_end_datetime is not None:
-            json_dict_content[f"{SPHN.hasEndDateTime.n3(self.sphn_schema.namespace_manager())}"] = self.has_end_datetime.isoformat(timespec='milliseconds')
-
-        if self.has_duration is not None:
-            json_dict_content[f"{SPHN.hasDuration.n3(self.sphn_schema.namespace_manager())}"] = self.has_duration.get_json_dict(content, self.id)
-
-        if self.has_time_pattern is not None:
-            json_dict_content[f"{SPHN.hasTimePattern.n3(self.sphn_schema.namespace_manager())}"] = self.has_time_pattern.get_json_dict(content, self.id)
-
-        if self.has_drug is not None:
-            json_dict_content[f"{SPHN.hasDrug.n3(self.sphn_schema.namespace_manager())}"] = self.has_drug.get_json_dict(content, self.id)
-
         if self.has_administration_route_code is not None:
             json_dict_content[f"{SPHN.hasAdministrationRouteCode.n3(self.sphn_schema.namespace_manager())}"] = self.has_administration_route_code.get_json_dict(content, self.id)
-
-        if self.has_reason_to_stop_code is not None:
-            json_dict_content[f"{SPHN.hasReasonToStopCode.n3(self.sphn_schema.namespace_manager())}"] = self.has_reason_to_stop_code.get_json_dict(content, self.id)
 
         if self.has_administrative_case is not None:
             json_dict_content[f"{SPHN.hasAdministrativeCase.n3(self.sphn_schema.namespace_manager())}"] = self.has_administrative_case.get_json_dict(content, self.id)
 
+        if self.has_drug is not None:
+            json_dict_content[f"{SPHN.hasDrug.n3(self.sphn_schema.namespace_manager())}"] = self.has_drug.get_json_dict(content, self.id)
+
+        if self.has_duration is not None:
+            json_dict_content[f"{SPHN.hasDuration.n3(self.sphn_schema.namespace_manager())}"] = self.has_duration.get_json_dict(content, self.id)
+
+        if self.has_end_datetime is not None:
+            json_dict_content[f"{SPHN.hasEndDateTime.n3(self.sphn_schema.namespace_manager())}"] = self.has_end_datetime.isoformat(timespec='milliseconds')
+
+        if self.has_reason_to_stop_code is not None:
+            json_dict_content[f"{SPHN.hasReasonToStopCode.n3(self.sphn_schema.namespace_manager())}"] = self.has_reason_to_stop_code.get_json_dict(content, self.id)
+
         if self.has_source_system_list is not None and len(self.has_source_system_list)>0:
             json_dict_content[f"{SPHN.hasSourceSystem.n3(self.sphn_schema.namespace_manager())}"] = [source_system.get_json_dict(content, self.id) for source_system in self.has_source_system_list]
+
+        if self.has_start_datetime is not None:
+            json_dict_content[f"{SPHN.hasStartDateTime.n3(self.sphn_schema.namespace_manager())}"] = self.has_start_datetime.isoformat(timespec='milliseconds')
+
+        if self.has_time_pattern is not None:
+            json_dict_content[f"{SPHN.hasTimePattern.n3(self.sphn_schema.namespace_manager())}"] = self.has_time_pattern.get_json_dict(content, self.id)
 
         # subject = <prefix:classname>
         subject = f"{SPHN.RadiopharmaceuticalAdministrationEvent.n3(self.sphn_schema.namespace_manager())}"

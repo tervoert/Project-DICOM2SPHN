@@ -80,21 +80,21 @@ class SPHNSourceSystem(SPHNConcept):
             "id": f"{self.id}"
         }
 
-        if self.has_name is not None:
-            json_dict_content[f"{SPHN.hasName.n3(self.sphn_schema.namespace_manager())}"] = self.has_name
-
-        if self.has_purpose is not None:
-            json_dict_content[f"{SPHN.hasPurpose.n3(self.sphn_schema.namespace_manager())}"] = {
-                "iri": SPHN_IND + self.has_purpose
-            }
-
         if self.has_category is not None:
             json_dict_content[f"{SPHN.hasCategory.n3(self.sphn_schema.namespace_manager())}"] = {
                 "iri": SPHN_IND + self.has_category
             }
 
+        if self.has_name is not None:
+            json_dict_content[f"{SPHN.hasName.n3(self.sphn_schema.namespace_manager())}"] = self.has_name
+
         if self.has_primary_system is not None:
             json_dict_content[f"{SPHN.hasPrimarySystem.n3(self.sphn_schema.namespace_manager())}"] = self.has_primary_system.get_json_dict(content, self.id)
+
+        if self.has_purpose is not None:
+            json_dict_content[f"{SPHN.hasPurpose.n3(self.sphn_schema.namespace_manager())}"] = {
+                "iri": SPHN_IND + self.has_purpose
+            }
 
         # subject = <prefix:classname>
         subject = f"{SPHN.SourceSystem.n3(self.sphn_schema.namespace_manager())}"

@@ -78,30 +78,30 @@ class SPHNDataCompressionAlgorithm(SPHNConcept):
             "id": f"{self.id}"
         }
 
-        if self.has_name is not None:
-            json_dict_content_inline[f"{SPHN.hasName.n3(self.sphn_schema.namespace_manager())}"] = self.has_name
-
-        if self.has_version is not None:
-            json_dict_content_inline[f"{SPHN.hasVersion.n3(self.sphn_schema.namespace_manager())}"] = self.has_version
-
         if self.has_description is not None:
             json_dict_content_inline[f"{SPHN.hasDescription.n3(self.sphn_schema.namespace_manager())}"] = self.has_description
-
-        if self.has_uniform_resource_locator is not None:
-            json_dict_content_inline[f"{SPHN.hasUniformResourceLocator.n3(self.sphn_schema.namespace_manager())}"] = self.has_uniform_resource_locator
-
-        if self.has_type is not None:
-            json_dict_content_inline[f"{SPHN.hasType.n3(self.sphn_schema.namespace_manager())}"] = {
-                "iri": SPHN_IND + self.has_type
-            }
 
         if self.has_method is not None:
             json_dict_content_inline[f"{SPHN.hasMethod.n3(self.sphn_schema.namespace_manager())}"] = {
                 "iri": SPHN_IND + self.has_method
             }
 
+        if self.has_name is not None:
+            json_dict_content_inline[f"{SPHN.hasName.n3(self.sphn_schema.namespace_manager())}"] = self.has_name
+
         if self.has_ratio is not None:
             json_dict_content_inline[f"{SPHN.hasRatio.n3(self.sphn_schema.namespace_manager())}"] = self.has_ratio.get_json_dict(content, self.id)
+
+        if self.has_type is not None:
+            json_dict_content_inline[f"{SPHN.hasType.n3(self.sphn_schema.namespace_manager())}"] = {
+                "iri": SPHN_IND + self.has_type
+            }
+
+        if self.has_uniform_resource_locator is not None:
+            json_dict_content_inline[f"{SPHN.hasUniformResourceLocator.n3(self.sphn_schema.namespace_manager())}"] = self.has_uniform_resource_locator
+
+        if self.has_version is not None:
+            json_dict_content_inline[f"{SPHN.hasVersion.n3(self.sphn_schema.namespace_manager())}"] = self.has_version
 
         # Return the JSON description
         return json_dict_content_inline

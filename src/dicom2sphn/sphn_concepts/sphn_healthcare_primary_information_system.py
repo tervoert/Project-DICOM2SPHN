@@ -52,11 +52,11 @@ class SPHNHealthcarePrimaryInformationSystem(SPHNConcept):
             "id": f"{self.id}"
         }
 
-        if self.has_name is not None:
-            json_dict_content_inline[f"{SPHN.hasName.n3(self.sphn_schema.namespace_manager())}"] = self.has_name
-
         if self.has_code is not None:
             json_dict_content_inline[f"{SPHN.hasCode.n3(self.sphn_schema.namespace_manager())}"] = self.has_code.get_json_dict(content, self.id)
+
+        if self.has_name is not None:
+            json_dict_content_inline[f"{SPHN.hasName.n3(self.sphn_schema.namespace_manager())}"] = self.has_name
 
         # Return the JSON description of the reference to the instance
         return json_dict_content_inline

@@ -189,35 +189,8 @@ class SPHNImagingProcedure(SPHNConcept):
             "id": f"{self.id}"
         }
 
-        if self.has_start_datetime is not None:
-            json_dict_content[f"{SPHN.hasStartDateTime.n3(self.sphn_schema.namespace_manager())}"] = self.has_start_datetime.isoformat(timespec='milliseconds')
-
-        if self.has_end_datetime is not None:
-            json_dict_content[f"{SPHN.hasEndDateTime.n3(self.sphn_schema.namespace_manager())}"] = self.has_end_datetime.isoformat(timespec='milliseconds')
-
-        if self.has_description is not None:
-            json_dict_content[f"{SPHN.hasDescription.n3(self.sphn_schema.namespace_manager())}"] = self.has_description
-
-        if self.has_subject_age is not None:
-            json_dict_content[f"{SPHN.hasSubjectAge.n3(self.sphn_schema.namespace_manager())}"] = self.has_subject_age.get_json_dict(content, self.id)
-
-        if self.has_subject_body_height is not None:
-            json_dict_content[f"{SPHN.hasSubjectBodyHeight.n3(self.sphn_schema.namespace_manager())}"] = self.has_subject_body_height.get_json_dict(content, self.id)
-
-        if self.has_subject_body_weight is not None:
-            json_dict_content[f"{SPHN.hasSubjectBodyWeight.n3(self.sphn_schema.namespace_manager())}"] = self.has_subject_body_weight.get_json_dict(content, self.id)
-
-        if self.has_subject_body_mass_index is not None:
-            json_dict_content[f"{SPHN.hasSubjectBodyMassIndex.n3(self.sphn_schema.namespace_manager())}"] = self.has_subject_body_mass_index.get_json_dict(content, self.id)
-
-        if self.has_subject_administrative_sex is not None:
-            json_dict_content[f"{SPHN.hasSubjectAdministrativeSex.n3(self.sphn_schema.namespace_manager())}"] = self.has_subject_administrative_sex.get_json_dict(content, self.id)
-
-        if self.has_subject_pregnancy_status_code is not None:
-            json_dict_content[f"{SPHN.hasSubjectPregnancyStatusCode.n3(self.sphn_schema.namespace_manager())}"] = self.has_subject_pregnancy_status_code.get_json_dict(content, self.id)
-
-        if self.has_intent is not None:
-            json_dict_content[f"{SPHN.hasIntent.n3(self.sphn_schema.namespace_manager())}"] = self.has_intent.get_json_dict(content, self.id)
+        if self.has_administrative_case is not None:
+            json_dict_content[f"{SPHN.hasAdministrativeCase.n3(self.sphn_schema.namespace_manager())}"] = self.has_administrative_case.get_json_dict(content, self.id)
 
         if self.has_body_site_list is not None and len(self.has_body_site_list)>0:
             json_dict_content[f"{SPHN.hasBodySite.n3(self.sphn_schema.namespace_manager())}"] = [body_site.get_json_dict(content, self.id) for body_site in self.has_body_site_list]
@@ -225,14 +198,41 @@ class SPHNImagingProcedure(SPHNConcept):
         if self.has_code_list is not None and len(self.has_code_list)>0:
             json_dict_content[f"{SPHN.hasCode.n3(self.sphn_schema.namespace_manager())}"] = [code.get_json_dict(content, self.id) for code in self.has_code_list]
 
+        if self.has_description is not None:
+            json_dict_content[f"{SPHN.hasDescription.n3(self.sphn_schema.namespace_manager())}"] = self.has_description
+
+        if self.has_end_datetime is not None:
+            json_dict_content[f"{SPHN.hasEndDateTime.n3(self.sphn_schema.namespace_manager())}"] = self.has_end_datetime.isoformat(timespec='milliseconds')
+
         if self.has_imaging_series_list is not None and len(self.has_imaging_series_list)>0:
             json_dict_content[f"{SPHN.hasImagingSeries.n3(self.sphn_schema.namespace_manager())}"] = [imaging_series.get_json_dict(content, self.id) for imaging_series in self.has_imaging_series_list]
 
-        if self.has_administrative_case is not None:
-            json_dict_content[f"{SPHN.hasAdministrativeCase.n3(self.sphn_schema.namespace_manager())}"] = self.has_administrative_case.get_json_dict(content, self.id)
+        if self.has_intent is not None:
+            json_dict_content[f"{SPHN.hasIntent.n3(self.sphn_schema.namespace_manager())}"] = self.has_intent.get_json_dict(content, self.id)
 
         if self.has_source_system_list is not None and len(self.has_source_system_list)>0:
             json_dict_content[f"{SPHN.hasSourceSystem.n3(self.sphn_schema.namespace_manager())}"] = [source_system.get_json_dict(content, self.id) for source_system in self.has_source_system_list]
+
+        if self.has_start_datetime is not None:
+            json_dict_content[f"{SPHN.hasStartDateTime.n3(self.sphn_schema.namespace_manager())}"] = self.has_start_datetime.isoformat(timespec='milliseconds')
+
+        if self.has_subject_administrative_sex is not None:
+            json_dict_content[f"{SPHN.hasSubjectAdministrativeSex.n3(self.sphn_schema.namespace_manager())}"] = self.has_subject_administrative_sex.get_json_dict(content, self.id)
+
+        if self.has_subject_age is not None:
+            json_dict_content[f"{SPHN.hasSubjectAge.n3(self.sphn_schema.namespace_manager())}"] = self.has_subject_age.get_json_dict(content, self.id)
+
+        if self.has_subject_body_height is not None:
+            json_dict_content[f"{SPHN.hasSubjectBodyHeight.n3(self.sphn_schema.namespace_manager())}"] = self.has_subject_body_height.get_json_dict(content, self.id)
+
+        if self.has_subject_body_mass_index is not None:
+            json_dict_content[f"{SPHN.hasSubjectBodyMassIndex.n3(self.sphn_schema.namespace_manager())}"] = self.has_subject_body_mass_index.get_json_dict(content, self.id)
+
+        if self.has_subject_body_weight is not None:
+            json_dict_content[f"{SPHN.hasSubjectBodyWeight.n3(self.sphn_schema.namespace_manager())}"] = self.has_subject_body_weight.get_json_dict(content, self.id)
+
+        if self.has_subject_pregnancy_status_code is not None:
+            json_dict_content[f"{SPHN.hasSubjectPregnancyStatusCode.n3(self.sphn_schema.namespace_manager())}"] = self.has_subject_pregnancy_status_code.get_json_dict(content, self.id)
 
         # subject = <prefix:classname>
         subject = f"{SPHN.ImagingProcedure.n3(self.sphn_schema.namespace_manager())}"

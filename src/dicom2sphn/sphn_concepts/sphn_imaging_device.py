@@ -87,20 +87,20 @@ class SPHNImagingDevice(SPHNConcept):
             "id": f"{self.id}"
         }
 
-        if self.has_type_code is not None:
-            json_dict_content_inline[f"{SPHN.hasTypeCode.n3(self.sphn_schema.namespace_manager())}"] = self.has_type_code.get_json_dict(content, self.id)
-
-        if self.has_product_code is not None:
-            json_dict_content_inline[f"{SPHN.hasProductCode.n3(self.sphn_schema.namespace_manager())}"] = self.has_product_code.get_json_dict(content, self.id)
-
         if self.has_manufacturer_name is not None:
             json_dict_content_inline[f"{SPHN.hasManufacturerName.n3(self.sphn_schema.namespace_manager())}"] = self.has_manufacturer_name
 
         if self.has_model_name is not None:
             json_dict_content_inline[f"{SPHN.hasModelName.n3(self.sphn_schema.namespace_manager())}"] = self.has_model_name
 
+        if self.has_product_code is not None:
+            json_dict_content_inline[f"{SPHN.hasProductCode.n3(self.sphn_schema.namespace_manager())}"] = self.has_product_code.get_json_dict(content, self.id)
+
         if self.has_software_list is not None and len(self.has_software_list)>0:
             json_dict_content_inline[f"{SPHN.hasSoftware.n3(self.sphn_schema.namespace_manager())}"] = [software.get_json_dict(content, self.id) for software in self.has_software_list]
+
+        if self.has_type_code is not None:
+            json_dict_content_inline[f"{SPHN.hasTypeCode.n3(self.sphn_schema.namespace_manager())}"] = self.has_type_code.get_json_dict(content, self.id)
 
         # Return the JSON description
         return json_dict_content_inline

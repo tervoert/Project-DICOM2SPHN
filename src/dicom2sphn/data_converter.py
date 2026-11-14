@@ -1879,25 +1879,6 @@ class DataConverter:
     }
 
 
-    """
-
-    We could add "SNOMED-CT: 87869004 | Manganese (substance) |" to the SPHN Contrast Agent Active Ingredient code list as it is relevant for manganese-based MRI contrast agents like Teslascan.
-
-    Trade name: Teslascan 
-    Manufacturer: IC Targets
-    Active ingredient: Mangafodipir Trisodium
-    SNOMED 410872002 | Mangafodipir trisodium (substance) | 
-    A subclass of SNOMED-CT 385420005 | Contrast media (substance) |
-
-    It is Manganese-based, but Manganese is not included in SPHN Contrast Agent Active Ingredient code list, unlike other elements e.g. Iodine, Gadolinium
-
-    See also the following references for more information on manganese-based MRI contrast agents:
-    https://pmc.ncbi.nlm.nih.gov/articles/PMC12384406/
-    https://www.itnonline.com/content/ge-healthcare-first-patient-dosed-trial-manganese-based-mri-contrast-agent
-
-    """
-
-
     # ##################################################
     # Radiopharmaceuticals
     # ##################################################
