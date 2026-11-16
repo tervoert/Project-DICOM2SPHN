@@ -135,7 +135,7 @@ class DWFrameProcessor:
         # ToDo: Edwin: Currently SPHN only allows one contrast agent administration event per imaging frame, change with the new SPHN schema version
 
         # Selecting the general or one of the specific SPHN ImagingFrames based on the SOP Class UID of the DICOM Instance dataset
-        if sop_class_uid in [sop_class.CTImageStorage]:
+        if sop_class_uid in ['empty_for_now']:#[sop_class.CTImageStorage]:
             # Create a specific SPHN ComputedTomographyImagingFrame
             logger.debug(" "*(indent+4) + "Creating an SPHN CT-ImagingFrame")
             sphn_imaging_frame = SPHNComputedTomographyImagingFrame(
@@ -153,7 +153,7 @@ class DWFrameProcessor:
                     if data_store.sphn_contrast_agent_administration_event_list is not None \
                         and len(data_store.sphn_contrast_agent_administration_event_list) > 0 else None
             )
-        elif sop_class_uid in [sop_class.MRImageStorage]:
+        elif sop_class_uid in ['empty_for_now']:#[sop_class.MRImageStorage]:
             # Create a specific SPHN MagneticResonanceImagingFrame
             logger.debug(" "*(indent+4) + "Creating an SPHN MR-ImagingFrame")
             sphn_imaging_frame = SPHNMagneticResonanceImagingFrame(
@@ -171,7 +171,7 @@ class DWFrameProcessor:
                     if data_store.sphn_contrast_agent_administration_event_list is not None \
                         and len(data_store.sphn_contrast_agent_administration_event_list) > 0 else None
             )
-        elif sop_class_uid in [sop_class.PositronEmissionTomographyImageStorage]:
+        elif sop_class_uid in ['empty_for_now']:#[sop_class.PositronEmissionTomographyImageStorage]:
             # Create a specific SPHN PositronEmissionTomographyImagingFrame
             logger.debug(" "*(indent+4) + "Creating an SPHN PET-ImagingFrame")
             sphn_imaging_frame = SPHNPositronEmissionTomographyImagingFrame(

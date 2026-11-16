@@ -8,7 +8,7 @@ from pydantic import Field, field_validator
 
 from ..sphn_schema_graph import SPHN, SPHNSchemaGraph
 from ..tools import generate_id, is_valid_string
-from .sphn_concept import SPHNConcept
+from .sphn_concept import SPHNConcept, UnorderedList
 from .sphn_data_provider import SPHNDataProvider
 
 
@@ -43,6 +43,24 @@ class SPHNSubjectPseudoIdentifier(SPHNConcept):
         return value
 
     # -----------------------------------------------------------------------------------------------------------------
+
+    #
+    # Edwin 2026-10-19
+    #
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return (
+                    self.has_identifier, 
+                    self.has_data_provider, 
+                    UnorderedList(self.has_shared_identifier_list)
+                ) == (
+                    other.has_identifier, 
+                    other.has_data_provider, 
+                    UnorderedList(other.has_shared_identifier_list)
+                )
+
+    # -----------------------------------------------------------------------------------------------------------------
     # Public functions
     # -----------------------------------------------------------------------------------------------------------------
 
@@ -73,25 +91,4 @@ class SPHNSubjectPseudoIdentifier(SPHNConcept):
             json_dict[f"{SPHN.hasIdentifier.n3(self.sphn_schema.namespace_manager())}"] = self.has_identifier
 
         return json_dict
-
-
-    #
-    # Edwin 2026-10-19
-    #
-    def __eq__(self, other):
-        if not isinstance(other, type(self)):
-            return NotImplemented
-        return (
-                    self.has_identifier, 
-                    self.has_data_provider, 
-                    sorted(self.has_shared_identifier_list) if self.has_shared_identifier_list is not None else None
-                ) == (
-                    other.has_identifier, 
-                    other.has_data_provider, 
-                    sorted(other.has_shared_identifier_list) if other.has_shared_identifier_list is not None else None
-                )
-
-    # -----------------------------------------------------------------------------------------------------------------
-    # Private functions
-    # -----------------------------------------------------------------------------------------------------------------
 

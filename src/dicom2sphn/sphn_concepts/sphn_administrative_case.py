@@ -10,7 +10,7 @@ from ..sphn_schema_graph import SPHN, SPHNSchemaGraph
 from ..tools import generate_id, is_valid_string
 from .sphn_admission import SPHNAdmission
 from .sphn_care_handling import SPHNCareHandling
-from .sphn_concept import SPHNConcept
+from .sphn_concept import SPHNConcept, UnorderedList
 from .sphn_discharge import SPHNDischarge
 from .sphn_source_system import SPHNSourceSystem
 from .sphn_subject_pseudo_identifier import SPHNSubjectPseudoIdentifier
@@ -48,6 +48,30 @@ class SPHNAdministrativeCase(SPHNConcept):
         if value is not None and not is_valid_string(value):
             raise ValueError(f'SPHN {info.field_name} value is not a valid string')
         return value
+
+    # -----------------------------------------------------------------------------------------------------------------
+
+    #
+    # Edwin 2026-10-19
+    #
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return (
+                    self.has_identifier, 
+                    self.has_admission, 
+                    self.has_subject_pseudo_identifier, 
+                    self.has_discharge, 
+                    self.has_care_handling, 
+                    UnorderedList(self.has_source_system_list)
+                ) == (
+                    other.has_identifier, 
+                    other.has_admission, 
+                    other.has_subject_pseudo_identifier, 
+                    other.has_discharge, 
+                    other.has_care_handling, 
+                    UnorderedList(other.has_source_system_list)
+                )
 
     # -----------------------------------------------------------------------------------------------------------------
     # Public functions
@@ -128,30 +152,3 @@ class SPHNAdministrativeCase(SPHNConcept):
         # Return the JSON description of the reference to the instance
         return json_dict_ref
 
-    
-    #
-    # Edwin 2026-10-19
-    #
-    def __eq__(self, other):
-        if not isinstance(other, type(self)):
-            return NotImplemented
-        return (
-                    self.has_identifier, 
-                    self.has_admission, 
-                    self.has_subject_pseudo_identifier, 
-                    self.has_discharge, 
-                    self.has_care_handling, 
-                    sorted(self.has_source_system_list) if self.has_source_system_list is not None else None
-                ) == (
-                    other.has_identifier, 
-                    other.has_admission, 
-                    other.has_subject_pseudo_identifier, 
-                    other.has_discharge, 
-                    other.has_care_handling, 
-                    sorted(other.has_source_system_list) if other.has_source_system_list is not None else None
-                )
-
-
-    # -----------------------------------------------------------------------------------------------------------------
-    # Private functions
-    # -----------------------------------------------------------------------------------------------------------------

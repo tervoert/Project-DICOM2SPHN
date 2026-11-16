@@ -18,7 +18,7 @@ from .sphn_body_mass_index import SPHNBodyMassIndex
 from .sphn_body_site import SPHNBodySite
 from .sphn_body_weight import SPHNBodyWeight
 from .sphn_code import SPHNCode
-from .sphn_concept import SPHNConcept
+from .sphn_concept import SPHNConcept, UnorderedList
 from .sphn_imaging_series import SPHNImagingSeries
 from .sphn_intent import SPHNIntent
 from .sphn_source_system import SPHNSourceSystem
@@ -99,6 +99,50 @@ class SPHNImagingProcedure(SPHNConcept):
         if not all(isinstance(item, SPHNSourceSystem) for item in value):
             raise TypeError("One or more items in the SPHN 'has_source_system' list are not SPHN SourceSystem instances.")
         return value
+
+    # -----------------------------------------------------------------------------------------------------------------
+
+    #
+    # Edwin 2026-10-19
+    #
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return (
+                    self.has_start_datetime, 
+                    self.has_end_datetime, 
+                    self.has_description,
+                    self.has_subject_pseudo_identifier,
+                    self.has_subject_age,
+                    self.has_subject_body_height,
+                    self.has_subject_body_weight,
+                    self.has_subject_body_mass_index,
+                    self.has_subject_administrative_sex,
+                    self.has_subject_pregnancy_status_code,
+                    self.has_administrative_case,
+                    self.has_intent,
+                    UnorderedList(self.has_body_site_list),
+                    UnorderedList(self.has_imaging_series_list),
+                    UnorderedList(self.has_code_list),
+                    UnorderedList(self.has_source_system_list),
+                ) == (
+                    other.has_start_datetime, 
+                    other.has_end_datetime, 
+                    other.has_description,
+                    other.has_subject_pseudo_identifier,
+                    other.has_subject_age,
+                    other.has_subject_body_height,
+                    other.has_subject_body_weight,
+                    other.has_subject_body_mass_index,
+                    other.has_subject_administrative_sex,
+                    other.has_subject_pregnancy_status_code,
+                    other.has_administrative_case,
+                    other.has_intent,
+                    UnorderedList(other.has_body_site_list),
+                    UnorderedList(other.has_imaging_series_list),
+                    UnorderedList(other.has_code_list),
+                    UnorderedList(other.has_source_system_list)
+                )
 
     # -----------------------------------------------------------------------------------------------------------------
     # Public functions
@@ -204,6 +248,7 @@ class SPHNImagingProcedure(SPHNConcept):
         if self.has_end_datetime is not None:
             json_dict_content[f"{SPHN.hasEndDateTime.n3(self.sphn_schema.namespace_manager())}"] = self.has_end_datetime.isoformat(timespec='milliseconds')
 
+        # ToDo: Edwin test
         if self.has_imaging_series_list is not None and len(self.has_imaging_series_list)>0:
             json_dict_content[f"{SPHN.hasImagingSeries.n3(self.sphn_schema.namespace_manager())}"] = [imaging_series.get_json_dict(content, self.id) for imaging_series in self.has_imaging_series_list]
 
@@ -257,50 +302,3 @@ class SPHNImagingProcedure(SPHNConcept):
         # Return the JSON description of the reference to the instance
         return json_dict_ref
 
-
-    #
-    # Edwin 2026-10-19
-    #
-    def __eq__(self, other):
-        if not isinstance(other, type(self)):
-            return NotImplemented
-        return (
-                    self.has_start_datetime, 
-                    self.has_end_datetime, 
-                    self.has_description,
-                    self.has_subject_pseudo_identifier,
-                    self.has_subject_age,
-                    self.has_subject_body_height,
-                    self.has_subject_body_weight,
-                    self.has_subject_body_mass_index,
-                    self.has_subject_administrative_sex,
-                    self.has_subject_pregnancy_status_code,
-                    self.has_administrative_case,
-                    self.has_intent,
-                    sorted(self.has_body_site_list) if self.has_body_site_list is not None else None,
-                    sorted(self.has_imaging_series_list) if self.has_imaging_series_list is not None else None,
-                    sorted(self.has_code_list) if self.has_code_list is not None else None,
-                    sorted(self.has_source_system_list) if self.has_source_system_list is not None else None,
-                ) == (
-                    other.has_start_datetime, 
-                    other.has_end_datetime, 
-                    other.has_description,
-                    other.has_subject_pseudo_identifier,
-                    other.has_subject_age,
-                    other.has_subject_body_height,
-                    other.has_subject_body_weight,
-                    other.has_subject_body_mass_index,
-                    other.has_subject_administrative_sex,
-                    other.has_subject_pregnancy_status_code,
-                    other.has_administrative_case,
-                    other.has_intent,
-                    sorted(other.has_body_site_list) if other.has_body_site_list is not None else None,
-                    sorted(other.has_imaging_series_list) if other.has_imaging_series_list is not None else None,
-                    sorted(other.has_code_list) if other.has_code_list is not None else None,
-                    sorted(other.has_source_system_list) if other.has_source_system_list is not None else None
-                )
-
-
-    # -----------------------------------------------------------------------------------------------------------------
-    # Private functions
-    # -----------------------------------------------------------------------------------------------------------------

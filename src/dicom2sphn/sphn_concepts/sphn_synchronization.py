@@ -44,6 +44,22 @@ class SPHNSynchronization(SPHNConcept):
         return self
 
     # -----------------------------------------------------------------------------------------------------------------
+
+    #
+    # Edwin 2026-10-19
+    #
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return (
+                    self.has_method, 
+                    self.has_signal_source
+                ) == (
+                    other.has_method, 
+                    other.has_signal_source
+                )
+
+    # -----------------------------------------------------------------------------------------------------------------
     # Public functions
     # -----------------------------------------------------------------------------------------------------------------
 
@@ -76,22 +92,3 @@ class SPHNSynchronization(SPHNConcept):
 
         return json_dict
 
-    
-    #
-    # Edwin 2026-10-19
-    #
-    def __eq__(self, other):
-        if not isinstance(other, type(self)):
-            return NotImplemented
-        return (
-                    self.has_method, 
-                    self.has_signal_source
-                ) == (
-                    other.has_method, 
-                    other.has_signal_source
-                )
-
-
-    # -----------------------------------------------------------------------------------------------------------------
-    # Private functions
-    # -----------------------------------------------------------------------------------------------------------------

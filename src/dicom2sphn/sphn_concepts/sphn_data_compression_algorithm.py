@@ -58,6 +58,32 @@ class SPHNDataCompressionAlgorithm(SPHNConcept):
         return self
 
     # -----------------------------------------------------------------------------------------------------------------
+
+    #
+    # Edwin 2026-10-19
+    #
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return (    
+                    self.has_name, 
+                    self.has_version, 
+                    self.has_description, 
+                    self.has_uniform_resource_locator, 
+                    self.has_type, 
+                    self.has_method, 
+                    self.has_ratio
+                ) == (
+                    other.has_name, 
+                    other.has_version, 
+                    other.has_description, 
+                    other.has_uniform_resource_locator, 
+                    other.has_type, 
+                    other.has_method, 
+                    other.has_ratio
+                )
+
+    # -----------------------------------------------------------------------------------------------------------------
     # Public functions
     # -----------------------------------------------------------------------------------------------------------------
 
@@ -106,31 +132,3 @@ class SPHNDataCompressionAlgorithm(SPHNConcept):
         # Return the JSON description
         return json_dict_content_inline
 
-
-    #
-    # Edwin 2026-10-19
-    #
-    def __eq__(self, other):
-        if not isinstance(other, type(self)):
-            return NotImplemented
-        return (    
-                    self.has_name, 
-                    self.has_version, 
-                    self.has_description, 
-                    self.has_uniform_resource_locator, 
-                    self.has_type, 
-                    self.has_method, 
-                    self.has_ratio
-                ) == (
-                    other.has_name, 
-                    other.has_version, 
-                    other.has_description, 
-                    other.has_uniform_resource_locator, 
-                    other.has_type, 
-                    other.has_method, 
-                    other.has_ratio
-                )
-
-    # -----------------------------------------------------------------------------------------------------------------
-    # Private functions
-    # -----------------------------------------------------------------------------------------------------------------

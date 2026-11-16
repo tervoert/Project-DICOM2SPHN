@@ -312,7 +312,7 @@ class DWInstanceProcessor:
             )
 
             # Selecting the general or one of the specific SPHN ImagingSeries
-            if sop_class_uid in [sop_class.CTImageStorage]:
+            if sop_class_uid in ['empty_for_now']:#[sop_class.CTImageStorage]:
                 # Create a specific SPHN ComputedTomographyImagingSeries
                 logger.debug(" "*(indent+4) + "Creating an SPHN CT-ImagingSeries")
                 sphn_imaging_series = SPHNComputedTomographyImagingSeries(
@@ -321,7 +321,7 @@ class DWInstanceProcessor:
                     has_source_system_list = [data_store.sphn_source_system],
                     has_imaging_modality_code = imaging_modality_code
                 )
-            elif sop_class_uid in [sop_class.MRImageStorage]:
+            elif sop_class_uid in ['empty_for_now']:#[sop_class.MRImageStorage]:
                 # Create a specific SPHN MagneticResonanceImagingSeries
                 logger.debug(" "*(indent+4) + "Creating an SPHN MR-ImagingSeries")
                 sphn_imaging_series = SPHNMagneticResonanceImagingSeries(
@@ -330,7 +330,7 @@ class DWInstanceProcessor:
                     has_source_system_list = [data_store.sphn_source_system],
                     has_imaging_modality_code = imaging_modality_code
                 )
-            elif sop_class_uid in [sop_class.PositronEmissionTomographyImageStorage]:
+            elif sop_class_uid in ['empty_for_now']:#[sop_class.PositronEmissionTomographyImageStorage]:
                 # Create a specific SPHN PositronEmissionTomographyImagingSeries
                 logger.debug(" "*(indent+4) + "Creating an SPHN PET-ImagingSeries")
                 sphn_imaging_series = SPHNPositronEmissionTomographyImagingSeries(

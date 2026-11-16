@@ -31,6 +31,30 @@ class SPHNImageDimensions(SPHNConcept):
     id: str = Field(default_factory=lambda: generate_id())
 
     # -----------------------------------------------------------------------------------------------------------------
+
+    #
+    # Edwin 2026-10-19
+    #
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return (
+                    self.has_number_of_rows, 
+                    self.has_number_of_columns, 
+                    self.has_number_of_slices, 
+                    self.has_slice_spacing, 
+                    self.has_slice_thickness, 
+                    self.has_pixel_dimensions
+                ) == (
+                    other.has_number_of_rows, 
+                    other.has_number_of_columns, 
+                    other.has_number_of_slices, 
+                    other.has_slice_spacing, 
+                    other.has_slice_thickness, 
+                    other.has_pixel_dimensions
+                )
+
+    # -----------------------------------------------------------------------------------------------------------------
     # Public functions
     # -----------------------------------------------------------------------------------------------------------------
 
@@ -72,29 +96,3 @@ class SPHNImageDimensions(SPHNConcept):
         # Return the JSON description
         return json_dict_content_inline
 
-    
-    #
-    # Edwin 2026-10-19
-    #
-    def __eq__(self, other):
-        if not isinstance(other, type(self)):
-            return NotImplemented
-        return (
-                    self.has_number_of_rows, 
-                    self.has_number_of_columns, 
-                    self.has_number_of_slices, 
-                    self.has_slice_spacing, 
-                    self.has_slice_thickness, 
-                    self.has_pixel_dimensions
-                ) == (
-                    other.has_number_of_rows, 
-                    other.has_number_of_columns, 
-                    other.has_number_of_slices, 
-                    other.has_slice_spacing, 
-                    other.has_slice_thickness, 
-                    other.has_pixel_dimensions
-                )
-
-    # -----------------------------------------------------------------------------------------------------------------
-    # Private functions
-    # -----------------------------------------------------------------------------------------------------------------

@@ -9,7 +9,7 @@ from pydantic import Field, field_validator
 
 from ..sphn_schema_graph import SPHN, SPHNSchemaGraph
 from ..tools import generate_id, is_valid_string
-from .sphn_concept import SPHNConcept
+from .sphn_concept import SPHNConcept, UnorderedList
 from .sphn_quantity import SPHNQuantity
 from .sphn_source_system import SPHNSourceSystem
 from .sphn_subject_pseudo_identifier import SPHNSubjectPseudoIdentifier
@@ -37,6 +37,26 @@ class SPHNAge(SPHNConcept):
         if not all(isinstance(item, SPHNSourceSystem) for item in value):
             raise TypeError("One or more items in the SPHN 'has_source_system' list are not SPHN SourceSystem instances.")
         return value
+
+    # -----------------------------------------------------------------------------------------------------------------
+
+    #
+    # Edwin 2026-10-19
+    #
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return (
+                    self.has_determination_datetime, 
+                    self.has_quantity, 
+                    self.has_subject_pseudo_identifier, 
+                    UnorderedList(self.has_source_system_list)
+                ) == (
+                    other.has_determination_datetime, 
+                    other.has_quantity, 
+                    other.has_subject_pseudo_identifier, 
+                    UnorderedList(other.has_source_system_list)
+                )
 
     # -----------------------------------------------------------------------------------------------------------------
     # Public functions
@@ -113,26 +133,3 @@ class SPHNAge(SPHNConcept):
         # Return the JSON description of the reference to the instance
         return json_dict_ref
 
-    
-    #
-    # Edwin 2026-10-19
-    #
-    def __eq__(self, other):
-        if not isinstance(other, type(self)):
-            return NotImplemented
-        return (
-                    self.has_determination_datetime, 
-                    self.has_quantity, 
-                    self.has_subject_pseudo_identifier, 
-                    sorted(self.has_source_system_list) if self.has_source_system_list is not None else None
-                ) == (
-                    other.has_determination_datetime, 
-                    other.has_quantity, 
-                    other.has_subject_pseudo_identifier, 
-                    sorted(other.has_source_system_list) if other.has_source_system_list is not None else None
-                )
-
-    # -----------------------------------------------------------------------------------------------------------------
-    # Private functions
-    # -----------------------------------------------------------------------------------------------------------------
-    

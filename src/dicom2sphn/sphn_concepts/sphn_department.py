@@ -29,6 +29,20 @@ class SPHNDepartment(SPHNConcept):
         return value  
 
     # -----------------------------------------------------------------------------------------------------------------
+
+    #
+    # Edwin 2026-10-19
+    #
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return (
+                    self.has_name,
+                ) == (
+                    other.has_name,
+                )
+
+    # -----------------------------------------------------------------------------------------------------------------
     # Public functions
     # -----------------------------------------------------------------------------------------------------------------
 
@@ -76,19 +90,3 @@ class SPHNDepartment(SPHNConcept):
 
         return json_dict_content_inline
 
-
-    #
-    # Edwin 2026-10-19
-    #
-    def __eq__(self, other):
-        if not isinstance(other, type(self)):
-            return NotImplemented
-        return (
-                    self.has_name,
-                ) == (
-                    other.has_name,
-                )
-
-    # -----------------------------------------------------------------------------------------------------------------
-    # Private functions
-    # -----------------------------------------------------------------------------------------------------------------

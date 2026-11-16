@@ -38,6 +38,24 @@ class SPHNDataProvider(SPHNConcept):
         return self
 
     # -----------------------------------------------------------------------------------------------------------------
+
+    #
+    # Edwin 2026-10-19
+    #
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return (
+                    self.has_category, 
+                    self.has_institution_code, 
+                    self.has_department
+                ) == (
+                    other.has_category, 
+                    other.has_institution_code, 
+                    other.has_department
+                )
+
+    # -----------------------------------------------------------------------------------------------------------------
     # Public functions
     # -----------------------------------------------------------------------------------------------------------------
 
@@ -94,23 +112,3 @@ class SPHNDataProvider(SPHNConcept):
 
         return json_dict
 
-    
-    #
-    # Edwin 2026-10-19
-    #
-    def __eq__(self, other):
-        if not isinstance(other, type(self)):
-            return NotImplemented
-        return (
-                    self.has_category, 
-                    self.has_institution_code, 
-                    self.has_department
-                ) == (
-                    other.has_category, 
-                    other.has_institution_code, 
-                    other.has_department
-                )
-    
-    # -----------------------------------------------------------------------------------------------------------------
-    # Private functions
-    # -----------------------------------------------------------------------------------------------------------------

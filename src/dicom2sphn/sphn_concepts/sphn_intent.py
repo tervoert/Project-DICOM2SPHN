@@ -21,7 +21,21 @@ class SPHNIntent(SPHNConcept):
 
     sphn_schema: SPHNSchemaGraph
     id: str = Field(default_factory=lambda: generate_id())
-     
+
+    # ----------------------------------------------------------------------------------------------------------
+
+    #
+    # Edwin 2026-10-19
+    #
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return (
+                    self.has_code,
+                ) == (
+                    other.has_code,
+                )
+
     # ----------------------------------------------------------------------------------------------------------
     # Public functions
     # ----------------------------------------------------------------------------------------------------------
@@ -49,19 +63,3 @@ class SPHNIntent(SPHNConcept):
         # Return the JSON description
         return json_dict_content_inline
 
-
-    #
-    # Edwin 2026-10-19
-    #
-    def __eq__(self, other):
-        if not isinstance(other, type(self)):
-            return NotImplemented
-        return (
-                    self.has_code,
-                ) == (
-                    other.has_code,
-                )
-
-    # ----------------------------------------------------------------------------------------------------------
-    # Private functions
-    # ----------------------------------------------------------------------------------------------------------

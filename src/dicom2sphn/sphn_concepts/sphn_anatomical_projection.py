@@ -9,7 +9,7 @@ from pydantic import Field, field_validator
 from ..sphn_schema_graph import SPHN, SPHNSchemaGraph
 from ..tools import generate_id, is_valid_string
 from .sphn_code import SPHNCode
-from .sphn_concept import SPHNConcept
+from .sphn_concept import SPHNConcept, UnorderedList
 
 
 #
@@ -33,6 +33,22 @@ class SPHNAnatomicalProjection(SPHNConcept):
             if not all(isinstance(item, SPHNCode) for item in value):
                 raise TypeError('One or more items in the has_modifier_code_list are not SPHN Code instances')
         return value
+
+    # -----------------------------------------------------------------------------------------------------------------
+
+    #
+    # Edwin 2026-10-19
+    #
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return (
+                    self.has_code, 
+                    UnorderedList(self.has_modifier_code_list)
+                ) == (
+                    other.has_code, 
+                    UnorderedList(other.has_modifier_code_list)
+                )
 
     # -----------------------------------------------------------------------------------------------------------------
     # Public functions
@@ -80,21 +96,3 @@ class SPHNAnatomicalProjection(SPHNConcept):
         # Return the JSON description
         return json_dict_content_inline
 
-
-    #
-    # Edwin 2026-10-19
-    #
-    def __eq__(self, other):
-        if not isinstance(other, type(self)):
-            return NotImplemented
-        return (
-                    self.has_code, 
-                    sorted(self.has_modifier_code_list) if self.has_modifier_code_list is not None else None
-                ) == (
-                    other.has_code, 
-                    sorted(other.has_modifier_code_list) if other.has_modifier_code_list is not None else None
-                )
-    
-    # -----------------------------------------------------------------------------------------------------------------
-    # Private functions
-    # -----------------------------------------------------------------------------------------------------------------

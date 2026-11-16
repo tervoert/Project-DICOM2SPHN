@@ -37,6 +37,24 @@ class SPHNQuantity(SPHNConcept):
         return self
 
     # -----------------------------------------------------------------------------------------------------------------
+
+    #
+    # Edwin 2026-10-19
+    #
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return (
+                    self.has_unit, 
+                    self.has_comparator
+                ) == (
+                    other.has_unit, 
+                    other.has_comparator
+                ) \
+                and ((isinstance(self.has_value, int) and self.has_value == other.has_value) \
+                    or (isinstance(self.has_value, float) and isclose(self.has_value, other.has_value, rel_tol=1e-4, abs_tol=1e-9)))
+
+    # -----------------------------------------------------------------------------------------------------------------
     # Public functions
     # -----------------------------------------------------------------------------------------------------------------
 
@@ -71,23 +89,3 @@ class SPHNQuantity(SPHNConcept):
         # Return the JSON description
         return json_dict_content_inline
 
-
-    #
-    # Edwin 2026-10-19
-    #
-    def __eq__(self, other):
-        if not isinstance(other, type(self)):
-            return NotImplemented
-        return (
-                    self.has_unit, 
-                    self.has_comparator
-                ) == (
-                    other.has_unit, 
-                    other.has_comparator
-                ) \
-                and ((isinstance(self.has_value, int) and self.has_value == other.has_value) \
-                    or (isinstance(self.has_value, float) and isclose(self.has_value, other.has_value, rel_tol=1e-4, abs_tol=1e-9)))
-
-    # -----------------------------------------------------------------------------------------------------------------
-    # Private functions
-    # -----------------------------------------------------------------------------------------------------------------

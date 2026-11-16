@@ -28,6 +28,28 @@ class SPHNFlowProfileInterval(SPHNConcept):
     id: str = Field(default_factory=lambda: generate_id())
 
     # ----------------------------------------------------------------------------------------------------------
+
+    #
+    # Edwin 2026-10-19
+    #
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return (
+                    self.has_start_datetime, 
+                    self.has_end_datetime, 
+                    self.has_duration, 
+                    self.has_volume, 
+                    self.has_volumetric_flow_rate
+                ) == (
+                    other.has_start_datetime, 
+                    other.has_end_datetime, 
+                    other.has_duration, 
+                    other.has_volume, 
+                    other.has_volumetric_flow_rate
+                )
+
+    # ----------------------------------------------------------------------------------------------------------
     # Public functions
     # ----------------------------------------------------------------------------------------------------------
 
@@ -66,27 +88,3 @@ class SPHNFlowProfileInterval(SPHNConcept):
         # Return the JSON description
         return json_dict_content_inline
 
-    
-    #
-    # Edwin 2026-10-19
-    #
-    def __eq__(self, other):
-        if not isinstance(other, type(self)):
-            return NotImplemented
-        return (
-                    self.has_start_datetime, 
-                    self.has_end_datetime, 
-                    self.has_duration, 
-                    self.has_volume, 
-                    self.has_volumetric_flow_rate
-                ) == (
-                    other.has_start_datetime, 
-                    other.has_end_datetime, 
-                    other.has_duration, 
-                    other.has_volume, 
-                    other.has_volumetric_flow_rate
-                )
-
-    # -----------------------------------------------------------------------------------------------------------------
-    # Private functions
-    # -----------------------------------------------------------------------------------------------------------------

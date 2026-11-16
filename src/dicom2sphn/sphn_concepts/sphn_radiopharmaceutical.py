@@ -8,6 +8,7 @@ from pydantic import Field, field_validator
 
 from ..sphn_schema_graph import SPHN, SPHNSchemaGraph
 from ..tools import generate_id, is_valid_string
+from .sphn_concept import UnorderedList
 from .sphn_drug import SPHNDrug
 from .sphn_drug_article import SPHNDrugArticle
 from .sphn_quantity import SPHNQuantity
@@ -23,13 +24,23 @@ class SPHNRadiopharmaceutical(SPHNDrug):
 
     has_article: SPHNDrugArticle|None=None                              # (0:1) SPHN Drug Article
     has_quantity: SPHNQuantity|None=None                                # (0:1) SPHN Quantity
-    has_radionuclide: SPHNRadionuclide|None=None                        # (0:1) SPHN Radionuclide
+    has_radionuclide_list: list[SPHNRadionuclide]|None=None             # (0:n) SPHN Radionuclide (list)
     has_active_ingredient_list: list[SPHNSubstance]|None=None           # (0:n) SPHN Substance (list)
     has_inactive_ingredient_list: list[SPHNSubstance]|None=None         # (0:n) SPHN Substance (list)
     has_source_system_list: list[SPHNSourceSystem]                      # (1:n) SPHN SourceSystem (list)
 
     sphn_schema: SPHNSchemaGraph
     id: str = Field(default_factory=lambda: generate_id())
+
+    @field_validator('has_radionuclide_list', mode='after')  
+    @classmethod
+    def validate_radionuclide_list(cls, value: list[SPHNRadionuclide]|None=None) -> list[SPHNRadionuclide]|None:
+        if value is not None:
+            if len(value) == 0:
+                raise ValueError("SPHN 'has_radionuclide_list' must be a non-empty list or None.")
+            if not all(isinstance(item, SPHNRadionuclide) for item in value):
+                raise TypeError("One or more items in the 'has_radionuclide_list' are not SPHN Radionuclide instances.")
+        return value
 
     @field_validator('has_active_ingredient_list', mode='after')  
     @classmethod
@@ -59,6 +70,30 @@ class SPHNRadiopharmaceutical(SPHNDrug):
         if not all(isinstance(item, SPHNSourceSystem) for item in value):
             raise TypeError("One or more items in the SPHN 'has_source_system' list are not SPHN SourceSystem instances.")
         return value
+
+    # ----------------------------------------------------------------------------------------------------------
+
+    #
+    # Edwin 2026-10-19
+    #
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return (
+                    self.has_quantity, 
+                    self.has_article, 
+                    UnorderedList(self.has_radionuclide_list), 
+                    UnorderedList(self.has_active_ingredient_list), 
+                    UnorderedList(self.has_inactive_ingredient_list), 
+                    UnorderedList(self.has_source_system_list)
+                ) == (
+                    other.has_quantity, 
+                    other.has_article, 
+                    UnorderedList(other.has_radionuclide_list), 
+                    UnorderedList(other.has_active_ingredient_list), 
+                    UnorderedList(other.has_inactive_ingredient_list), 
+                    UnorderedList(other.has_source_system_list)
+                )
 
     # ----------------------------------------------------------------------------------------------------------
     # Public functions
@@ -106,38 +141,11 @@ class SPHNRadiopharmaceutical(SPHNDrug):
         if self.has_quantity is not None:
             json_dict_content_inline[f"{SPHN.hasQuantity.n3(self.sphn_schema.namespace_manager())}"] = self.has_quantity.get_json_dict(content, self.id)
 
-        if self.has_radionuclide is not None:
-            json_dict_content_inline[f"{SPHN.hasRadionuclide.n3(self.sphn_schema.namespace_manager())}"] = self.has_radionuclide.get_json_dict(content, self.id)
+        if self.has_radionuclide_list is not None and len(self.has_radionuclide_list)>0:
+            json_dict_content_inline[f"{SPHN.hasRadionuclide.n3(self.sphn_schema.namespace_manager())}"] = [radionuclide.get_json_dict(content, self.id) for radionuclide in self.has_radionuclide_list]
 
         if self.has_source_system_list is not None and len(self.has_source_system_list)>0:
             json_dict_content_inline[f"{SPHN.hasSourceSystem.n3(self.sphn_schema.namespace_manager())}"] = [source_system.get_json_dict(content, self.id) for source_system in self.has_source_system_list]
 
         return json_dict_content_inline
 
-    
-    #
-    # Edwin 2026-10-19
-    #
-    def __eq__(self, other):
-        if not isinstance(other, type(self)):
-            return NotImplemented
-        return (
-                    self.has_quantity, 
-                    self.has_article, 
-                    self.has_radionuclide, 
-                    sorted(self.has_active_ingredient_list) if self.has_active_ingredient_list is not None else None, 
-                    sorted(self.has_inactive_ingredient_list) if self.has_inactive_ingredient_list is not None else None, 
-                    sorted(self.has_source_system_list) if self.has_source_system_list is not None else None
-                ) == (
-                    other.has_quantity, 
-                    other.has_article, 
-                    other.has_radionuclide, 
-                    sorted(other.has_active_ingredient_list) if other.has_active_ingredient_list is not None else None, 
-                    sorted(other.has_inactive_ingredient_list) if other.has_inactive_ingredient_list is not None else None, 
-                    sorted(other.has_source_system_list) if other.has_source_system_list is not None else None
-                )
-
-
-    # -----------------------------------------------------------------------------------------------------------------
-    # Private functions
-    # -----------------------------------------------------------------------------------------------------------------

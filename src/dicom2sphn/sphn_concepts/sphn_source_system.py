@@ -53,6 +53,26 @@ class SPHNSourceSystem(SPHNConcept):
         return self
 
     # ----------------------------------------------------------------------------------------------------------
+
+    #
+    # Edwin 2026-10-19
+    #
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return (
+                    self.has_name, 
+                    self.has_purpose, 
+                    self.has_category, 
+                    self.has_primary_system
+                ) == (
+                    other.has_name, 
+                    other.has_purpose, 
+                    other.has_category, 
+                    other.has_primary_system
+                )
+
+    # ----------------------------------------------------------------------------------------------------------
     # Public functions
     # ----------------------------------------------------------------------------------------------------------
 
@@ -119,26 +139,3 @@ class SPHNSourceSystem(SPHNConcept):
         # Return the JSON description of the reference to the instance
         return json_dict_ref
 
-
-    #
-    # Edwin 2026-10-19
-    #
-    def __eq__(self, other):
-        if not isinstance(other, type(self)):
-            return NotImplemented
-        return (
-                    self.has_name, 
-                    self.has_purpose, 
-                    self.has_category, 
-                    self.has_primary_system
-                ) == (
-                    other.has_name, 
-                    other.has_purpose, 
-                    other.has_category, 
-                    other.has_primary_system
-                )
-
-    
-    # ----------------------------------------------------------------------------------------------------------
-    # Private functions
-    # ----------------------------------------------------------------------------------------------------------

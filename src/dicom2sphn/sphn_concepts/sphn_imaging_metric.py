@@ -35,6 +35,24 @@ class SPHNImagingMetric(SPHNConcept):
         return value  
 
     # -----------------------------------------------------------------------------------------------------------------
+
+    #
+    # Edwin 2026-10-19
+    #
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return (
+                    self.has_type_code, 
+                    self.has_unit, 
+                    self.has_description
+                ) == (
+                    other.has_type_code, 
+                    other.has_unit, 
+                    other.has_description
+                )
+
+    # -----------------------------------------------------------------------------------------------------------------
     # Public functions
     # -----------------------------------------------------------------------------------------------------------------
 
@@ -67,24 +85,3 @@ class SPHNImagingMetric(SPHNConcept):
         # Return the JSON description
         return json_dict_content_inline
 
-
-    #
-    # Edwin 2026-10-19
-    #
-    def __eq__(self, other):
-        if not isinstance(other, type(self)):
-            return NotImplemented
-        return (
-                    self.has_type_code, 
-                    self.has_unit, 
-                    self.has_description
-                ) == (
-                    other.has_type_code, 
-                    other.has_unit, 
-                    other.has_description
-                )
-
-
-    # -----------------------------------------------------------------------------------------------------------------
-    # Private functions
-    # -----------------------------------------------------------------------------------------------------------------

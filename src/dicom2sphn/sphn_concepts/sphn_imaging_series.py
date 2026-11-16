@@ -12,7 +12,7 @@ from ..sphn_schema_graph import SPHN, SPHNSchemaGraph
 from ..tools import generate_id, is_valid_string
 from .sphn_administrative_case import SPHNAdministrativeCase
 from .sphn_code import SPHNCode
-from .sphn_concept import SPHNConcept
+from .sphn_concept import SPHNConcept, UnorderedList
 from .sphn_data_file import SPHNDataFile
 from .sphn_imaging_device import SPHNImagingDevice
 from .sphn_imaging_frame import SPHNImagingFrame
@@ -80,6 +80,42 @@ class SPHNImagingSeries(SPHNConcept):
         if not all(isinstance(item, SPHNSourceSystem) for item in value):
             raise TypeError("One or more items in the SPHN 'has_source_system' list are not SPHN SourceSystem instances.")
         return value
+
+    # -----------------------------------------------------------------------------------------------------------------
+
+    #
+    # Edwin 2026-10-19
+    #
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return (
+                    self.has_start_datetime, 
+                    self.has_end_datetime, 
+                    self.has_description,
+                    self.has_protocol_name,
+                    self.has_subject_pseudo_identifier,
+                    self.has_imaging_modality_code,
+                    self.has_number_of_frames,
+                    self.has_medical_device,
+                    self.has_administrative_case,
+                    UnorderedList(self.has_imaging_frame_list),
+                    UnorderedList(self.has_data_file_list),
+                    UnorderedList(self.has_source_system_list)
+                ) == (
+                    other.has_start_datetime, 
+                    other.has_end_datetime,
+                    other.has_description,
+                    other.has_protocol_name,
+                    other.has_subject_pseudo_identifier,
+                    other.has_imaging_modality_code,
+                    other.has_number_of_frames,
+                    other.has_medical_device,
+                    other.has_administrative_case,
+                    UnorderedList(other.has_imaging_frame_list),
+                    UnorderedList(other.has_data_file_list),
+                    UnorderedList(other.has_source_system_list)
+                )
 
     # -----------------------------------------------------------------------------------------------------------------
     # Public functions
@@ -157,38 +193,38 @@ class SPHNImagingSeries(SPHNConcept):
             "id": f"{self.id}"
         }
 
-        if self.has_administrative_case is not None:
-            json_dict_content[f"{SPHN.hasAdministrativeCase.n3(self.sphn_schema.namespace_manager())}"] = self.has_administrative_case.get_json_dict(content, self.id)
+        # if self.has_administrative_case is not None:
+        #     json_dict_content[f"{SPHN.hasAdministrativeCase.n3(self.sphn_schema.namespace_manager())}"] = self.has_administrative_case.get_json_dict(content, self.id)
 
-        if self.has_data_file_list is not None and len(self.has_data_file_list)>0:
-            json_dict_content[f"{SPHN.hasDataFile.n3(self.sphn_schema.namespace_manager())}"] = [data_file.get_json_dict(content, self.id) for data_file in self.has_data_file_list]
+        # if self.has_data_file_list is not None and len(self.has_data_file_list)>0:
+        #     json_dict_content[f"{SPHN.hasDataFile.n3(self.sphn_schema.namespace_manager())}"] = [data_file.get_json_dict(content, self.id) for data_file in self.has_data_file_list]
 
-        if self.has_description is not None:
-            json_dict_content[f"{SPHN.hasDescription.n3(self.sphn_schema.namespace_manager())}"] = self.has_description
+        # if self.has_description is not None:
+        #     json_dict_content[f"{SPHN.hasDescription.n3(self.sphn_schema.namespace_manager())}"] = self.has_description
 
-        if self.has_end_datetime is not None:
-            json_dict_content[f"{SPHN.hasEndDateTime.n3(self.sphn_schema.namespace_manager())}"] = self.has_end_datetime.isoformat(timespec='milliseconds')
+        # if self.has_end_datetime is not None:
+        #     json_dict_content[f"{SPHN.hasEndDateTime.n3(self.sphn_schema.namespace_manager())}"] = self.has_end_datetime.isoformat(timespec='milliseconds')
 
-        if self.has_imaging_frame_list is not None and len(self.has_imaging_frame_list)>0:
-            json_dict_content[f"{SPHN.hasImagingFrame.n3(self.sphn_schema.namespace_manager())}"] = [imaging_frame.get_json_dict(content, self.id) for imaging_frame in self.has_imaging_frame_list]
+        # if self.has_imaging_frame_list is not None and len(self.has_imaging_frame_list)>0:
+        #     json_dict_content[f"{SPHN.hasImagingFrame.n3(self.sphn_schema.namespace_manager())}"] = [imaging_frame.get_json_dict(content, self.id) for imaging_frame in self.has_imaging_frame_list]
 
-        if self.has_imaging_modality_code is not None:
-            json_dict_content[f"{SPHN.hasImagingModalityCode.n3(self.sphn_schema.namespace_manager())}"] = self.has_imaging_modality_code.get_json_dict(content, self.id)
+        # if self.has_imaging_modality_code is not None:
+        #     json_dict_content[f"{SPHN.hasImagingModalityCode.n3(self.sphn_schema.namespace_manager())}"] = self.has_imaging_modality_code.get_json_dict(content, self.id)
 
-        if self.has_medical_device is not None:
-            json_dict_content[f"{SPHN.hasMedicalDevice.n3(self.sphn_schema.namespace_manager())}"] = self.has_medical_device.get_json_dict(content, self.id)
+        # if self.has_medical_device is not None:
+        #     json_dict_content[f"{SPHN.hasMedicalDevice.n3(self.sphn_schema.namespace_manager())}"] = self.has_medical_device.get_json_dict(content, self.id)
 
-        if self.has_number_of_frames is not None:
-            json_dict_content[f"{SPHN.hasNumberOfFrames.n3(self.sphn_schema.namespace_manager())}"] = self.has_number_of_frames.get_json_dict(content, self.id)
+        # if self.has_number_of_frames is not None:
+        #     json_dict_content[f"{SPHN.hasNumberOfFrames.n3(self.sphn_schema.namespace_manager())}"] = self.has_number_of_frames.get_json_dict(content, self.id)
 
-        if self.has_protocol_name is not None:
-            json_dict_content[f"{SPHN.hasProtocolName.n3(self.sphn_schema.namespace_manager())}"] = self.has_protocol_name
+        # if self.has_protocol_name is not None:
+        #     json_dict_content[f"{SPHN.hasProtocolName.n3(self.sphn_schema.namespace_manager())}"] = self.has_protocol_name
 
         if self.has_source_system_list is not None and len(self.has_source_system_list)>0:
             json_dict_content[f"{SPHN.hasSourceSystem.n3(self.sphn_schema.namespace_manager())}"] = [source_system.get_json_dict(content, self.id) for source_system in self.has_source_system_list]
 
-        if self.has_start_datetime is not None:
-            json_dict_content[f"{SPHN.hasStartDateTime.n3(self.sphn_schema.namespace_manager())}"] = self.has_start_datetime.isoformat(timespec='milliseconds')
+        # if self.has_start_datetime is not None:
+        #     json_dict_content[f"{SPHN.hasStartDateTime.n3(self.sphn_schema.namespace_manager())}"] = self.has_start_datetime.isoformat(timespec='milliseconds')
 
         # subject = <prefix:classname>
         subject = f"{SPHN.ImagingSeries.n3(self.sphn_schema.namespace_manager())}"
@@ -212,44 +248,4 @@ class SPHNImagingSeries(SPHNConcept):
 
         # Return the JSON description of the reference to the instance
         return json_dict_ref
-
-
-    #
-    # Edwin 2026-10-19
-    #
-    def __eq__(self, other):
-        if not isinstance(other, type(self)):
-            return NotImplemented
-        return (
-                    self.has_start_datetime, 
-                    self.has_end_datetime, 
-                    self.has_description,
-                    self.has_protocol_name,
-                    self.has_subject_pseudo_identifier,
-                    self.has_imaging_modality_code,
-                    self.has_number_of_frames,
-                    self.has_medical_device,
-                    self.has_administrative_case,
-                    sorted(self.has_imaging_frame_list) if self.has_imaging_frame_list is not None else None,
-                    sorted(self.has_data_file_list) if self.has_data_file_list is not None else None,
-                    sorted(self.has_source_system_list) if self.has_source_system_list is not None else None
-                ) == (
-                    other.has_start_datetime, 
-                    other.has_end_datetime,
-                    other.has_description,
-                    other.has_protocol_name,
-                    other.has_subject_pseudo_identifier,
-                    other.has_imaging_modality_code,
-                    other.has_number_of_frames,
-                    other.has_medical_device,
-                    other.has_administrative_case,
-                    sorted(other.has_imaging_frame_list) if other.has_imaging_frame_list is not None else None,
-                    sorted(other.has_data_file_list) if other.has_data_file_list is not None else None,
-                    sorted(other.has_source_system_list) if other.has_source_system_list is not None else None
-                )
-
-
-    # -----------------------------------------------------------------------------------------------------------------
-    # Private functions
-    # -----------------------------------------------------------------------------------------------------------------
 

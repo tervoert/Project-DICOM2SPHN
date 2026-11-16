@@ -25,7 +25,25 @@ class SPHNDataRelease(SPHNConcept):
 
     sphn_schema: SPHNSchemaGraph
     id: str = Field(default_factory=lambda: generate_id())
-   
+
+    # -----------------------------------------------------------------------------------------------------------------
+
+    #
+    # Edwin 2026-10-19
+    #
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return (
+                    self.has_data_provider, 
+                    self.conforms_to, 
+                    self.has_extraction_datetime
+                ) == (
+                    other.has_data_provider, 
+                    other.conforms_to, 
+                    other.has_extraction_datetime
+                )
+
     # -----------------------------------------------------------------------------------------------------------------
     # Public functions
     # -----------------------------------------------------------------------------------------------------------------
@@ -64,23 +82,3 @@ class SPHNDataRelease(SPHNConcept):
 
         return json_dict
 
-    
-    #
-    # Edwin 2026-10-19
-    #
-    def __eq__(self, other):
-        if not isinstance(other, type(self)):
-            return NotImplemented
-        return (
-                    self.has_data_provider, 
-                    self.conforms_to, 
-                    self.has_extraction_datetime
-                ) == (
-                    other.has_data_provider, 
-                    other.conforms_to, 
-                    other.has_extraction_datetime
-                )
-
-    # -----------------------------------------------------------------------------------------------------------------
-    # Private functions
-    # -----------------------------------------------------------------------------------------------------------------

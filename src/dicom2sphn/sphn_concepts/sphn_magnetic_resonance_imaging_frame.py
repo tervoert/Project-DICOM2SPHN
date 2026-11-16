@@ -17,6 +17,7 @@ from ..tools import (
 )
 from .sphn_anatomical_projection import SPHNAnatomicalProjection
 from .sphn_body_site import SPHNBodySite
+from .sphn_concept import UnorderedList
 from .sphn_contrast_agent_administration_event import (
     SPHNContrastAgentAdministrationEvent,
 )
@@ -98,6 +99,42 @@ class SPHNMagneticResonanceImagingFrame(SPHNImagingFrame):
             if not self.sphn_schema.is_sphn_imaging_frame_content_qualification_value_set_member(self.has_content_qualification):
                 raise ValueError(f"SPHN 'has_content_qualification' value: '{self.has_content_qualification}' is not a member of the SPHN 'ImagingFrame_contentQualification' value set")
         return self
+
+    # -----------------------------------------------------------------------------------------------------------------
+
+    #
+    # Edwin 2026-10-19
+    #
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return (
+                    self.has_start_datetime, 
+                    self.has_end_datetime, 
+                    self.has_content_qualification, 
+                    self.has_image_dimensions,
+                    self.has_imaging_metric,
+                    self.has_anatomical_projection,
+                    self.has_contrast_agent_administration_event,
+                    self.has_contrast_agent_phase,
+                    self.has_synchronization,
+                    UnorderedList(self.has_type_list),
+                    UnorderedList(self.has_body_site_list),
+                    UnorderedList(self.has_algorithm_list)
+                ) == (
+                    other.has_start_datetime, 
+                    other.has_end_datetime, 
+                    other.has_content_qualification, 
+                    other.has_image_dimensions, 
+                    other.has_imaging_metric,
+                    other.has_anatomical_projection,
+                    other.has_contrast_agent_administration_event,
+                    other.has_contrast_agent_phase,
+                    other.has_synchronization,
+                    UnorderedList(other.has_type_list),
+                    UnorderedList(other.has_body_site_list),
+                    UnorderedList(other.has_algorithm_list)
+                )
 
     # -----------------------------------------------------------------------------------------------------------------
     # Public functions
@@ -212,44 +249,4 @@ class SPHNMagneticResonanceImagingFrame(SPHNImagingFrame):
 
         # Return the JSON description
         return json_dict_content_inline
-
-
-    #
-    # Edwin 2026-10-19
-    #
-    def __eq__(self, other):
-        if not isinstance(other, type(self)):
-            return NotImplemented
-        return (
-                    self.has_start_datetime, 
-                    self.has_end_datetime, 
-                    self.has_content_qualification, 
-                    self.has_image_dimensions,
-                    self.has_imaging_metric,
-                    self.has_anatomical_projection,
-                    self.has_contrast_agent_administration_event,
-                    self.has_contrast_agent_phase,
-                    self.has_synchronization,
-                    sorted(self.has_type_list) if self.has_type_list is not None else None,
-                    sorted(self.has_body_site_list) if self.has_body_site_list is not None else None,
-                    sorted(self.has_algorithm_list) if self.has_algorithm_list is not None else None
-                ) == (
-                    other.has_start_datetime, 
-                    other.has_end_datetime, 
-                    other.has_content_qualification, 
-                    other.has_image_dimensions, 
-                    other.has_imaging_metric,
-                    other.has_anatomical_projection,
-                    other.has_contrast_agent_administration_event,
-                    other.has_contrast_agent_phase,
-                    other.has_synchronization,
-                    sorted(other.has_type_list) if other.has_type_list is not None else None,
-                    sorted(other.has_body_site_list) if other.has_body_site_list is not None else None,
-                    sorted(other.has_algorithm_list) if other.has_algorithm_list is not None else None
-                )
-
-
-    # -----------------------------------------------------------------------------------------------------------------
-    # Private functions
-    # -----------------------------------------------------------------------------------------------------------------
 

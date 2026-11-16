@@ -47,6 +47,24 @@ class SPHNCode(SPHNConcept):
         return value  
 
     # ----------------------------------------------------------------------------------------------------------
+
+    #
+    # Edwin 2026-10-19
+    #
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return (
+                    self.has_coding_system_and_version, 
+                    self.has_identifier, 
+                    self.has_name
+                ) == (
+                    other.has_coding_system_and_version, 
+                    other.has_identifier, 
+                    other.has_name
+                )
+
+    # ----------------------------------------------------------------------------------------------------------
     # Public functions
     # ----------------------------------------------------------------------------------------------------------
 
@@ -90,9 +108,15 @@ class SPHNCode(SPHNConcept):
             # It is a Terminology
     
             # Inline, not a core concept, no reference to separate content description
-            json_dict_content_inline = {
-                "termid": self.has_coding_system_and_version + "-" + self.has_identifier
-            }
+            if self.has_coding_system_and_version == 'SNOMED':
+                # Add the "-CT" to SNOMED
+                json_dict_content_inline = {
+                    "termid": "SNOMED-CT" + "-" + self.has_identifier
+                }
+            else:
+                json_dict_content_inline = {
+                    "termid": self.has_coding_system_and_version + "-" + self.has_identifier
+                }
 
             # Check which Terminology
             if self.has_coding_system_and_version == 'SNOMED':
@@ -133,23 +157,3 @@ class SPHNCode(SPHNConcept):
 
         return json_dict_content_inline
 
-
-    #
-    # Edwin 2026-10-19
-    #
-    def __eq__(self, other):
-        if not isinstance(other, type(self)):
-            return NotImplemented
-        return (
-                    self.has_coding_system_and_version, 
-                    self.has_identifier, 
-                    self.has_name
-                ) == (
-                    other.has_coding_system_and_version, 
-                    other.has_identifier, 
-                    other.has_name
-                )
-
-    # ----------------------------------------------------------------------------------------------------------
-    # Private functions
-    # ----------------------------------------------------------------------------------------------------------

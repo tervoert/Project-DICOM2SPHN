@@ -12,6 +12,7 @@ from ..sphn_schema_graph import SPHN, SPHNSchemaGraph
 from ..tools import generate_id, is_valid_string
 from .sphn_administrative_case import SPHNAdministrativeCase
 from .sphn_code import SPHNCode
+from .sphn_concept import UnorderedList
 from .sphn_drug_administration_event import SPHNDrugAdministrationEvent
 from .sphn_quantity import SPHNQuantity
 from .sphn_radiopharmaceutical import SPHNRadiopharmaceutical
@@ -49,6 +50,38 @@ class SPHNRadiopharmaceuticalAdministrationEvent(SPHNDrugAdministrationEvent):
         if not all(isinstance(item, SPHNSourceSystem) for item in value):
             raise TypeError("One or more items in the SPHN 'has_source_system' list are not SPHN SourceSystem instances.")
         return value
+
+    # ----------------------------------------------------------------------------------------------------------
+
+    #
+    # Edwin 2026-10-19
+    #
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return (
+                    self.has_start_datetime, 
+                    self.has_end_datetime, 
+                    self.has_drug, 
+                    self.has_administration_route_code, 
+                    self.has_reason_to_stop_code, 
+                    self.has_duration, 
+                    self.has_time_pattern, 
+                    self.has_subject_pseudo_identifier, 
+                    self.has_administrative_case, 
+                    UnorderedList(self.has_source_system_list)
+                ) == (
+                    other.has_start_datetime, 
+                    other.has_end_datetime, 
+                    other.has_drug, 
+                    other.has_administration_route_code, 
+                    other.has_reason_to_stop_code, 
+                    other.has_duration, 
+                    other.has_time_pattern, 
+                    other.has_subject_pseudo_identifier, 
+                    other.has_administrative_case, 
+                    UnorderedList(other.has_source_system_list)
+                )
 
     # ----------------------------------------------------------------------------------------------------------
     # Public functions
@@ -142,39 +175,3 @@ class SPHNRadiopharmaceuticalAdministrationEvent(SPHNDrugAdministrationEvent):
         # Return the JSON description of the reference to the instance
         return json_dict_ref
 
-    
-    #
-    # Edwin 2026-10-19
-    #
-    def __eq__(self, other):
-        if not isinstance(other, type(self)):
-            return NotImplemented
-        return (
-                    self.has_start_datetime, 
-                    self.has_end_datetime, 
-                    self.has_drug, 
-                    self.has_administration_route_code, 
-                    self.has_reason_to_stop_code, 
-                    self.has_duration, 
-                    self.has_time_pattern, 
-                    self.has_subject_pseudo_identifier, 
-                    self.has_administrative_case, 
-                    sorted(self.has_source_system_list) if self.has_source_system_list is not None else None
-                ) == (
-                    other.has_start_datetime, 
-                    other.has_end_datetime, 
-                    other.has_drug, 
-                    other.has_administration_route_code, 
-                    other.has_reason_to_stop_code, 
-                    other.has_duration, 
-                    other.has_time_pattern, 
-                    other.has_subject_pseudo_identifier, 
-                    other.has_administrative_case, 
-                    sorted(other.has_source_system_list) if other.has_source_system_list is not None else None
-                )
-
-
-
-    # -----------------------------------------------------------------------------------------------------------------
-    # Private functions
-    # -----------------------------------------------------------------------------------------------------------------

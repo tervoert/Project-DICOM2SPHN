@@ -8,6 +8,7 @@ from pydantic import Field, field_validator
 
 from ..sphn_schema_graph import SPHN, SPHNSchemaGraph
 from ..tools import generate_id, is_valid_string
+from .sphn_concept import UnorderedList
 from .sphn_contrast_agent_active_ingredient import SPHNContrastAgentActiveIngredient
 from .sphn_drug import SPHNDrug
 from .sphn_drug_article import SPHNDrugArticle
@@ -48,6 +49,28 @@ class SPHNContrastAgent(SPHNDrug):
         if not all(isinstance(item, SPHNSourceSystem) for item in value):
             raise TypeError("One or more items in the SPHN 'has_source_system' list are not SPHN SourceSystem instances.")
         return value
+
+    # ----------------------------------------------------------------------------------------------------------
+
+    #
+    # Edwin 2026-10-19
+    #
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return (
+                    self.has_quantity, 
+                    self.has_article, 
+                    UnorderedList(self.has_active_ingredient_list),                    
+                    UnorderedList(self.has_inactive_ingredient_list),
+                    UnorderedList(self.has_source_system_list),
+                ) == (
+                    other.has_quantity, 
+                    other.has_article, 
+                    UnorderedList(other.has_active_ingredient_list),
+                    UnorderedList(other.has_inactive_ingredient_list),
+                    UnorderedList(other.has_source_system_list)
+                )
 
     # ----------------------------------------------------------------------------------------------------------
     # Public functions
@@ -123,27 +146,3 @@ class SPHNContrastAgent(SPHNDrug):
 
         return json_dict_content_inline
 
-    
-    #
-    # Edwin 2026-10-19
-    #
-    def __eq__(self, other):
-        if not isinstance(other, type(self)):
-            return NotImplemented
-        return (
-                    self.has_quantity, 
-                    self.has_article, 
-                    sorted(self.has_active_ingredient_list) if self.has_active_ingredient_list is not None else None,                    
-                    sorted(self.has_inactive_ingredient_list) if self.has_inactive_ingredient_list is not None else None,
-                    sorted(self.has_source_system_list) if self.has_source_system_list is not None else None,
-                ) == (
-                    other.has_quantity, 
-                    other.has_article, 
-                    sorted(other.has_active_ingredient_list) if other.has_active_ingredient_list is not None else None,
-                    sorted(other.has_inactive_ingredient_list) if other.has_inactive_ingredient_list is not None else None,
-                    sorted(other.has_source_system_list) if other.has_source_system_list is not None else None
-                )
-
-    # -----------------------------------------------------------------------------------------------------------------
-    # Private functions
-    # -----------------------------------------------------------------------------------------------------------------

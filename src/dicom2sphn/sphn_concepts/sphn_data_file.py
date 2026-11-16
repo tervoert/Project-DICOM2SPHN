@@ -16,7 +16,7 @@ from ..tools import (
     is_valid_string,
 )
 from .sphn_code import SPHNCode
-from .sphn_concept import SPHNConcept
+from .sphn_concept import SPHNConcept, UnorderedList
 from .sphn_hash import SPHNHash
 from .sphn_source_system import SPHNSourceSystem
 from .sphn_subject_pseudo_identifier import SPHNSubjectPseudoIdentifier
@@ -74,6 +74,34 @@ class SPHNDataFile(SPHNConcept):
             if not self.sphn_schema.is_sphn_data_file_encoding_value_set_member(self.has_encoding):
                 raise ValueError(f"SPHN has_encoding value '{self.has_encoding}' is not a SPHN DataFile encoding value set member")
         return self
+
+    # ----------------------------------------------------------------------------------------------------------
+
+    #
+    # Edwin 2026-10-19
+    #
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return (    
+                    self.has_name, 
+                    self.has_encoding, 
+                    self.has_uniform_resource_identifier, 
+                    self.has_creation_datetime, 
+                    self.has_format_code, 
+                    self.has_hash, 
+                    UnorderedList(self.has_subject_pseudo_identifier_list), 
+                    UnorderedList(self.has_source_system_list)
+                ) == (
+                    other.has_name, 
+                    other.has_encoding, 
+                    other.has_uniform_resource_identifier, 
+                    other.has_creation_datetime, 
+                    other.has_format_code, 
+                    other.has_hash, 
+                    UnorderedList(other.has_subject_pseudo_identifier_list), 
+                    UnorderedList(other.has_source_system_list)
+                )
 
     # ----------------------------------------------------------------------------------------------------------
     # Public functions
@@ -162,33 +190,3 @@ class SPHNDataFile(SPHNConcept):
         # Return the JSON description of the reference to the instance
         return json_dict_ref
 
-
-    #
-    # Edwin 2026-10-19
-    #
-    def __eq__(self, other):
-        if not isinstance(other, type(self)):
-            return NotImplemented
-        return (    
-                    self.has_name, 
-                    self.has_encoding, 
-                    self.has_uniform_resource_identifier, 
-                    self.has_creation_datetime, 
-                    self.has_format_code, 
-                    self.has_hash, 
-                    sorted(self.has_subject_pseudo_identifier_list) if self.has_subject_pseudo_identifier_list is not None else None, 
-                    sorted(self.has_source_system_list) if self.has_source_system_list is not None else None
-                ) == (
-                    other.has_name, 
-                    other.has_encoding, 
-                    other.has_uniform_resource_identifier, 
-                    other.has_creation_datetime, 
-                    other.has_format_code, 
-                    other.has_hash, 
-                    sorted(other.has_subject_pseudo_identifier_list) if other.has_subject_pseudo_identifier_list is not None else None, 
-                    sorted(other.has_source_system_list) if other.has_source_system_list is not None else None
-                )
-
-    # ----------------------------------------------------------------------------------------------------------
-    # Private functions
-    # ----------------------------------------------------------------------------------------------------------

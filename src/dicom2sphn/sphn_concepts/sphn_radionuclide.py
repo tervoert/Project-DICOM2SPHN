@@ -9,6 +9,7 @@ from pydantic import Field, field_validator
 from ..sphn_schema_graph import SPHN, SPHNSchemaGraph
 from ..tools import generate_id, is_valid_string
 from .sphn_code import SPHNCode
+from .sphn_concept import UnorderedList
 from .sphn_quantity import SPHNQuantity
 from .sphn_radioactivity import SPHNRadioactivity
 from .sphn_source_system import SPHNSourceSystem
@@ -47,6 +48,31 @@ class SPHNRadionuclide(SPHNSubstance):
             raise TypeError("One or more items in the SPHN 'has_source_system' list are not SPHN SourceSystem instances.")
         return value
 
+    # ----------------------------------------------------------------------------------------------------------
+
+    #
+    # Edwin 2026-10-19
+    #
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return (
+                    self.has_generic_name, 
+                    self.has_quantity, 
+                    self.has_half_life, 
+                    self.has_positron_fraction, 
+                    self.has_radioactivity, 
+                    self.has_code, 
+                    UnorderedList(self.has_source_system_list)
+                ) == (
+                    other.has_generic_name, 
+                    other.has_quantity, 
+                    other.has_half_life, 
+                    other.has_positron_fraction, 
+                    other.has_radioactivity, 
+                    other.has_code, 
+                    UnorderedList(other.has_source_system_list)
+                )
 
     # ----------------------------------------------------------------------------------------------------------
     # Public functions
@@ -105,31 +131,3 @@ class SPHNRadionuclide(SPHNSubstance):
 
         return json_dict_content_inline
 
-    
-    #
-    # Edwin 2026-10-19
-    #
-    def __eq__(self, other):
-        if not isinstance(other, type(self)):
-            return NotImplemented
-        return (
-                    self.has_generic_name, 
-                    self.has_quantity, 
-                    self.has_half_life, 
-                    self.has_positron_fraction, 
-                    self.has_radioactivity, 
-                    self.has_code, 
-                    sorted(self.has_source_system_list) if self.has_source_system_list is not None else None
-                ) == (
-                    other.has_generic_name, 
-                    other.has_quantity, 
-                    other.has_half_life, 
-                    other.has_positron_fraction, 
-                    other.has_radioactivity, 
-                    other.has_code, 
-                    sorted(other.has_source_system_list) if other.has_source_system_list is not None else None
-                )
-
-    # -----------------------------------------------------------------------------------------------------------------
-    # Private functions
-    # -----------------------------------------------------------------------------------------------------------------

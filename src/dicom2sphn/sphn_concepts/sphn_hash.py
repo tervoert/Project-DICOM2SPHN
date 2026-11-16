@@ -40,6 +40,22 @@ class SPHNHash(SPHNConcept):
         return self
 
     # ----------------------------------------------------------------------------------------------------------
+
+    #
+    # Edwin 2026-10-19
+    #
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return (
+                    self.has_algorithm,
+                    self.has_string_value
+                ) == (
+                    other.has_algorithm,
+                    other.has_string_value
+                )
+
+    # ----------------------------------------------------------------------------------------------------------
     # Public functions
     # ----------------------------------------------------------------------------------------------------------
 
@@ -71,21 +87,3 @@ class SPHNHash(SPHNConcept):
         # Return the JSON description of the reference to the instance
         return json_dict_content_inline
 
-
-    #
-    # Edwin 2026-10-19
-    #
-    def __eq__(self, other):
-        if not isinstance(other, type(self)):
-            return NotImplemented
-        return (
-                    self.has_algorithm,
-                    self.has_string_value
-                ) == (
-                    other.has_algorithm,
-                    other.has_string_value
-                )
-
-    # ----------------------------------------------------------------------------------------------------------
-    # Private functions
-    # ----------------------------------------------------------------------------------------------------------

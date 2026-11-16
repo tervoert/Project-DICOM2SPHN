@@ -28,6 +28,26 @@ class SPHNTimePattern(SPHNConcept):
     id: str = Field(default_factory=lambda: generate_id())
 
     # -----------------------------------------------------------------------------------------------------------------
+
+    #
+    # Edwin 2026-10-19
+    #
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return (
+                    self.has_offset, 
+                    self.has_frequency, 
+                    self.has_type_code, 
+                    self.has_time_of_day_code
+                ) == (
+                    other.has_offset, 
+                    other.has_frequency, 
+                    other.has_type_code, 
+                    other.has_time_of_day_code
+                )
+
+    # -----------------------------------------------------------------------------------------------------------------
     # Public functions
     # -----------------------------------------------------------------------------------------------------------------
 
@@ -61,29 +81,4 @@ class SPHNTimePattern(SPHNConcept):
             json_dict_content_inline[f"{SPHN.hasTypeCode.n3(self.sphn_schema.namespace_manager())}"] = self.has_type_code.get_json_dict(content, self.id)
 
         return json_dict_content_inline
-
-    
-    #
-    # Edwin 2026-10-19
-    #
-    def __eq__(self, other):
-        if not isinstance(other, type(self)):
-            return NotImplemented
-        return (
-                    self.has_offset, 
-                    self.has_frequency, 
-                    self.has_type_code, 
-                    self.has_time_of_day_code
-                ) == (
-                    other.has_offset, 
-                    other.has_frequency, 
-                    other.has_type_code, 
-                    other.has_time_of_day_code
-                )
-
-
-
-    # -----------------------------------------------------------------------------------------------------------------
-    # Private functions
-    # -----------------------------------------------------------------------------------------------------------------
 

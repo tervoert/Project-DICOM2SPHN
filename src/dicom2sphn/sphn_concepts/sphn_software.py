@@ -39,6 +39,26 @@ class SPHNSoftware(SPHNConcept):
         return value  
 
     # -----------------------------------------------------------------------------------------------------------------
+
+    #
+    # Edwin 2026-10-19
+    #
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return (
+                    self.has_name, 
+                    self.has_version, 
+                    self.has_description, 
+                    self.has_uniform_resource_locator
+                ) == (
+                    other.has_name, 
+                    other.has_version, 
+                    other.has_description, 
+                    other.has_uniform_resource_locator
+                )
+
+    # -----------------------------------------------------------------------------------------------------------------
     # Public functions
     # -----------------------------------------------------------------------------------------------------------------
 
@@ -74,27 +94,3 @@ class SPHNSoftware(SPHNConcept):
         # Return the JSON description
         return json_dict_content_inline
 
-
-    #
-    # Edwin 2026-10-19
-    #
-    def __eq__(self, other):
-        if not isinstance(other, type(self)):
-            return NotImplemented
-        return (
-                    self.has_name, 
-                    self.has_version, 
-                    self.has_description, 
-                    self.has_uniform_resource_locator
-                ) == (
-                    other.has_name, 
-                    other.has_version, 
-                    other.has_description, 
-                    other.has_uniform_resource_locator
-                )
-
-
-
-    # -----------------------------------------------------------------------------------------------------------------
-    # Private functions
-    # -----------------------------------------------------------------------------------------------------------------

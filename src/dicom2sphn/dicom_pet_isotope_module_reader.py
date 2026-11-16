@@ -1069,7 +1069,7 @@ def create_sphn_radiopharmaceutical(
     sphn_radiopharmaceutical = SPHNRadiopharmaceutical(
         sphn_schema = context.sphn_schema,
         has_active_ingredient_list = sphn_active_ingredient_list,
-        has_radionuclide = sphn_radionuclide,
+        has_radionuclide_list = [sphn_radionuclide] if sphn_radionuclide is not None else None,
         has_quantity = create_sphn_quantity_for_volume(volume, context, indent=indent+2) if volume is not None else None,
         has_source_system_list = [data_store.sphn_source_system]
     )

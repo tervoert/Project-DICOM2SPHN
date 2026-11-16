@@ -9,7 +9,7 @@ from pydantic import Field, ValidationInfo, field_validator
 from ..sphn_schema_graph import SPHN, SPHNSchemaGraph
 from ..tools import generate_id, is_valid_string
 from .sphn_code import SPHNCode
-from .sphn_concept import SPHNConcept
+from .sphn_concept import SPHNConcept, UnorderedList
 from .sphn_software import SPHNSoftware
 
 
@@ -48,6 +48,30 @@ class SPHNImagingDevice(SPHNConcept):
         if value is not None and not is_valid_string(value):
             raise ValueError(f"SPHN {info.field_name} string value '{value}' is not a valid string")
         return value
+
+    # -----------------------------------------------------------------------------------------------------------------
+
+    #
+    # Edwin 2026-10-19
+    #
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return (
+                    self.has_type_code, 
+                    self.has_product_code, 
+                    self.has_manufacturer_name, 
+                    self.has_model_name, 
+                    self.has_serial_number, 
+                    UnorderedList(self.has_software_list)
+                ) == (
+                    other.has_type_code, 
+                    other.has_product_code, 
+                    other.has_manufacturer_name, 
+                    other.has_model_name, 
+                    other.has_serial_number, 
+                    UnorderedList(other.has_software_list)
+                )
 
     # -----------------------------------------------------------------------------------------------------------------
     # Public functions
@@ -104,33 +128,4 @@ class SPHNImagingDevice(SPHNConcept):
 
         # Return the JSON description
         return json_dict_content_inline
-
-
-    #
-    # Edwin 2026-10-19
-    #
-    def __eq__(self, other):
-        if not isinstance(other, type(self)):
-            return NotImplemented
-        return (
-                    self.has_type_code, 
-                    self.has_product_code, 
-                    self.has_manufacturer_name, 
-                    self.has_model_name, 
-                    self.has_serial_number, 
-                    sorted(self.has_software_list) if self.has_software_list is not None else None
-                ) == (
-                    other.has_type_code, 
-                    other.has_product_code, 
-                    other.has_manufacturer_name, 
-                    other.has_model_name, 
-                    other.has_serial_number, 
-                    sorted(other.has_software_list) if other.has_software_list is not None else None
-                )
-
-    # -----------------------------------------------------------------------------------------------------------------
-    # Private functions
-    # -----------------------------------------------------------------------------------------------------------------
-
-
 

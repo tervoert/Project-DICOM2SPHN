@@ -13,6 +13,7 @@ from ..tools import generate_id, is_valid_string
 from .sphn_administrative_case import SPHNAdministrativeCase
 from .sphn_body_position import SPHNBodyPosition
 from .sphn_code import SPHNCode
+from .sphn_concept import UnorderedList
 from .sphn_data_file import SPHNDataFile
 from .sphn_imaging_device import SPHNImagingDevice
 from .sphn_imaging_series import SPHNImagingSeries
@@ -84,6 +85,44 @@ class SPHNPositronEmissionTomographyImagingSeries(SPHNImagingSeries):
         if not all(isinstance(item, SPHNSourceSystem) for item in value):
             raise TypeError("One or more items in the SPHN 'has_source_system' list are not SPHN SourceSystem instances.")
         return value
+
+    # -----------------------------------------------------------------------------------------------------------------
+
+    #
+    # Edwin 2026-10-19
+    #
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return (
+                    self.has_start_datetime, 
+                    self.has_end_datetime, 
+                    self.has_description,
+                    self.has_protocol_name,
+                    self.has_subject_pseudo_identifier,
+                    self.has_imaging_modality_code,
+                    self.has_number_of_frames,
+                    self.has_medical_device,
+                    self.has_administrative_case,
+                    UnorderedList(self.has_imaging_frame_list),
+                    UnorderedList(self.has_body_position_list),
+                    UnorderedList(self.has_data_file_list),
+                    UnorderedList(self.has_source_system_list)
+                ) == (
+                    other.has_start_datetime, 
+                    other.has_end_datetime,
+                    other.has_description,
+                    other.has_protocol_name,
+                    other.has_subject_pseudo_identifier,
+                    other.has_imaging_modality_code,
+                    other.has_number_of_frames,
+                    other.has_medical_device,
+                    other.has_administrative_case,
+                    UnorderedList(other.has_imaging_frame_list),
+                    UnorderedList(other.has_body_position_list),
+                    UnorderedList(other.has_data_file_list),
+                    UnorderedList(other.has_source_system_list)
+                )
 
     # -----------------------------------------------------------------------------------------------------------------
     # Public functions
@@ -219,45 +258,4 @@ class SPHNPositronEmissionTomographyImagingSeries(SPHNImagingSeries):
 
         # Return the JSON description of the reference to the instance
         return json_dict_ref
-
-
-    #
-    # Edwin 2026-10-19
-    #
-    def __eq__(self, other):
-        if not isinstance(other, type(self)):
-            return NotImplemented
-        return (
-                    self.has_start_datetime, 
-                    self.has_end_datetime, 
-                    self.has_description,
-                    self.has_protocol_name,
-                    self.has_subject_pseudo_identifier,
-                    self.has_imaging_modality_code,
-                    self.has_number_of_frames,
-                    self.has_medical_device,
-                    self.has_administrative_case,
-                    sorted(self.has_imaging_frame_list) if self.has_imaging_frame_list is not None else None,
-                    sorted(self.has_body_position_list) if self.has_body_position_list is not None else None,
-                    sorted(self.has_data_file_list) if self.has_data_file_list is not None else None,
-                    sorted(self.has_source_system_list) if self.has_source_system_list is not None else None
-                ) == (
-                    other.has_start_datetime, 
-                    other.has_end_datetime,
-                    other.has_description,
-                    other.has_protocol_name,
-                    other.has_subject_pseudo_identifier,
-                    other.has_imaging_modality_code,
-                    other.has_number_of_frames,
-                    other.has_medical_device,
-                    other.has_administrative_case,
-                    sorted(other.has_imaging_frame_list) if other.has_imaging_frame_list is not None else None,
-                    sorted(other.has_body_position_list) if other.has_body_position_list is not None else None,
-                    sorted(other.has_data_file_list) if other.has_data_file_list is not None else None,
-                    sorted(other.has_source_system_list) if other.has_source_system_list is not None else None
-                )
-
-    # -----------------------------------------------------------------------------------------------------------------
-    # Private functions
-    # -----------------------------------------------------------------------------------------------------------------
 
