@@ -177,8 +177,8 @@ class SPHNMagneticResonanceImagingSeries(SPHNImagingSeries):
     #
     # Edwin 2026-08-13
     #
-    # It is a Core Concept
-    def get_json_dict(self, content: dict, source_concept_id: str|None=None) -> dict:
+    # This is a Core Concept
+    def get_json_dict(self, content: dict, source_concept_id: str|None=None, write_target_concept: bool=False) -> dict:
         """ 
         Gets the dict for json output
         """
@@ -191,6 +191,9 @@ class SPHNMagneticResonanceImagingSeries(SPHNImagingSeries):
         json_dict_ref = {
             "id": f"{self.id}"
         }
+
+        if write_target_concept is True:
+            json_dict_ref["target_concept"] = SPHN.MagneticResonanceImagingSeries
 
         # Part 2: Create the JSON description of the instance for the 'content'
 
@@ -205,7 +208,7 @@ class SPHNMagneticResonanceImagingSeries(SPHNImagingSeries):
             json_dict_content[f"{SPHN.hasBodyPosition.n3(self.sphn_schema.namespace_manager())}"] = [body_position.get_json_dict(content, self.id) for body_position in self.has_body_position_list]
 
         if self.has_data_file_list is not None and len(self.has_data_file_list)>0:
-            json_dict_content[f"{SPHN.hasDataFile.n3(self.sphn_schema.namespace_manager())}"] = [data_file.get_json_dict(content, self.id) for data_file in self.has_data_file_list]
+            json_dict_content[f"{SPHN.hasDataFile.n3(self.sphn_schema.namespace_manager())}"] = [data_file.get_json_dict(content, self.id, write_target_concept=True) for data_file in self.has_data_file_list]
 
         if self.has_description is not None:
             json_dict_content[f"{SPHN.hasDescription.n3(self.sphn_schema.namespace_manager())}"] = self.has_description

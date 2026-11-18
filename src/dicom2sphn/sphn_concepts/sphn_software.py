@@ -65,8 +65,8 @@ class SPHNSoftware(SPHNConcept):
     #
     # Edwin 2026-08-05
     #
-    # It is not a Core Concept
-    def get_json_dict(self, content: dict|None=None, source_concept_id: str|None=None) -> dict:
+    # This is a Normal Concept
+    def get_json_dict(self, content: dict|None=None, source_concept_id: str|None=None, write_target_concept: bool=False) -> dict:
         """ 
         Gets the dict for json output
         """
@@ -78,6 +78,9 @@ class SPHNSoftware(SPHNConcept):
         json_dict_content_inline = {
             "id": f"{self.id}"
         }
+
+        if write_target_concept is True:
+            json_dict_content_inline["target_concept"] = SPHN.Software
 
         if self.has_description is not None:
             json_dict_content_inline[f"{SPHN.hasDescription.n3(self.sphn_schema.namespace_manager())}"] = self.has_description

@@ -21,7 +21,7 @@ class SPHNConcept(ABC, BaseModel):
     id: str
 
     @abstractmethod
-    def get_json_dict(self, content: dict|None=None, source_concept_id: str|None=None) -> dict:
+    def get_json_dict(self, content: dict|None=None, source_concept_id: str|None=None, write_target_concept: bool=False) -> dict:
         pass
 
     @abstractmethod

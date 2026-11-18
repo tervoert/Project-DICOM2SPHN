@@ -6,8 +6,8 @@ dw_frame_processor.py:
 import time
 from datetime import timedelta
 
+import pydicom
 from pydicom import Dataset
-from pynetdicom import sop_class
 
 from .context import Context
 from .dicom_frame_reader import get_frame_metadata_from_dicom
@@ -135,7 +135,7 @@ class DWFrameProcessor:
         # ToDo: Edwin: Currently SPHN only allows one contrast agent administration event per imaging frame, change with the new SPHN schema version
 
         # Selecting the general or one of the specific SPHN ImagingFrames based on the SOP Class UID of the DICOM Instance dataset
-        if sop_class_uid in ['empty_for_now']:#[sop_class.CTImageStorage]:
+        if sop_class_uid in [pydicom.uid.CTImageStorage]:
             # Create a specific SPHN ComputedTomographyImagingFrame
             logger.debug(" "*(indent+4) + "Creating an SPHN CT-ImagingFrame")
             sphn_imaging_frame = SPHNComputedTomographyImagingFrame(
@@ -153,7 +153,7 @@ class DWFrameProcessor:
                     if data_store.sphn_contrast_agent_administration_event_list is not None \
                         and len(data_store.sphn_contrast_agent_administration_event_list) > 0 else None
             )
-        elif sop_class_uid in ['empty_for_now']:#[sop_class.MRImageStorage]:
+        elif sop_class_uid in [pydicom.uid.MRImageStorage]:
             # Create a specific SPHN MagneticResonanceImagingFrame
             logger.debug(" "*(indent+4) + "Creating an SPHN MR-ImagingFrame")
             sphn_imaging_frame = SPHNMagneticResonanceImagingFrame(
@@ -171,7 +171,7 @@ class DWFrameProcessor:
                     if data_store.sphn_contrast_agent_administration_event_list is not None \
                         and len(data_store.sphn_contrast_agent_administration_event_list) > 0 else None
             )
-        elif sop_class_uid in ['empty_for_now']:#[sop_class.PositronEmissionTomographyImageStorage]:
+        elif sop_class_uid in [pydicom.uid.PositronEmissionTomographyImageStorage]:
             # Create a specific SPHN PositronEmissionTomographyImagingFrame
             logger.debug(" "*(indent+4) + "Creating an SPHN PET-ImagingFrame")
             sphn_imaging_frame = SPHNPositronEmissionTomographyImagingFrame(
@@ -190,6 +190,12 @@ class DWFrameProcessor:
                         and len(data_store.sphn_radiopharmaceutical_administration_event_list) > 0 else None
             )
         elif sop_class_uid in ['empty_for_now']:
+            #[
+            # pydicom.uid.ComputedRadiographyImageStorage, 
+            # pydicom.uid.DigitalXRayImageStorageForPresentation,
+            # pydicom.uid.DigitalXRayImageStorageForProcessing,
+            # pydicom.uid.XRayRadiofluoroscopicImageStorage,
+            # ]: https://pydicom.github.io/pydicom/stable/reference/uid.html
             # Create a specific SPHN XRayImagingFrame
             logger.debug(" "*(indent+4) + "Creating an SPHN XRay-ImagingFrame")
             sphn_imaging_frame = SPHNXRayImagingFrame(

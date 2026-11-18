@@ -87,7 +87,7 @@ class SPHNDataProvider(SPHNConcept):
     # This is a Special Concept
     # - No content and no source_concept_id are provided
     #
-    def get_json_dict(self, content: dict|None=None, source_concept_id: str|None=None) -> dict:
+    def get_json_dict(self, content: dict|None=None, source_concept_id: str|None=None, write_target_concept: bool=False) -> dict:
         """ 
         Gets the dict for json output
         """
@@ -98,6 +98,9 @@ class SPHNDataProvider(SPHNConcept):
         json_dict = {
             "id": f"{self.id}"
         }
+
+        if write_target_concept is True:
+            json_dict["target_concept"] = SPHN.DataProvider
 
         if self.has_category is not None:
             json_dict[f"{SPHN.hasCategory.n3(self.sphn_schema.namespace_manager())}"] = {

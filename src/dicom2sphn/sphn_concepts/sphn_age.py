@@ -80,8 +80,8 @@ class SPHNAge(SPHNConcept):
     #
     # Edwin 2026-08-05
     #
-    #  It is a Core Concept
-    def get_json_dict(self, content: dict, source_concept_id: str|None=None) -> dict:
+    # This is a Core Concept
+    def get_json_dict(self, content: dict, source_concept_id: str|None=None, write_target_concept: bool=False) -> dict:
         """ 
         Gets the dict for json output
         """
@@ -94,6 +94,9 @@ class SPHNAge(SPHNConcept):
         json_dict_ref = {
             "id": f"{self.id}"
         }
+
+        if write_target_concept is True:
+            json_dict_ref["target_concept"] = SPHN.Age
 
         # Part 2: Create the JSON description of the instance for the 'content'
 

@@ -93,8 +93,8 @@ class SPHNCode(SPHNConcept):
     #
     # Edwin 2026-07-06
     #
-    # It is not a Core Concept
-    def get_json_dict(self, content: dict|None=None, source_concept_id: str|None=None) -> dict:
+    # This is a Normal Concept
+    def get_json_dict(self, content: dict|None=None, source_concept_id: str|None=None, write_target_concept: bool=False) -> dict:
         """ 
         Gets the dict for json output
         """
@@ -102,7 +102,7 @@ class SPHNCode(SPHNConcept):
         assert content is None or isinstance(content, dict)
         assert source_concept_id is None or is_valid_string(source_concept_id)
         
-        # Check if it is a Terminology or Code
+        # Check if it is a Code or Terminology
         if self.has_coding_system_and_version in ['SNOMED','DCM','UCUM','EDAM']:
 
             # It is a Terminology
@@ -135,6 +135,9 @@ class SPHNCode(SPHNConcept):
                 # This should never happen
                 raise ValueError("Unknown Terminology")
 
+            if write_target_concept is True:
+                json_dict_content_inline["target_concept"] = SPHN.Terminology
+
         else:
             # It is a Code
 
@@ -142,6 +145,9 @@ class SPHNCode(SPHNConcept):
             json_dict_content_inline = {
                 "id": f"{self.id}"
             }
+
+            if write_target_concept is True:
+                json_dict_content_inline["target_concept"] = SPHN.Code
 
             if self.has_coding_system_and_version is not None:
                 json_dict_content_inline[f"{SPHN.hasCodingSystemAndVersion.n3(self.sphn_schema.namespace_manager())}"] = self.has_coding_system_and_version

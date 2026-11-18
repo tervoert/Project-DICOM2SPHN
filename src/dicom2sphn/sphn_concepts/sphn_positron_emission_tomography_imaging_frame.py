@@ -199,8 +199,8 @@ class SPHNPositronEmissionTomographyImagingFrame(SPHNImagingFrame):
     #
     # Edwin 2026-08-13
     #
-    # It is not a Core Concept
-    def get_json_dict(self, content: dict|None=None, source_concept_id: str|None=None) -> dict:
+    # This is a Normal Concept
+    def get_json_dict(self, content: dict|None=None, source_concept_id: str|None=None, write_target_concept: bool=False) -> dict:
         """ 
         Gets the dict for json output
         """
@@ -212,6 +212,9 @@ class SPHNPositronEmissionTomographyImagingFrame(SPHNImagingFrame):
         json_dict_content_inline = {
             "id": f"{self.id}"
         }
+
+        if write_target_concept is True:
+            json_dict_content_inline["target_concept"] = SPHN.PositronEmissionTomographyImagingFrame
 
         if self.has_algorithm_list is not None and len(self.has_algorithm_list)>0:
             json_dict_content_inline[f"{SPHN.hasAlgorithm.n3(self.sphn_schema.namespace_manager())}"] = [algorithm.get_json_dict(content, self.id) for algorithm in self.has_algorithm_list]
@@ -249,7 +252,7 @@ class SPHNPositronEmissionTomographyImagingFrame(SPHNImagingFrame):
             json_dict_content_inline[f"{SPHN.hasSubjectPhysiologicState.n3(self.sphn_schema.namespace_manager())}"] = self.has_subject_physiologic_state.get_json_dict(content, self.id)
 
         if self.has_synchronization is not None:  # Added
-            json_dict_content_inline[f"{SPHN.hasSynchronization.n3(self.sphn_schema.namespace_manager())}"] = self.has_synchronization.get_json_dict(content, self.id)
+            json_dict_content_inline[f"{SPHN.hasSynchronization.n3(self.sphn_schema.namespace_manager())}"] = self.has_synchronization.get_json_dict(content, self.id, write_target_concept=True)
 
         if self.has_type_list is not None and len(self.has_type_list)>0:
             json_dict_content_inline[f"{SPHN.hasType.n3(self.sphn_schema.namespace_manager())}"] = [{"iri": SPHN_IND + image_type} for image_type in self.has_type_list]

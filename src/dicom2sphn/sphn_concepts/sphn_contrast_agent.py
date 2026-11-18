@@ -110,8 +110,8 @@ class SPHNContrastAgent(SPHNDrug):
     #
     # Edwin 2026-08-13
     #
-    # Not a Core Concept
-    def get_json_dict(self, content: dict, source_concept_id: str|None=None) -> dict:
+    # This is a Normal Concept
+    def get_json_dict(self, content: dict, source_concept_id: str|None=None, write_target_concept: bool=False) -> dict:
         """ 
         Gets the dict for json output
         """
@@ -123,6 +123,9 @@ class SPHNContrastAgent(SPHNDrug):
         json_dict_content_inline = {
             "id": f"{self.id}"
         }
+
+        if write_target_concept is True:
+            json_dict_content_inline["target_concept"] = SPHN.ContrastAgent
 
         # ToDo: Edwin: for old SPHN version
         if self.has_active_ingredient_list is not None and len(self.has_active_ingredient_list) > 0:

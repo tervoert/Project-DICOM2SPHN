@@ -17,6 +17,7 @@ from ..tools import (
 )
 from .sphn_anatomical_projection import SPHNAnatomicalProjection
 from .sphn_body_site import SPHNBodySite
+from .sphn_concept import UnorderedList
 from .sphn_contrast_agent_administration_event import (
     SPHNContrastAgentAdministrationEvent,
 )
@@ -26,7 +27,6 @@ from .sphn_image_dimensions import SPHNImageDimensions
 from .sphn_imaging_frame import SPHNImagingFrame
 from .sphn_imaging_metric import SPHNImagingMetric
 from .sphn_synchronization import SPHNSynchronization
-from .sphn_concept import UnorderedList
 
 
 #
@@ -195,8 +195,8 @@ class SPHNComputedTomographyImagingFrame(SPHNImagingFrame):
     #
     # Edwin 2026-08-13
     #
-    # It is not a Core Concept
-    def get_json_dict(self, content: dict|None=None, source_concept_id: str|None=None) -> dict:
+    # This is a Normal Concept
+    def get_json_dict(self, content: dict|None=None, source_concept_id: str|None=None, write_target_concept: bool=False) -> dict:
         """ 
         Gets the dict for json output
         """
@@ -208,6 +208,9 @@ class SPHNComputedTomographyImagingFrame(SPHNImagingFrame):
         json_dict_content_inline = {
             "id": f"{self.id}"
         }
+
+        if write_target_concept is True:
+            json_dict_content_inline["target_concept"] = SPHN.ComputedTomographyImagingFrame
 
         if self.has_algorithm_list is not None and len(self.has_algorithm_list)>0:
             json_dict_content_inline[f"{SPHN.hasAlgorithm.n3(self.sphn_schema.namespace_manager())}"] = [algorithm.get_json_dict(content, self.id) for algorithm in self.has_algorithm_list]
@@ -242,7 +245,7 @@ class SPHNComputedTomographyImagingFrame(SPHNImagingFrame):
             json_dict_content_inline[f"{SPHN.hasStartDateTime.n3(self.sphn_schema.namespace_manager())}"] = self.has_start_datetime.isoformat(timespec='milliseconds')
 
         if self.has_synchronization is not None:  # Added
-            json_dict_content_inline[f"{SPHN.hasSynchronization.n3(self.sphn_schema.namespace_manager())}"] = self.has_synchronization.get_json_dict(content, self.id)
+            json_dict_content_inline[f"{SPHN.hasSynchronization.n3(self.sphn_schema.namespace_manager())}"] = self.has_synchronization.get_json_dict(content, self.id, write_target_concept=True)
 
         if self.has_type_list is not None and len(self.has_type_list)>0:
             json_dict_content_inline[f"{SPHN.hasType.n3(self.sphn_schema.namespace_manager())}"] = [{"iri": SPHN_IND + image_type} for image_type in self.has_type_list]

@@ -212,8 +212,8 @@ class SPHNImagingProcedure(SPHNConcept):
     #
     # Edwin 2026-08-05
     #
-    # It is a Core Concept
-    def get_json_dict(self, content: dict, source_concept_id: str|None=None) -> dict:
+    # This is a Core Concept
+    def get_json_dict(self, content: dict, source_concept_id: str|None=None, write_target_concept: bool=False) -> dict:
         """ 
         Gets the dict for json output
         """
@@ -226,6 +226,9 @@ class SPHNImagingProcedure(SPHNConcept):
         json_dict_ref = {
             "id": f"{self.id}"
         }
+
+        if write_target_concept is True:
+            json_dict_ref["target_concept"] = SPHN.ImagingProcedure
 
         # Part 2: Create the JSON description of the instance for the 'content'
 
@@ -248,9 +251,8 @@ class SPHNImagingProcedure(SPHNConcept):
         if self.has_end_datetime is not None:
             json_dict_content[f"{SPHN.hasEndDateTime.n3(self.sphn_schema.namespace_manager())}"] = self.has_end_datetime.isoformat(timespec='milliseconds')
 
-        # ToDo: Edwin test
         if self.has_imaging_series_list is not None and len(self.has_imaging_series_list)>0:
-            json_dict_content[f"{SPHN.hasImagingSeries.n3(self.sphn_schema.namespace_manager())}"] = [imaging_series.get_json_dict(content, self.id) for imaging_series in self.has_imaging_series_list]
+            json_dict_content[f"{SPHN.hasImagingSeries.n3(self.sphn_schema.namespace_manager())}"] = [imaging_series.get_json_dict(content, self.id, write_target_concept=True) for imaging_series in self.has_imaging_series_list]
 
         if self.has_intent is not None:
             json_dict_content[f"{SPHN.hasIntent.n3(self.sphn_schema.namespace_manager())}"] = self.has_intent.get_json_dict(content, self.id)
