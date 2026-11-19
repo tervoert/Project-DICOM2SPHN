@@ -1,10 +1,37 @@
-# Medical Imaging Contrast Agents
+# Medical Imaging Contrast Agents: Trade Names and Ingredients
 
-Contrast agents grouped by imaging modality and type, with each one's manufacturer and its ingredients coded in SNOMED CT (International Edition, 2026-10-01).
+This list gives 89 medical imaging contrast agents by trade name, grouped by imaging modality and type. For each one it gives the manufacturer and the ingredients, coded in SNOMED CT (International Edition, 2026-10-01).
 
-Manufacturer is the current owner, or the successor company for discontinued products. 
+- **Manufacturer** is the current owner, or the successor company for discontinued products.
+- **Active ingredients** are the substances that give the contrast effect. They become SPHN Contrast Agent Active Ingredient objects.
+- **Inactive ingredients** are carriers or excipients. They are listed for completeness, but are not mapped to SPHN.
 
-Ingredient codes are substances under `105590001 | Substance (substance) |`. Most are also under `385420005 | Contrast media (substance) |` except for `15158005 | Air (substance) |`, `109216000 | Gadopentetate dimeglumine (substance) |` and `414308003 | Meglumine gadobenate (substance) |`, but these were added as additional codes in SPHN.
+All ingredient codes are substances under `105590001 | Substance (substance) |`. Most are also under `385420005 | Contrast media (substance) |`, as SPHN requires for a [Contrast Agent Active Ingredient](https://www.biomedit.ch/rdf/sphn-schema/sphn#ContrastAgentActiveIngredient). The exceptions are `15158005 | Air (substance) |`, `109216000 | Gadopentetate dimeglumine (substance) |` and `414308003 | Meglumine gadobenate (substance) |`, which SPHN allows as additional codes.
+
+See [Contrast-Agents.md](Contrast-Agents.md) for the background on contrast agents in DICOM and SPHN.
+
+## How DICOM2SPHN uses this list
+
+Many DICOM images have no coded contrast agent, only the free text Contrast/Bolus Agent (0018,0010) attribute, for example `OMNIPAQUE`, `CC MAGNEVIST` or `Visipaque-320 100ml`. DICOM2SPHN searches this free text for the trade names in this list, and also for active ingredient names (e.g. "Iohexol") and active element names (e.g. "Gadolinium").
+
+When a trade name is found, DICOM2SPHN creates an SPHN Contrast Agent with:
+- one SPHN Contrast Agent Active Ingredient for each **active ingredient** of the trade name, with the SNOMED CT code from this list;
+- an SPHN Drug Article whose name is the trade name, followed by the concentration and dose when they follow the trade name in the text. For example, `Omnipaque 300 100 ml` gives the article name `Omnipaque-300 100ml`.
+
+A concentration is only recognized when it is one of the common values 30, 60, 76, 140, 150, 160, 180, 200, 240, 250, 260, 270, 282, 292, 300, 320, 350, 360, 370, 380, 390 or 400 (mg iodine/mL). A dose is a number with the unit mL (or cc) or mg.
+
+The list is implemented in [data_converter.py](src/dicom2sphn/data_converter.py), in these dictionaries:
+
+| Dictionary | Content |
+|---|---|
+| `contrast_agent_trade_name_2_manufacturer_and_ingredient_name` | Trade name → manufacturer, active ingredients and inactive ingredients |
+| `contrast_agent_active_ingredient_name_2_snomed_code` | Active ingredient name → SNOMED CT code |
+| `contrast_agent_active_element_names_2_snomed_code` | Active element name (e.g. "Iodine") → SNOMED CT code |
+| `contrast_agent_names_2_patterns` | Trade name, ingredient name or element name → regular expression for the free text search, including common misspellings (e.g. "Amipak" for "Amipaque") |
+
+The free text search is implemented in [extract_contrast_agents.py](src/dicom2sphn/extract_contrast_agents.py). When you add a contrast agent to this list, also add it to these dictionaries, and the other way around.
+
+## Overview
 
 | Modality | Type | Agents |
 |---|---|---|
@@ -151,6 +178,10 @@ Ingredient codes are substances under `105590001 | Substance (substance) |`. Mos
 
 **Notes**
 
-- **Magnevist and MultiHance** have the salt forms gadopentetate dimeglumine `109216000` and meglumine gadobenate `414308003`, which are not under `385420005 | Contrast media (substance) |`, but were added as additional codes in SPHN. Note that the acid forms (gadopentetic acid, gadobenic acid), sit under `385420005 | Contrast media (substance) |`.
-- **Levovist:** the contrast effect comes from air microbubbles; galactose and palmitic acid are the carrier. `15158005 | Air (substance) |` is not under `385420005 | Contrast media (substance) |`, but was added as additional code in SPHN.
+- **Magnevist and MultiHance** have the salt forms gadopentetate dimeglumine `109216000` and meglumine gadobenate `414308003`. These are not under `385420005 | Contrast media (substance) |`, but SPHN allows them as additional codes. The acid forms (gadopentetic acid, gadobenic acid) are under `385420005 | Contrast media (substance) |`.
+- **Levovist:** the contrast effect comes from air microbubbles; galactose and palmitic acid are the carrier. `15158005 | Air (substance) |` is not under `385420005 | Contrast media (substance) |`, but SPHN allows it as an additional code.
+- **Inactive ingredients** (galactose, palmitic acid and povidone) are listed for completeness only. DICOM2SPHN does not add them to the SPHN Contrast Agent.
+- **Several active ingredients:** a trade name can have more than one active ingredient (e.g. Angiovist, Gastrografin, Hexabrix). DICOM2SPHN then adds all of them to the same SPHN Contrast Agent.
+- **Several trade names for one product:** some products are sold under different trade names in different countries (e.g. Gadavist/Gadovist, Eovist/Primovist, Isovue/Iopamiro/Niopam). Each trade name has its own row.
 - SNOMED CT codes were checked against tx.fhir.org.
+- This list and the dictionaries in [data_converter.py](src/dicom2sphn/data_converter.py) were compared on 2026-11-19: they have the same 89 trade names, manufacturers and ingredient codes.

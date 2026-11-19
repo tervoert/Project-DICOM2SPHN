@@ -2142,6 +2142,8 @@ class DataConverter:
         "Dotatate Cu^64^":                          rf"(?<![a-z0-9])({_rp_iso_Cu64}{_rp_sep}(?:(?:cu[-\s]?)?dota[-\s]?tate)|(?:(?:cu[-\s]?)?dota[-\s]?tate){_rp_sep}{_rp_iso_Cu64}|detectnet)(?![a-z0-9])",  # detectnet: additional
         "FAPI Ga^68^":                              rf"(?<![a-z0-9])({_rp_iso_Ga68}{_rp_sep}(?:(?:ga[-\s]?)?(?:fapi(?:[-\s]?\d+)?|fibroblast[-\s]?activation[-\s]?protein[-\s]?inhibitor))|(?:(?:ga[-\s]?)?(?:fapi(?:[-\s]?\d+)?|fibroblast[-\s]?activation[-\s]?protein[-\s]?inhibitor)){_rp_sep}{_rp_iso_Ga68})(?![a-z0-9])",
         "Pentixafor Ga^68^":                        r"(?<![a-z0-9])(pentixafor|boclatixafortide)(?![a-z0-9])",  # boclatixafortide: INN of pentixafor
+        "PSMA Ga^68^":                              rf"(?<![a-z0-9])({_rp_iso_Ga68}{_rp_sep}(?:ga[-\s]?)?psma(?![-\s]*(?:\d|hbed|i[-\s]*(?:&|and)[-\s]*t))|(?:ga[-\s]?)?psma(?![-\s]*(?:\d|hbed|i[-\s]*(?:&|and)[-\s]*t)){_rp_sep}{_rp_iso_Ga68})(?![a-z0-9])",  # Ga-68 PSMA without a ligand number (not PSMA-11/PSMA-HBED-CC, PSMA-617 or PSMA I&T)
+        "PSMA I&T Ga^68^":                          rf"(?<![a-z0-9])({_rp_iso_Ga68}{_rp_sep}(?:ga[-\s]?)?psma[-\s]*i[-\s]*(?:&|and)[-\s]*t|(?:ga[-\s]?)?psma[-\s]*i[-\s]*(?:&|and)[-\s]*t{_rp_sep}{_rp_iso_Ga68})(?![a-z0-9])",  # PSMA I&T (imaging and therapy), the Ga-68 label is required as PSMA I&T is also used with Lu-177
     }
 
     # Dictionary mapping the DICOM PET radiopharmaceutical names to their codes
@@ -2302,6 +2304,8 @@ class DataConverter:
         "Dotatate Cu^64^":                          ("SNOMED",      "926371003", "| Copper (64-Cu) dotatate (substance) |"),
         "FAPI Ga^68^":                              ("SNOMED",     "1362094009", "| Gallium (68-Ga) labeled fibroblast activation protein inhibitor (substance) |"),  # New in the SNOMED CT International Edition after 2025-02
         "Pentixafor Ga^68^":                        ("SNOMED",     "1362095005", "| Gallium (68-Ga) labeled boclatixafortide (substance) |"),  # New in the SNOMED CT International Edition after 2025-02
+        "PSMA Ga^68^":                              ("SNOMED",     "1359969008", "| Gallium (68-Ga) labeled prostate specific membrane antigen (substance) |"),  # The general Ga-68 PSMA concept, as the ligand is not known
+        "PSMA I&T Ga^68^":                          ("SNOMED",     "1359969008", "| Gallium (68-Ga) labeled prostate specific membrane antigen (substance) |"),  # No specific SNOMED CT concept for PSMA I&T, the general Ga-68 PSMA concept is used
     }
 
     # Dictionary mapping the DICOM CID 4021 "PET Radiopharmaceutical" codes to the (new) codes used in pet_radiopharmaceutical_name_2_code

@@ -153,6 +153,7 @@ Project-DICOM2SPHN/
 ├── pyproject.toml                    Package definition
 ├── Contrast-Agents.md                Background on contrast agents
 ├── Contrast-Agent-Trade-Names-and-Ingredients.md
+├── Radiopharmaceuticals.md           Background on radiopharmaceuticals
 └── src/dicom2sphn/
     ├── cli.py, main.py               Command line interface and main program
     ├── import_config_settings.py     Reads and checks the configuration
@@ -170,6 +171,7 @@ Project-DICOM2SPHN/
 
 - [Contrast-Agents.md](Contrast-Agents.md): how contrast agents, their ingredients and administrations are represented.
 - [Contrast-Agent-Trade-Names-and-Ingredients.md](Contrast-Agent-Trade-Names-and-Ingredients.md): trade names and active ingredients of contrast agents.
+- [Radiopharmaceuticals.md](Radiopharmaceuticals.md): how radiopharmaceuticals, their radionuclides and administrations are represented.
 
 ---
 
