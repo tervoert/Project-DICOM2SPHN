@@ -95,7 +95,7 @@ The main sections are:
 | `[SPHN.data_provider]` | Category, department and institution code of the data provider |
 | `[SPHN.source_system]` | Name, purpose and category of the source system (e.g. the PACS) |
 | `[dicomweb_api_user]` | DICOMweb base URL, username, password and request timeout |
-| `[dicom_options]` | Allowed SOP classes (CT, MR and PET by default), local timezone, and fallback dates and times for studies and contrast administrations |
+| `[dicom_options]` | Allowed SOP classes (by default all image SOP classes, see [Supported DICOM SOP Classes](Supported_DICOM_SOP_Classes.md)), local timezone, and fallback dates and times for studies and contrast administrations |
 | `[data_processing]` | Store only unique imaging procedures, series and/or frames |
 
 > **Note:** `config.toml` contains credentials. Do not commit it to version control.
@@ -132,6 +132,69 @@ The default patient comes from the CPTAC-LUAD collection of [The Cancer Imaging 
 
 ---
 
+## Processing a list of patients
+
+The script `scripts/run_patient_list.py` runs DICOM2SPHN for every DICOM PatientID in a text file. The file contains one PatientID per line. Empty lines and lines starting with `#` are ignored, and a PatientID that appears more than once is processed only once.
+
+```bash
+python scripts/run_patient_list.py patient_ids.txt -c config.toml
+```
+
+Process four patients at a time and write the output of each patient to its own log file:
+
+```bash
+python scripts/run_patient_list.py patient_ids.txt -c config.toml --jobs 4 --log_dir output/logs
+python scripts/run_patient_list.py patient_ids.txt -c config.toml --output_dir D:/sphn_export
+```
+
+| Option | Short | Default | Description |
+|---|---|---|---|
+| `patient_id_file` | | (required) | Text file with one DICOM PatientID per line |
+| `--config_file` | `-c` | `config.toml` | The configuration file |
+| `--output_file_path_specification` | `-o` | `output/output_patient_{patient_id}_{file_id}.json` | Output file path. It must contain `{patient_id}` and `{file_id}` |
+| `--output_dir` | `-d` | (none) | Folder for the output JSON files. Replaces the folder part of `-o`; the file name pattern is kept. The folder is created if it does not exist |
+| `--jobs` | `-j` | `1` | Number of patients processed in parallel |
+| `--log_dir` | | (none) | Write the output of each patient to `<log_dir>/<PatientID>.log` instead of the console |
+| `--stop_on_error` | | off | Stop at the first patient that returns an error. With `--jobs` > 1, patients that are already running are finished first |
+
+Each patient runs in a separate `python -m dicom2sphn` process. The script works even if the package was not installed with `pip install -e .`. Without `--log_dir`, the output is printed to the console. With `--jobs` > 1, the output of each patient is printed as one block when that patient is finished, so the output of different patients is not mixed.
+
+At the end, the script prints a summary of how many patients were exported, had an error or had nothing to export, and lists the PatientIDs that failed. The script returns exit code `1` if at least one patient had an error, and `0` otherwise.
+
+> **Note:** each parallel job opens its own DICOMweb session. Keep `--jobs` small (for example 2 to 4), so that the DICOMweb server is not overloaded.
+
+### Making a patient list from an Orthanc server
+
+The examples below write all PatientIDs on an [Orthanc](https://www.orthanc-server.com/) server to `patient_ids.txt`. Replace the URL, username and password (`orthanc:orthanc`) with your own.
+
+With the DICOMweb API (QIDO-RS) and [jq](https://jqlang.org/):
+
+```bash
+curl -s -u orthanc:orthanc "http://localhost:8042/dicom-web/studies?includefield=00100020" \
+  | jq -r '[.[]."00100020".Value[]?] | unique | .[]' > patient_ids.txt
+```
+
+With the Orthanc REST API and jq:
+
+```bash
+curl -s -u orthanc:orthanc "http://localhost:8042/patients?expand" \
+  | jq -r '.[].MainDicomTags.PatientID' | sort -u > patient_ids.txt
+```
+
+With PowerShell on Windows (no jq needed):
+
+```powershell
+$cred = Get-Credential   # for example: orthanc / orthanc
+(Invoke-RestMethod -Uri "http://localhost:8042/patients?expand" -Credential $cred -AllowUnencryptedAuthentication).MainDicomTags.PatientID |
+  Sort-Object -Unique | Set-Content -Encoding utf8 patient_ids.txt
+```
+
+You can edit the file afterwards, for example to remove patients or to add `#` comments.
+
+> **Note:** a DICOMweb server can limit the number of results of one QIDO-RS query. If the list seems too short, check the server settings, or use the Orthanc REST API example.
+
+---
+
 ## Output
 
 The program writes one JSON file per patient, in the *PatientRecord* format of the SPHN Connector. It contains:
@@ -154,6 +217,9 @@ Project-DICOM2SPHN/
 ├── Contrast-Agents.md                Background on contrast agents
 ├── Contrast-Agent-Trade-Names-and-Ingredients.md
 ├── Radiopharmaceuticals.md           Background on radiopharmaceuticals
+├── Supported_DICOM_SOP_Classes.md    The DICOM SOP Classes that can be processed
+├── scripts/
+│   └── run_patient_list.py           Runs DICOM2SPHN for every PatientID in a text file
 └── src/dicom2sphn/
     ├── cli.py, main.py               Command line interface and main program
     ├── import_config_settings.py     Reads and checks the configuration
@@ -172,6 +238,7 @@ Project-DICOM2SPHN/
 - [Contrast-Agents.md](Contrast-Agents.md): how contrast agents, their ingredients and administrations are represented.
 - [Contrast-Agent-Trade-Names-and-Ingredients.md](Contrast-Agent-Trade-Names-and-Ingredients.md): trade names and active ingredients of contrast agents.
 - [Radiopharmaceuticals.md](Radiopharmaceuticals.md): how radiopharmaceuticals, their radionuclides and administrations are represented.
+- [Supported_DICOM_SOP_Classes.md](Supported_DICOM_SOP_Classes.md): the DICOM SOP Classes that can be processed, with their modality, IOD and SPHN ImagingSeries and ImagingFrame.
 
 ---
 

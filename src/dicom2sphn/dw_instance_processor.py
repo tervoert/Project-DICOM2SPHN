@@ -311,7 +311,11 @@ class DWInstanceProcessor:
             )
 
             # Selecting the general or one of the specific SPHN ImagingSeries
-            if sop_class_uid in [pydicom.uid.CTImageStorage]:
+            if sop_class_uid in [
+                pydicom.uid.CTImageStorage,
+                pydicom.uid.EnhancedCTImageStorage,
+                pydicom.uid.LegacyConvertedEnhancedCTImageStorage
+                ]:
                 # Create a specific SPHN ComputedTomographyImagingSeries
                 logger.debug(" "*(indent+4) + "Creating an SPHN CT-ImagingSeries")
                 sphn_imaging_series = SPHNComputedTomographyImagingSeries(
@@ -320,7 +324,12 @@ class DWInstanceProcessor:
                     has_source_system_list = [data_store.sphn_source_system],
                     has_imaging_modality_code = imaging_modality_code
                 )
-            elif sop_class_uid in [pydicom.uid.MRImageStorage]:
+            elif sop_class_uid in [
+                pydicom.uid.MRImageStorage,
+                pydicom.uid.EnhancedMRImageStorage,
+                pydicom.uid.EnhancedMRColorImageStorage,
+                pydicom.uid.LegacyConvertedEnhancedMRImageStorage
+                ]:
                 # Create a specific SPHN MagneticResonanceImagingSeries
                 logger.debug(" "*(indent+4) + "Creating an SPHN MR-ImagingSeries")
                 sphn_imaging_series = SPHNMagneticResonanceImagingSeries(
@@ -329,7 +338,11 @@ class DWInstanceProcessor:
                     has_source_system_list = [data_store.sphn_source_system],
                     has_imaging_modality_code = imaging_modality_code
                 )
-            elif sop_class_uid in [pydicom.uid.PositronEmissionTomographyImageStorage]:
+            elif sop_class_uid in [
+                pydicom.uid.PositronEmissionTomographyImageStorage,
+                pydicom.uid.LegacyConvertedEnhancedPETImageStorage,
+                pydicom.uid.EnhancedPETImageStorage
+                ]:
                 # Create a specific SPHN PositronEmissionTomographyImagingSeries
                 logger.debug(" "*(indent+4) + "Creating an SPHN PET-ImagingSeries")
                 sphn_imaging_series = SPHNPositronEmissionTomographyImagingSeries(
@@ -338,13 +351,25 @@ class DWInstanceProcessor:
                     has_source_system_list = [data_store.sphn_source_system],
                     has_imaging_modality_code = imaging_modality_code
                 )
-            elif sop_class_uid in ["empty-for-now"]:
-                #[
-                # pydicom.uid.ComputedRadiographyImageStorage, 
-                # pydicom.uid.DigitalXRayImageStorageForPresentation,
-                # pydicom.uid.DigitalXRayImageStorageForProcessing,
-                # pydicom.uid.XRayRadiofluoroscopicImageStorage,
-                # ]: https://pydicom.github.io/pydicom/stable/reference/uid.html
+            elif sop_class_uid in [
+                pydicom.uid.ComputedRadiographyImageStorage,
+                pydicom.uid.DigitalXRayImageStorageForPresentation,
+                pydicom.uid.DigitalXRayImageStorageForProcessing,
+                pydicom.uid.DigitalMammographyXRayImageStorageForPresentation,
+                pydicom.uid.DigitalMammographyXRayImageStorageForProcessing,
+                pydicom.uid.DigitalIntraOralXRayImageStorageForPresentation,
+                pydicom.uid.DigitalIntraOralXRayImageStorageForProcessing,
+                pydicom.uid.XRayAngiographicImageStorage,
+                pydicom.uid.EnhancedXAImageStorage,
+                pydicom.uid.XRayRadiofluoroscopicImageStorage,
+                pydicom.uid.EnhancedXRFImageStorage,
+                pydicom.uid.XRay3DAngiographicImageStorage,
+                pydicom.uid.XRay3DCraniofacialImageStorage,
+                pydicom.uid.BreastTomosynthesisImageStorage,
+                pydicom.uid.BreastProjectionXRayImageStorageForPresentation,
+                pydicom.uid.BreastProjectionXRayImageStorageForProcessing,
+                ]:
+                # Reference for DICOM UIDs: https://pydicom.github.io/pydicom/stable/reference/uid.html
                 # Create a specific SPHN XRayImagingSeries
                 logger.debug(" "*(indent+4) + "Creating an SPHN XRay-ImagingSeries")
                 sphn_imaging_series = SPHNXRayImagingSeries(

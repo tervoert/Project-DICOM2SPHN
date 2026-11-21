@@ -83,59 +83,16 @@ class DWFrameProcessor:
         assert data_store.sphn_schema is not None
         assert sop_class_uid is not None
 
-        # -------------------------------------------------------------------------------------------------------------
-
-        # Supported DICOM SOP Classes by the dcm2sphn example:
-        # +-----------+-------------------------------------------------------------+--------------------------------+----------+-----------------------------------------+-------------------------------------------------------------+
-        # | Supported | SOP Class                                                   | SOP Class UID                  | Modality | IOD                                     |                                                             |
-        # +-----------+-------------------------------------------------------------+--------------------------------+----------+-----------------------------------------+-------------------------------------------------------------+      
-        # | No        | Computed Radiography Image Storage                          | 1.2.840.10008.5.1.4.1.1.1      | CR       | Computed Radiography Image IOD          | sop_class.ComputedRadiographyImageStorage                   |
-        # | No        | Digital X-Ray Image Storage – For Presentation              | 1.2.840.10008.5.1.4.1.1.1.1    | DX       | Digital X-Ray Image IOD                 | sop_class.DigitalXRayImageStorageForPresentation            |
-        # | No        | Digital X-Ray Image Storage – For Processing                | 1.2.840.10008.5.1.4.1.1.1.1.1  | DX       | Digital X-Ray Image IOD                 | sop_class.DigitalXRayImageStorageForProcessing              |
-        # | No        | Digital Mammography X-Ray Image Storage – For Presentation  | 1.2.840.10008.5.1.4.1.1.1.2    | MG       | Digital Mammography X-Ray Image IOD     | sop_class.DigitalMammographyXRayImageStorageForPresentation |
-        # | No        | Digital Mammography X-Ray Image Storage – For Processing    | 1.2.840.10008.5.1.4.1.1.1.2.1  | MG       | Digital Mammography X-Ray Image IOD     | sop_class.DigitalMammographyXRayImageStorageForProcessing   |
-        # | No        | Digital Intra-Oral X-Ray Image Storage - For Presentation   | 1.2.840.10008.5.1.4.1.1.1.3    | IO       | Digital Intra-Oral X-Ray Image IOD      | sop_class.DigitalIntraOralXRayImageStorageForPresentation   |
-        # | No        | Digital Intra-Oral X-Ray Image Storage - For Processing     | 1.2.840.10008.5.1.4.1.1.1.3.1  | IO       | Digital Intra-Oral X-Ray Image IOD      | sop_class.DigitalIntraOralXRayImageStorageForProcessing     |
-        # | Yes       | CT Image Storage                                            | 1.2.840.10008.5.1.4.1.1.2      | CT       | CT Image IOD                            | sop_class.CTImageStorage                                    |
-        # | No        | Enhanced CT Image Storage                                   | 1.2.840.10008.5.1.4.1.1.2.1    | CT       | Enhanced CT Image IOD                   | sop_class.EnhancedCTImageStorage                            |
-        # | No        | Legacy Converted Enhanced CT Image Storage                  | 1.2.840.10008.5.1.4.1.1.2.2    | CT       | Legacy Converted Enhanced CT Image IOD  | sop_class.LegacyConvertedEnhancedCTImageStorage             |
-        # | No        | CT Image Storage - For Processsing                          | 1.2.840.10008.5.1.4.1.1.2.3    | CT       | CT Image IOD                            | < new >                                                     |
-        # | No        | Enhanced CT Image Storage - For Processing                  | 1.2.840.10008.5.1.4.1.1.2.4    | CT       | Enhanced CT Image IOD                   | < new >                                                     |
-        # | No        | Legacy Converted Enhanced CT Image Storage - For Processing | 1.2.840.10008.5.1.4.1.1.2.5    | CT       | Legacy Converted Enhanced CT Image IOD  | < new >                                                     |
-        # | No        | Ultrasound Multi-frame Image Storage                        | 1.2.840.10008.5.1.4.1.1.3.1    | US       | Ultrasound Multi-frame Image IOD        | sop_class.UltrasoundMultiFrameImageStorage                  |
-        # | Yes       | MR Image Storage                                            | 1.2.840.10008.5.1.4.1.1.4      | MR       | MR Image IOD                            | sop_class.MRImageStorage                                    |
-        # | No        | Enhanced MR Image Storage                                   | 1.2.840.10008.5.1.4.1.1.4.1    | MR       | Enhanced MR Image IOD                   | sop_class.EnhancedMRImageStorage                            |
-        # | No        | MR Spectroscopy Storage                                     | 1.2.840.10008.5.1.4.1.1.4.2    | MR       | MR Spectroscopy IOD                     | sop_class.MRSpectroscopyStorage                             |
-        # | No        | Enhanced MR Color Image Storage                             | 1.2.840.10008.5.1.4.1.1.4.3    | MR       | Enhanced MR Color Image IOD             | sop_class.EnhancedMRColorImageStorage                       |
-        # | No        | Legacy Converted Enhanced MR Image Storage                  | 1.2.840.10008.5.1.4.1.1.4.4    | MR       | Legacy Converted Enhanced MR Image IOD  | sop_class.LegacyConvertedEnhancedMRImageStorage             |
-        # | No        | Ultrasound Image Storage                                    | 1.2.840.10008.5.1.4.1.1.6.1    | US       | Ultrasound Image IOD                    | sop_class.UltrasoundImageStorage                            |
-        # | No        | Enhanced US Volume Storage                                  | 1.2.840.10008.5.1.4.1.1.6.2    | US       | Enhanced US Volume IOD                  | sop_class.EnhancedUSVolumeStorage                           |
-        # | No        | Photoacoustic Image Storage                                 | 1.2.840.10008.5.1.4.1.1.6.3    | PA       | Photoacoustic Image IOD                 | sop_class.PhotoacousticImageStorage                         |
-        # | No        | X-Ray Angiographic Image Storage                            | 1.2.840.10008.5.1.4.1.1.12.1   | XA       | X-Ray Angiographic Image IOD            | sop_class.XRayAngiographicImageStorage                      |
-        # | No        | Enhanced XA Image Storage                                   | 1.2.840.10008.5.1.4.1.1.12.1.1 | XA       | Enhanced XA Image IOD                   | sop_class.EnhancedXAImageStorage                            |
-        # | No        | X-Ray Radiofluoroscopic Image Storage                       | 1.2.840.10008.5.1.4.1.1.12.2   | RF       | X-Ray Radiofluoroscopic Image IOD       | sop_class.XRayRadiofluoroscopicImageStorage                 |
-        # | No        | Enhanced XRF Image Storage                                  | 1.2.840.10008.5.1.4.1.1.12.2.1 | RF       | Enhanced XRF Image IOD                  | sop_class.EnhancedXRFImageStorage                           |
-        # | No        | X-Ray 3D Angiographic Image Storage                         | 1.2.840.10008.5.1.4.1.1.13.1.1 | XA       | X-Ray 3D Angiographic Image IOD         | sop_class.XRay3DAngiographicImageStorage                    |
-        # | No        | X-Ray 3D Craniofacial Image Storage                         | 1.2.840.10008.5.1.4.1.1.13.1.2 |          | X-Ray 3D Craniofacial Image IOD         | sop_class.XRay3DCraniofacialImageStorage                    |
-        # | No        | Breast Tomosynthesis Image Storage                          | 1.2.840.10008.5.1.4.1.1.13.1.3 |          | Breast Tomosynthesis Image IOD          | sop_class.BreastTomosynthesisImageStorage                   |
-        # | No        | Breast Projection X-Ray Image Storage – For Presentation    | 1.2.840.10008.5.1.4.1.1.13.1.4 |          | Breast Projection X-Ray Image IOD       | sop_class.BreastProjectionXRayImageStorageForPresentation   |
-        # | No        | Breast Projection X-Ray Image Storage – For Processing      | 1.2.840.10008.5.1.4.1.1.13.1.5 |          | Breast Projection X-Ray Image IOD       | sop_class.BreastProjectionXRayImageStorageForProcessing     |
-        # | No        | Nuclear Medicine Image Storage                              | 1.2.840.10008.5.1.4.1.1.20     | NM       | Nuclear Medicine Image IOD              | sop_class.NuclearMedicineImageStorage                       |
-        # | No        | Segmentation Storage                                        | 1.2.840.10008.5.1.4.1.1.66.4   | SEG      | Segmentation IOD                        | sop_class.SegmentationStorage                               |
-        # | No        | VL Whole Slide Microscopy Image Storage                     | 1.2.840.10008.5.1.4.1.1.77.1.6 | SM       | VL Whole Slide Microscopy Image IOD     | sop_class.VLWholeSlideMicroscopyImageStorage                |
-        # | Yes       | Positron Emission Tomography Image Storage                  | 1.2.840.10008.5.1.4.1.1.128    | PT       | Positron Emission Tomography Image IOD  | sop_class.PositronEmissionTomographyImageStorage            |
-        # | No        | Legacy Converted Enhanced PET Image Storage                 | 1.2.840.10008.5.1.4.1.1.128.1  | PT       | Legacy Converted Enhanced PET Image IOD | sop_class.LegacyConvertedEnhancedPETImageStorage            |
-        # | No        | Enhanced PET Image Storage                                  | 1.2.840.10008.5.1.4.1.1.130    | PT       | Enhanced PET Image IOD                  | sop_class.EnhancedPETImageStorage                           |
-        # +-----------+-------------------------------------------------------------+--------------------------------+----------+-----------------------------------------+-------------------------------------------------------------+
-        # For DICOM standard SOP classes see: https://dicom.nema.org/medical/dicom/current/output/html/part04.html#sect_B.5
-        # For the pydicom / pynetdicom SOP classes see: https://pydicom.github.io/pynetdicom/stable/reference/sop_classes.html
-
-        # -------------------------------------------------------------------------------------------------------------
 
         # ToDo: Edwin: Currently SPHN only allows one contrast agent administration event per imaging frame, change with the new SPHN schema version
+        # Reference for DICOM UIDs: https://pydicom.github.io/pydicom/stable/reference/uid.html
 
         # Selecting the general or one of the specific SPHN ImagingFrames based on the SOP Class UID of the DICOM Instance dataset
-        if sop_class_uid in [pydicom.uid.CTImageStorage]:
+        if sop_class_uid in [
+            pydicom.uid.CTImageStorage, 
+            pydicom.uid.EnhancedCTImageStorage,
+            pydicom.uid.LegacyConvertedEnhancedCTImageStorage
+            ]:
             # Create a specific SPHN ComputedTomographyImagingFrame
             logger.debug(" "*(indent+4) + "Creating an SPHN CT-ImagingFrame")
             sphn_imaging_frame = SPHNComputedTomographyImagingFrame(
@@ -153,7 +110,12 @@ class DWFrameProcessor:
                     if data_store.sphn_contrast_agent_administration_event_list is not None \
                         and len(data_store.sphn_contrast_agent_administration_event_list) > 0 else None
             )
-        elif sop_class_uid in [pydicom.uid.MRImageStorage]:
+        elif sop_class_uid in [
+            pydicom.uid.MRImageStorage,
+            pydicom.uid.EnhancedMRImageStorage,
+            pydicom.uid.EnhancedMRColorImageStorage,
+            pydicom.uid.LegacyConvertedEnhancedMRImageStorage
+            ]:
             # Create a specific SPHN MagneticResonanceImagingFrame
             logger.debug(" "*(indent+4) + "Creating an SPHN MR-ImagingFrame")
             sphn_imaging_frame = SPHNMagneticResonanceImagingFrame(
@@ -171,7 +133,11 @@ class DWFrameProcessor:
                     if data_store.sphn_contrast_agent_administration_event_list is not None \
                         and len(data_store.sphn_contrast_agent_administration_event_list) > 0 else None
             )
-        elif sop_class_uid in [pydicom.uid.PositronEmissionTomographyImageStorage]:
+        elif sop_class_uid in [
+            pydicom.uid.PositronEmissionTomographyImageStorage,
+            pydicom.uid.LegacyConvertedEnhancedPETImageStorage,
+            pydicom.uid.EnhancedPETImageStorage
+            ]:
             # Create a specific SPHN PositronEmissionTomographyImagingFrame
             logger.debug(" "*(indent+4) + "Creating an SPHN PET-ImagingFrame")
             sphn_imaging_frame = SPHNPositronEmissionTomographyImagingFrame(
@@ -189,13 +155,24 @@ class DWFrameProcessor:
                     if data_store.sphn_radiopharmaceutical_administration_event_list is not None \
                         and len(data_store.sphn_radiopharmaceutical_administration_event_list) > 0 else None
             )
-        elif sop_class_uid in ['empty_for_now']:
-            #[
-            # pydicom.uid.ComputedRadiographyImageStorage, 
-            # pydicom.uid.DigitalXRayImageStorageForPresentation,
-            # pydicom.uid.DigitalXRayImageStorageForProcessing,
-            # pydicom.uid.XRayRadiofluoroscopicImageStorage,
-            # ]: https://pydicom.github.io/pydicom/stable/reference/uid.html
+        elif sop_class_uid in [
+            pydicom.uid.ComputedRadiographyImageStorage,
+            pydicom.uid.DigitalXRayImageStorageForPresentation,
+            pydicom.uid.DigitalXRayImageStorageForProcessing,
+            pydicom.uid.DigitalMammographyXRayImageStorageForPresentation,
+            pydicom.uid.DigitalMammographyXRayImageStorageForProcessing,
+            pydicom.uid.DigitalIntraOralXRayImageStorageForPresentation,
+            pydicom.uid.DigitalIntraOralXRayImageStorageForProcessing,
+            pydicom.uid.XRayAngiographicImageStorage,
+            pydicom.uid.EnhancedXAImageStorage,
+            pydicom.uid.XRayRadiofluoroscopicImageStorage,
+            pydicom.uid.EnhancedXRFImageStorage,
+            pydicom.uid.XRay3DAngiographicImageStorage,
+            pydicom.uid.XRay3DCraniofacialImageStorage,
+            pydicom.uid.BreastTomosynthesisImageStorage,
+            pydicom.uid.BreastProjectionXRayImageStorageForPresentation,
+            pydicom.uid.BreastProjectionXRayImageStorageForProcessing,
+            ]:
             # Create a specific SPHN XRayImagingFrame
             logger.debug(" "*(indent+4) + "Creating an SPHN XRay-ImagingFrame")
             sphn_imaging_frame = SPHNXRayImagingFrame(

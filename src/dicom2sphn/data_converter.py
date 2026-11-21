@@ -59,14 +59,14 @@ class DataConverter:
     dicom_modality_code_dict: ClassVar[ReadOnly[dict[str, tuple[tuple[str, str], tuple[str, str, str]]]]] = {
         ### Acquisition modalities
         "AR":           (("DCM", "AR",         "| Autorefraction |"),                                  ("", "", "")),
-        "BDUS":         (("DCM", "BDUS",       "| Ultrasound Bone Densitometry |"),                    ("", "", "")),
+        "BDUS":         (("DCM", "BDUS",       "| Ultrasound Bone Densitometry |"),                    ("SNOMED", "16310003",  "| Ultrasonography (procedure) |")),
         "BI":           (("DCM", "BI",         "| Biomagnetic Imaging |"),                             ("", "", "")),
-        "BMD":          (("DCM", "BMD",        "| Bone Mineral Densitometry |"),                       ("", "", "")),
-        "CFM":          (("DCM", "CFM",        "| Confocal Microscopy |"),                             ("", "", "")),
+        "BMD":          (("DCM", "BMD",        "| Bone Mineral Densitometry |"),                       ("SNOMED", "241686001", "| Dual energy X-ray absorptiometry (procedure) |")),
+        "CFM":          (("DCM", "CFM",        "| Confocal Microscopy |"),                             ("SNOMED", "363679005", "| Imaging (procedure) |")), # Has no "Imaging (procedure)" descendant for confocal microscopy
         "CR":           (("DCM", "CR",         "| Computed Radiography |"),                            ("SNOMED", "168537006", "| Plain X-ray (procedure) |")),
         "CT":           (("DCM", "CT",         "| Computed Tomography |"),                             ("SNOMED", "77477000",  "| Computed tomography (procedure) |")),
         "DG":           (("DCM", "DG",         "| Diaphanography |"),                                  ("", "", "")),
-        "DMS":          (("DCM", "DMS",        "| Dermoscopy |"),                                      ("", "", "")),
+        "DMS":          (("DCM", "DMS",        "| Dermoscopy |"),                                      ("SNOMED", "446078004", "| Dermoscopic photography (procedure) |")),
         "DX":           (("DCM", "DX",         "| Digital Radiography |"),                             ("SNOMED", "168537006", "| Plain X-ray (procedure) |")),
         "ECG":          (("DCM", "ECG",        "| Electrocardiography |"),                             ("", "", "")),
         "EEG":          (("DCM", "EEG",        "| Electroencephalography |"),                          ("", "", "")),
@@ -76,7 +76,7 @@ class DataConverter:
         "ES":           (("DCM", "ES",         "| Endoscopy |"),                                       ("", "", "")),
         "GM":           (("DCM", "GM",         "| General Microscopy |"),                              ("SNOMED", "363679005", "| Imaging (procedure) |")), # Has no "Imaging (procedure)" parent: SNOMED 117259009 | Microscopy (procedure) |
         "HD":           (("DCM", "HD",         "| Hemodynamic Waveform |"),                            ("", "", "")),
-        "IO":           (("DCM", "IO",         "| Intra-oral Radiography |"),                          ("", "", "")),
+        "IO":           (("DCM", "IO",         "| Intra-oral Radiography |"),                          ("SNOMED", "168537006", "| Plain X-ray (procedure) |")),
         "IVOCT":        (("DCM", "IVOCT",      "| Intravascular Optical Coherence Tomography |"),      ("SNOMED", "392010000", "| Optical coherence tomography (procedure) |")),
         "IVUS":         (("DCM", "IVUS",       "| Intravascular Ultrasound |"),                        ("SNOMED", "241466007", "| Intravascular ultrasound angiography of blood vessel (procedure) |")),
         "KER":          (("DCM", "KER",        "| Keratometry |"),                                     ("", "", "")),
@@ -87,11 +87,11 @@ class DataConverter:
         "NM":           (("DCM", "NM",         "| Nuclear Medicine |"),                                ("SNOMED", "373205008", "| Nuclear medicine imaging procedure (procedure) |")),
         "OAM":          (("DCM", "OAM",        "| Ophthalmic Axial Measurements |"),                   ("", "", "")),
         "OCT":          (("DCM", "OCT",        "| Optical Coherence Tomography |"),                    ("SNOMED", "392010000", "| Optical coherence tomography (procedure) |")),
-        "OP":           (("DCM", "OP",         "| Ophthalmic Photography |"),                          ("", "", "")),
+        "OP":           (("DCM", "OP",         "| Ophthalmic Photography |"),                          ("SNOMED", "20067007",  "| Ocular fundus photography (procedure) |")),
         "OPM":          (("DCM", "OPM",        "| Ophthalmic Mapping |"),                              ("", "", "")),
-        "OPT":          (("DCM", "OPT",        "| Ophthalmic Tomography |"),                           ("", "", "")),
-        "OPTBSV":       (("DCM", "OPTBSV",     "| Ophthalmic Tomography B-scan Volume Analysis |"),    ("", "", "")),
-        "OPTENF":       (("DCM", "OPTENF",     "| Ophthalmic Tomography En Face |"),                   ("", "", "")),
+        "OPT":          (("DCM", "OPT",        "| Ophthalmic Tomography |"),                           ("SNOMED", "392010000", "| Optical coherence tomography (procedure) |")),
+        "OPTBSV":       (("DCM", "OPTBSV",     "| Ophthalmic Tomography B-scan Volume Analysis |"),    ("SNOMED", "392010000", "| Optical coherence tomography (procedure) |")),
+        "OPTENF":       (("DCM", "OPTENF",     "| Ophthalmic Tomography En Face |"),                   ("SNOMED", "392010000", "| Optical coherence tomography (procedure) |")),
         "OPV":          (("DCM", "OPV",        "| Ophthalmic Visual Field |"),                         ("", "", "")),
         "OSS":          (("DCM", "OSS",        "| Optical Surface Scanner |"),                         ("", "", "")),
         "PA":           (("DCM", "PA",         "| Photoacoustic |"),                                   ("", "", "")),
@@ -101,14 +101,14 @@ class DataConverter:
         "RESP":         (("DCM", "RESP",       "| Respiratory Waveform |"),                            ("", "", "")),
         "RF":           (("DCM", "RF",         "| Radiofluoroscopy |"),                                ("SNOMED", "44491008",  "| Fluoroscopy (procedure) |")),
         "RG":           (("DCM", "RG",         "| Radiographic imaging |"),                            ("SNOMED", "363680008", "| Radiographic imaging procedure (procedure) |")),
-        "RTIMAGE":      (("DCM", "RTIMAGE",    "| RT Image |"),                                        ("", "", "")),
+        "RTIMAGE":      (("DCM", "RTIMAGE",    "| RT Image |"),                                        ("SNOMED", "363679005", "| Imaging (procedure) |")), # Has no "Imaging (procedure)" descendant for radiotherapy imaging
         "SM":           (("DCM", "SM",         "| Slide Microscopy |"),                                ("SNOMED", "363679005", "| Imaging (procedure) |")), # Has no "Imaging (procedure)" parent: SNOMED 117259009 | Microscopy (procedure) |
         "SRF":          (("DCM", "SRF",        "| Subjective Refraction |"),                           ("", "", "")),
-        "TG":           (("DCM", "TG",         "| Thermography |"),                                    ("", "", "")),
+        "TG":           (("DCM", "TG",         "| Thermography |"),                                    ("SNOMED", "40538005",  "| Thermography (procedure) |")),
         "US":           (("DCM", "US",         "| Ultrasound |"),                                      ("SNOMED", "16310003",  "| Ultrasonography (procedure) |")),
         "VA":           (("DCM", "VA",         "| Visual Acuity |"),                                   ("", "", "")),
         "XA":           (("DCM", "XA",         "| X-Ray Angiography |"),                               ("SNOMED", "77343006",  "| Angiography (procedure) |")),
-        "XC":           (("DCM", "XC",         "| External-camera Photography |"),                     ("", "", "")),
+        "XC":           (("DCM", "XC",         "| External-camera Photography |"),                     ("SNOMED", "103734008", "| External camera medical photography (procedure) |")),
         ### Non-acquisition modalities
         "ASMT":         (("DCM", "ASMT",       "| Content Assessment Results |"),                      ("", "", "")),
         "AU":           (("DCM", "AU",         "| Audio |"),                                           ("", "", "")),
@@ -128,7 +128,7 @@ class DataConverter:
         "RTRECORD":     (("DCM", "RTRECORD",   "| RT Treatment Record |"),                             ("", "", "")),
         "RTSTRUCT":     (("DCM", "RTSTRUCT",   "| Radiotherapy Structure Set |"),                      ("", "", "")),
         "RWV":          (("DCM", "RWV",        "| Real World Value Map |"),                            ("", "", "")),
-        "SEG":          (("DCM", "SEG",        "| Segmentation |"),                                    ("", "",  "")), # Has no "Imaging (procedure)" parent: SNOMED 74529008 | Image analysis, segmentation (procedure) |
+        "SEG":          (("DCM", "SEG",        "| Segmentation |"),                                    ("SNOMED", "363679005", "| Imaging (procedure) |")), # Has no "Imaging (procedure)" parent: SNOMED 74529008 | Image analysis, segmentation (procedure) |
         "SMR":          (("DCM", "SMR",        "| Stereometric Relationship |"),                       ("", "", "")),
         "SR":           (("DCM", "SR",         "| SR Document |"),                                     ("", "", "")),
         "STAIN":        (("DCM", "STAIN",      "| Automated Slide Stainer |"),                         ("", "", "")),
