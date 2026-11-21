@@ -3,6 +3,7 @@
 .vscode/
 output/
 config.toml
+scripts/patient_ids*.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
